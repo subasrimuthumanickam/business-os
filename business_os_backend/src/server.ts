@@ -12,7 +12,7 @@ app.use(cors());
 app.use(express.json()); // Essential body parser integration
 
 // Middleware Routes Context binding
-app.use('/api/auth', authRoutes);
+app.use('/api', authRoutes);
 
 app.listen(PORT, () => {
     console.log(`🚀 Server engine operating smoothly on port: ${PORT}`);

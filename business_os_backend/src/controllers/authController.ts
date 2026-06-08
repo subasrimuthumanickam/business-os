@@ -1,5 +1,12 @@
 import type { Request, Response } from 'express';
 import { authService } from '../services/authService.js';
+import { TenantModel } from '../models/tenantModel.js';
+
+const formatCompany = (companyName: string, id: number) => ({
+    id,
+    name: companyName,
+    subdomain: companyName.trim().toLowerCase().replace(/\s+/g, '-')
+});
 
 export const authController = {
     registerCompany: async (req: Request, res: Response): Promise<void> => {
@@ -20,8 +27,8 @@ export const authController = {
 
             res.status(201).json({
                 success: true,
-                message: 'Tenant registration completed successfully.',
-                data: registrationResult
+                token: registrationResult.token,
+                company: formatCompany(company_name, registrationResult.tenantId)
             });
         } catch (error: any) {
             res.status(400).json({ success: false, error: error.message });
@@ -38,23 +45,42 @@ export const authController = {
             }
 
             const loginResult = await authService.login(email, password);
+            const tenant = await TenantModel.findTenantById(loginResult.user.tenant_id);
+            const company = tenant
+                ? formatCompany(tenant.company_name, tenant.id)
+                : null;
 
             res.status(200).json({
                 success: true,
-                message: 'Login successful.',
-                data: {
-                    token: loginResult.token,
-                    user: {
-                        id: loginResult.user.user_id,
-                        name: loginResult.user.name,
-                        email: loginResult.user.email,
-                        tenantId: loginResult.user.tenant_id,
-                        roleId: loginResult.user.role_id
-                    }
-                }
+                token: loginResult.token,
+                company
             });
         } catch (error: any) {
             res.status(401).json({ success: false, error: error.message });
         }
+    },
+
+    forgotPassword: async (req: Request, res: Response): Promise<void> => {
+        res.status(501).json({ success: false, error: 'Forgot password is not implemented yet.' });
+    },
+
+    resetPassword: async (req: Request, res: Response): Promise<void> => {
+        res.status(501).json({ success: false, error: 'Reset password is not implemented yet.' });
+    },
+
+    check2FAStatus: async (req: Request, res: Response): Promise<void> => {
+        res.status(200).json({ enabled: false, message: '2FA is not implemented yet.' });
+    },
+
+    enable2FA: async (req: Request, res: Response): Promise<void> => {
+        res.status(501).json({ success: false, error: '2FA enable is not implemented yet.' });
+    },
+
+    verify2FA: async (req: Request, res: Response): Promise<void> => {
+        res.status(501).json({ success: false, error: '2FA verify is not implemented yet.' });
+    },
+
+    disable2FA: async (req: Request, res: Response): Promise<void> => {
+        res.status(501).json({ success: false, error: '2FA disable is not implemented yet.' });
     }
 };
