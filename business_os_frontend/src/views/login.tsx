@@ -17,25 +17,25 @@ interface FormData {
   twoFACode: string;
 }
 
-interface NewCustomer {
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  city: string;
-  state: string;
-  pincode: string;
-  gst_number: string;
-}
+// interface NewCustomer {
+//   name: string;
+//   email: string;
+//   phone: string;
+//   address: string;
+//   city: string;
+//   state: string;
+//   pincode: string;
+//   gst_number: string;
+// }
 
-interface Customer {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  city: string;
-  gst_number: string;
-}
+// interface Customer {
+//   id: number;
+//   name: string;
+//   email: string;
+//   phone: string;
+//   city: string;
+//   gst_number: string;
+// }
 
 function App() {
   const [isLogin, setIsLogin] = useState<boolean>(true);
@@ -66,15 +66,7 @@ function App() {
   const [twoFASecret, setTwoFASecret] = useState<string>('');
   const [twoFAQRCode, setTwoFAQRCode] = useState<string>('');
   const [verificationCode, setVerificationCode] = useState<string>('');
-
-  // Check 2FA status when logged in
-  useEffect(() => {
-    if (token) {
-      check2FAStatus();
-    }
-  }, [token]);
-
-  const check2FAStatus = async (): Promise<void> => {
+const check2FAStatus = async (): Promise<void> => {
     try {
       const response = await fetch('http://localhost:5000/api/2fa/status', {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -85,6 +77,14 @@ function App() {
       console.error('Error checking 2FA:', err);
     }
   };
+  // Check 2FA status when logged in
+  useEffect(() => {
+  if (token) {
+    check2FAStatus();
+  }
+}, [token, check2FAStatus]);
+
+  
 
   const setup2FA = async (): Promise<void> => {
     try {
@@ -398,7 +398,7 @@ function App() {
             onClick={() => { setIsLogin(false); setShow2FAInput(false); setForgotPasswordMode(false); }} 
             className={!isLogin ? 'active-tab' : 'tab'}
           >
-            Registering 
+            Register
           </button>
         </div>
         
