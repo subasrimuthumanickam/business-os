@@ -2,7 +2,7 @@ import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import '../index.css';
 
-// Define interfaces for TypeScript
+// Define interfaces for TypeScript typings
 interface Company {
   id: number;
   name: string;
@@ -16,26 +16,6 @@ interface FormData {
   password: string;
   twoFACode: string;
 }
-
-// interface NewCustomer {
-//   name: string;
-//   email: string;
-//   phone: string;
-//   address: string;
-//   city: string;
-//   state: string;
-//   pincode: string;
-//   gst_number: string;
-// }
-
-// interface Customer {
-//   id: number;
-//   name: string;
-//   email: string;
-//   phone: string;
-//   city: string;
-//   gst_number: string;
-// }
 
 function App() {
   const [isLogin, setIsLogin] = useState<boolean>(true);
@@ -66,7 +46,10 @@ function App() {
   const [twoFASecret, setTwoFASecret] = useState<string>('');
   const [twoFAQRCode, setTwoFAQRCode] = useState<string>('');
   const [verificationCode, setVerificationCode] = useState<string>('');
-const check2FAStatus = async (): Promise<void> => {
+
+  // Fetch 2FA status when token changes
+  const check2FAStatus = async (): Promise<void> => {
+    if (!token) return;
     try {
       const response = await fetch('http://localhost:5000/api/2fa/status', {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -77,14 +60,13 @@ const check2FAStatus = async (): Promise<void> => {
       console.error('Error checking 2FA:', err);
     }
   };
+
   // Check 2FA status when logged in
   useEffect(() => {
-  if (token) {
-    check2FAStatus();
-  }
-}, [token, check2FAStatus]);
-
-  
+    if (token) {
+      check2FAStatus();
+    }
+  }, [token]);
 
   const setup2FA = async (): Promise<void> => {
     try {
@@ -165,7 +147,12 @@ const check2FAStatus = async (): Promise<void> => {
       const response = await fetch('http://localhost:5000/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          company_name: formData.companyName,
+          admin_name: formData.name,
+          email: formData.email,
+          password: formData.password
+        })
       });
 
       const data = await response.json();
@@ -176,7 +163,7 @@ const check2FAStatus = async (): Promise<void> => {
         setCompany(data.company);
         setSuccess('Company registered successfully!');
       } else {
-        setError(data.error);
+        setError(data.error || data.message || 'Registration failed.');
       }
     } catch (err) {
       setError('Network error. Is backend running?');
@@ -211,7 +198,7 @@ const check2FAStatus = async (): Promise<void> => {
         setShow2FAInput(true);
         setError('2FA required. Enter your verification code:');
       } else {
-        setError(data.error);
+        setError(data.error || 'Login failed.');
       }
     } catch (err) {
       setError('Network error. Is backend running?');
@@ -235,7 +222,7 @@ const check2FAStatus = async (): Promise<void> => {
       if (response.ok) {
         setResetToken(data.resetToken || '');
         setForgotStep('reset');
-        setSuccess(data.message || 'Password reset token generated. Check console for link.');
+        setSuccess(data.message || 'Password reset token generated.');
       } else {
         setError(data.error || 'Unable to process password reset request');
       }
@@ -298,7 +285,7 @@ const check2FAStatus = async (): Promise<void> => {
     setShow2FAInput(false);
   };
 
-  // Dashboard after login
+  // Dashboard View (Rendered after successful Login/Registration)
   if (token && company) {
     return (
       <div className="dashboard">
@@ -339,7 +326,7 @@ const check2FAStatus = async (): Promise<void> => {
             </div>
           </div>
           
-          {/* 2FA Setup Modal */}
+          {/* 2FA Setup Modal Popup */}
           {show2FASetup && (
             <div className="modal">
               <div className="modal-content">
@@ -362,15 +349,14 @@ const check2FAStatus = async (): Promise<void> => {
           
           <div className="card">
             <h2>✅ Module 1: Authentication Complete</h2>
-            <p style={{ marginTop: 10, color: '#666' }}>All data stored in MySQL database</p>
+            <p style={{ marginTop: 10, color: '#666' }}>All data securely stored in MySQL database</p>
             <ul>
               <li>✓ Login with JWT</li>
               <li>✓ Register with Company</li>
-              <li>✓ Forgot Password</li>
+              <li>✓ Forgot Password Lifecycle</li>
               <li>✓ Two-Factor Authentication (2FA)</li>
-              <li>✓ Secure Logout</li>
-              <li>✓ MySQL Database Storage</li>
-              <li>✓ TypeScript Ready</li>
+              <li>✓ Secure Logout Cleanup</li>
+              <li>✓ TypeScript Typing Enforcement</li>
             </ul>
           </div>
         </div>
@@ -378,7 +364,7 @@ const check2FAStatus = async (): Promise<void> => {
     );
   }
 
-  // Auth Page
+  // Authentication View (Sign In / Sign Up Forms)
   return (
     <div className="auth-container">
       <div className="auth-card fade-in">
@@ -389,13 +375,13 @@ const check2FAStatus = async (): Promise<void> => {
         
         <div className="tab-container">
           <button 
-            onClick={() => { setIsLogin(true); setShow2FAInput(false); setForgotPasswordMode(false); }} 
+            onClick={() => { setIsLogin(true); setShow2FAInput(false); setForgotPasswordMode(false); setError(''); setSuccess(''); }} 
             className={isLogin && !forgotPasswordMode ? 'active-tab' : 'tab'}
           >
             Login
           </button>
           <button 
-            onClick={() => { setIsLogin(false); setShow2FAInput(false); setForgotPasswordMode(false); }} 
+            onClick={() => { setIsLogin(false); setShow2FAInput(false); setForgotPasswordMode(false); setError(''); setSuccess(''); }} 
             className={!isLogin ? 'active-tab' : 'tab'}
           >
             Register
@@ -470,6 +456,7 @@ const check2FAStatus = async (): Promise<void> => {
           <form onSubmit={handleLogin}>
             <input type="email" name="email" placeholder="Email address" onChange={handleChange} required className="auth-input" />
             <input type="password" name="password" placeholder="Password" onChange={handleChange} required className="auth-input" />
+            
             {show2FAInput && (
               <input 
                 type="text" 
@@ -481,6 +468,7 @@ const check2FAStatus = async (): Promise<void> => {
                 maxLength={6}
               />
             )}
+            
             <button type="submit" className="auth-btn">Sign In</button>
             <button
               type="button"
@@ -503,7 +491,6 @@ const check2FAStatus = async (): Promise<void> => {
           </form>
         )}
         
-        {/* <p className="auth-footer">✓ Login ✓ Register ✓ JWT ✓ 2FA ✓ Forgot Password</p> */}
         <p className="auth-footer">All-in-one authentication solution with JWT and 2FA security.</p>
       </div>
     </div>
