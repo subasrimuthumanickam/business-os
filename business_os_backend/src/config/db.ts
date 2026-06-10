@@ -3,12 +3,18 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+console.log("HOST =", process.env.DB_HOST);
+console.log("USER =", process.env.DB_USER);
+console.log("PASSWORD =", JSON.stringify(process.env.DB_PASSWORD));
+console.log("DB =", process.env.DB_NAME);
+
 // Create a connection pool to MySQL
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'root',
-  database: process.env.DB_NAME || 'business_os',
+  host: process.env.DB_HOST ?? 'localhost',
+  user: process.env.DB_USER ?? 'root',
+  // Fix: Ensure an empty string "" from .env is preserved and not replaced by 'root'
+  password: process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : 'root',
+  database: process.env.DB_NAME ?? 'business_os',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0

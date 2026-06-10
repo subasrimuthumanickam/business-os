@@ -1,300 +1,379 @@
-/* Global CSS for BusinessOS Module 1 */
+/* ==========================================================================
+   GLOBAL PARAMETERS DEFINITION SETUP (TIMES NEW ROMAN ENGINE)
+   ========================================================================== */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  font-family: 'Times New Roman', Times, serif !important;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-height: 100vh;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.fade-in {
-  animation: fadeIn 0.3s ease-out;
-}
-
-/* Auth Container */
-.auth-container {
+  background: white;
+  color: #F1F5F9;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+}
+
+/* ==========================================================================
+   THE JET BLACK TRANSPARENT GLASSIC CARD (LIKE RICH CUISINE OVERLAY)
+   ========================================================================== */
+.auth-container {
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* This background should be an image if you want exactly like Rich Cuisine */
+  background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+              center/cover no-repeat fixed;
+  padding: 24px;
 }
 
 .auth-card {
-  background: white;
-  border-radius: 20px;
-  padding: 40px;
   width: 100%;
-  max-width: 450px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 440px;
+  position: relative;
+  
+  /* 🔥 EXACT BLACK TRANSPARENT LIKE YOUR RICH CUISINE IMAGE 🔥 */
+  background: rgba(0, 0, 0, 0.85) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  
+  /* Clean border - minimal to keep the black transparent feel */
+  border: none !important;
+  border-radius: 16px;
+  padding: 44px 36px;
+  
+  /* Subtle shadow for depth */
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
 }
 
+/* If you want the exact overlay look from your image - solid black transparent without blur */
+.auth-card-solid {
+  background: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: none !important;
+  border-radius: 0px;
+}
+
+/* Header Text Nodes Styling inside the Glass Box */
 .auth-header {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 32px;
 }
 
 .auth-logo {
-  font-size: 32px;
-  font-weight: bold;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  color: #FFFFFF !important;
+  margin-bottom: 6px;
 }
 
 .auth-subtitle {
-  color: #666;
-  font-size: 14px;
-  margin-top: 5px;
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.6) !important;
+  font-weight: 300;
 }
 
-/* Tabs */
+/* ==========================================================================
+   HIGHLY PROFESSIONAL SEAMLESS INTEGRATED TOGGLE SLIDER TRACK
+   ========================================================================== */
 .tab-container {
   display: flex;
-  gap: 10px;
-  margin-bottom: 30px;
+  background: rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 3px;
+  border-radius: 8px;
+  margin-bottom: 28px;
 }
 
-.active-tab {
+.tab, .active-tab {
   flex: 1;
-  padding: 12px;
-  background: #667eea;
-  color: white;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 400;
   border: none;
-  border-radius: 10px;
+  border-radius: 6px;
   cursor: pointer;
-  font-weight: bold;
+  background: transparent;
+  text-align: center;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .tab {
-  flex: 1;
-  padding: 12px;
-  background: #f0f0f0;
-  color: #666;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
+  color: rgba(255, 255, 255, 0.5);
 }
 
-/* Form Inputs */
+.tab:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.active-tab {
+  color: #FFFFFF !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* ==========================================================================
+   FORM CONTROLS SYSTEM GRID
+   ========================================================================== */
 .auth-input {
   width: 100%;
-  padding: 14px;
-  margin: 10px 0;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  font-size: 16px;
-  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: #FFFFFF !important;
+  outline: none;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+}
+
+.auth-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .auth-input:focus {
-  outline: none;
-  border-color: #667eea;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(0, 0, 0, 0.8) !important;
 }
 
-/* Buttons */
+/* High Contrast Premium Solid Action Button */
 .auth-btn {
   width: 100%;
-  padding: 14px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: #FFFFFF !important;
+  color: #000000 !important;
   border: none;
-  border-radius: 10px;
-  font-size: 16px;
-  font-weight: bold;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  margin-top: 10px;
+  margin-top: 8px;
+  transition: all 0.2s ease;
 }
 
+.auth-btn:hover {
+  background: rgba(255, 255, 255, 0.9) !important;
+  transform: translateY(-1px);
+}
+
+/* Interactive Link Elements */
 .link-btn {
-  width: 100%;
-  padding: 10px;
-  background: none;
-  color: #667eea;
+  display: block;
+  width: max-content;
+  margin: 18px auto 0 auto;
+  background: transparent;
   border: none;
+  color: rgba(255, 255, 255, 0.5) !important;
+  font-size: 13px;
   cursor: pointer;
-  margin-top: 10px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.link-btn:hover {
+  color: #FFFFFF !important;
   text-decoration: underline;
 }
 
-/* Messages */
-.error-msg {
-  background: #fee;
-  color: #c33;
-  padding: 12px;
-  border-radius: 10px;
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-.success-msg {
-  background: #e8f5e9;
-  color: #2e7d32;
-  padding: 12px;
-  border-radius: 10px;
-  margin-bottom: 20px;
-  text-align: center;
-}
-
 .helper-text {
-  color: #555;
-  font-size: 14px;
-  margin-bottom: 15px;
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.6);
   text-align: center;
+  margin-bottom: 16px;
 }
 
 .auth-footer {
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.3);
   text-align: center;
-  margin-top: 30px;
-  color: #999;
-  font-size: 12px;
+  margin-top: 36px;
 }
 
-/* Dashboard */
+/* Feedback Layout Notification Labels */
+.error-msg, .success-msg {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.error-msg {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #FCA5A5;
+}
+
+.success-msg {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #A7F3D0;
+}
+
+/* ==========================================================================
+   DASHBOARD STYLES
+   ========================================================================== */
 .dashboard {
   display: flex;
   min-height: 100vh;
-  background: #f5f5f5;
+  width: 100%;
 }
 
 .sidebar {
   width: 260px;
-  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
-  color: white;
-  padding: 20px;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(10px);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 24px 16px;
   display: flex;
   flex-direction: column;
 }
 
 .logo {
-  font-size: 24px;
-  font-weight: bold;
+  font-size: 20px;
+  font-weight: 600;
+  color: #FFFFFF;
   text-align: center;
-  padding: 20px 0;
-  border-bottom: 1px solid #333;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 24px;
 }
 
 .nav {
   flex: 1;
-  margin-top: 30px;
 }
 
 .nav-item-active {
-  padding: 12px 20px;
-  background: #667eea;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 10px;
+  color: #FFFFFF;
+  font-size: 14px;
 }
 
 .logout-btn {
-  padding: 12px;
-  background: #dc3545;
-  color: white;
-  border: none;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
+  padding: 10px;
+  color: #FFFFFF;
   cursor: pointer;
-  margin-top: 20px;
+  margin-top: auto;
+  transition: all 0.2s ease;
+}
+
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
 .main-content {
   flex: 1;
-  padding: 30px;
+  background: #F8F9FC;
+  padding: 24px 32px;
+  overflow-y: auto;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: 32px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #E5E7EB;
 }
 
 .header h1 {
-  color: #333;
+  color: #1F2937;
+  font-size: 24px;
 }
 
 .badge {
-  padding: 8px 16px;
-  background: #e0e7ff;
-  color: #667eea;
+  background: #E5E7EB;
+  padding: 6px 12px;
   border-radius: 20px;
   font-size: 12px;
+  color: #374151;
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
 }
 
 .stat-card {
-  background: white;
-  padding: 20px;
-  border-radius: 15px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  padding: 24px;
   text-align: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #E5E7EB;
 }
 
 .stat-icon {
-  font-size: 40px;
-  margin-bottom: 10px;
+  font-size: 32px;
+  margin-bottom: 12px;
 }
 
 .stat-number {
   font-size: 28px;
-  font-weight: bold;
-  color: #333;
+  font-weight: 700;
+  color: #1F2937;
+  margin-bottom: 8px;
 }
 
 .stat-label {
   font-size: 14px;
-  color: #666;
+  color: #6B7280;
+  margin-bottom: 16px;
 }
 
-.card {
-  background: white;
-  border-radius: 15px;
-  padding: 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+.small-btn, .small-btn-danger {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
 }
 
-.card h2 {
-  margin-bottom: 15px;
+.small-btn {
+  background: #1F2937;
+  color: #FFFFFF;
 }
 
-.card ul {
-  list-style: none;
-  padding-left: 0;
+.small-btn:hover {
+  background: #374151;
 }
 
-.card li {
-  padding: 8px 0;
-  color: #28a745;
+.small-btn-danger {
+  background: #EF4444;
+  color: #FFFFFF;
 }
 
-/* Modal */
+.small-btn-danger:hover {
+  background: #DC2626;
+}
+
+/* ==========================================================================
+   MODAL STYLES FOR 2FA SETUP
+   ========================================================================== */
 .modal {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -302,71 +381,116 @@ body {
 }
 
 .modal-content {
-  background: white;
-  padding: 30px;
-  border-radius: 15px;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 32px;
   text-align: center;
   max-width: 400px;
   width: 90%;
 }
 
+.modal-content h2 {
+  color: #FFFFFF;
+  margin-bottom: 20px;
+  font-size: 22px;
+}
+
+.modal-content p {
+  color: rgba(255, 255, 255, 0.6);
+  margin: 16px 0;
+}
+
 .secret-text {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 8px 12px;
+  border-radius: 8px;
   font-size: 12px;
-  color: #666;
-  margin: 10px 0;
   word-break: break-all;
 }
 
-.small-btn {
-  padding: 5px 12px;
-  background: #28a745;
-  color: white;
-  border: none;
-  border-radius: 5px;
+.primary-btn, .secondary-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
   cursor: pointer;
-  font-size: 12px;
-}
-
-.small-btn-danger {
-  padding: 5px 12px;
-  background: #dc3545;
-  color: white;
+  margin: 8px;
   border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 12px;
+  transition: all 0.2s ease;
 }
 
 .primary-btn {
-  padding: 10px 20px;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
+  background: #FFFFFF;
+  color: #000000;
+}
+
+.primary-btn:hover {
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .secondary-btn {
-  padding: 10px 20px;
-  background: #6c757d;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  margin-left: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
 }
 
-@media (max-width: 768px) {
-  .sidebar {
-    width: 200px;
-  }
-  .main-content {
-    padding: 15px;
-  }
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
+.secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Entrance Animation Matrix Reset */
+.fade-in {
+  animation: authRevealGate 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes authRevealGate {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN
+   ========================================================================== */
+@media (max-width: 640px) {
   .auth-card {
-    padding: 25px;
+    margin: 16px;
+    padding: 32px 24px;
+  }
+  
+  .dashboard {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+  }
+  
+  .logo {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+  }
+  
+  .nav {
+    flex: 1;
+  }
+  
+  .logout-btn {
+    width: auto;
+    margin-top: 0;
+  }
+  
+  .main-content {
+    padding: 16px;
+  }
+  
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
 }

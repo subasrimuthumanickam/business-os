@@ -2,7 +2,6 @@ import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import '../index.css';
 
-// Define interfaces for TypeScript typings
 interface Company {
   id: number;
   name: string;
@@ -10,8 +9,8 @@ interface Company {
 }
 
 interface FormData {
-  companyName: string;
-  name: string;
+  company_name: string;
+  admin_name: string;
   email: string;
   password: string;
   twoFACode: string;
@@ -20,18 +19,18 @@ interface FormData {
 function App() {
   const [isLogin, setIsLogin] = useState<boolean>(true);
   const [formData, setFormData] = useState<FormData>({
-    companyName: '',
-    name: '',
+    company_name: '',
+    admin_name: '',
     email: '',
     password: '',
     twoFACode: ''
   });
+  
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [company, setCompany] = useState<Company | null>(null);
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
   
-  // Forgot Password State
   const [forgotPasswordMode, setForgotPasswordMode] = useState<boolean>(false);
   const [forgotStep, setForgotStep] = useState<string>('email');
   const [forgotEmail, setForgotEmail] = useState<string>('');
@@ -39,7 +38,6 @@ function App() {
   const [newPassword, setNewPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
 
-  // 2FA States
   const [show2FAInput, setShow2FAInput] = useState<boolean>(false);
   const [twoFAEnabled, setTwoFAEnabled] = useState<boolean>(false);
   const [show2FASetup, setShow2FASetup] = useState<boolean>(false);
@@ -47,7 +45,6 @@ function App() {
   const [twoFAQRCode, setTwoFAQRCode] = useState<string>('');
   const [verificationCode, setVerificationCode] = useState<string>('');
 
-  // Fetch 2FA status when token changes
   const check2FAStatus = async (): Promise<void> => {
     if (!token) return;
     try {
@@ -61,7 +58,6 @@ function App() {
     }
   };
 
-  // Check 2FA status when logged in
   useEffect(() => {
     if (token) {
       check2FAStatus();
@@ -147,9 +143,10 @@ function App() {
       const response = await fetch('http://localhost:5000/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // Aligned with backend interface RegisterBody
         body: JSON.stringify({
-          company_name: formData.companyName,
-          admin_name: formData.name,
+          company_name: formData.company_name,
+          admin_name: formData.admin_name,
           email: formData.email,
           password: formData.password
         })
@@ -163,7 +160,7 @@ function App() {
         setCompany(data.company);
         setSuccess('Company registered successfully!');
       } else {
-        setError(data.error || data.message || 'Registration failed.');
+        setError(data.error || 'Registration failed.');
       }
     } catch (err) {
       setError('Network error. Is backend running?');
@@ -236,16 +233,6 @@ function App() {
     setError('');
     setSuccess('');
 
-    if (!resetToken) {
-      setError('Reset token is missing. Please request a new one.');
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters long.');
-      return;
-    }
-
     if (newPassword !== confirmPassword) {
       setError('Passwords do not match.');
       return;
@@ -264,10 +251,6 @@ function App() {
         setSuccess('Password updated successfully! You can now sign in.');
         setForgotPasswordMode(false);
         setForgotStep('email');
-        setForgotEmail('');
-        setNewPassword('');
-        setConfirmPassword('');
-        setResetToken('');
         setIsLogin(true);
       } else {
         setError(data.error || 'Unable to reset password');
@@ -285,22 +268,21 @@ function App() {
     setShow2FAInput(false);
   };
 
-  // Dashboard View (Rendered after successful Login/Registration)
   if (token && company) {
     return (
       <div className="dashboard">
         <div className="sidebar">
-          <div className="logo">🏢 BusinessOS</div>
+          <div className="logo">Login Now Portal</div>
           <nav className="nav">
             <div className="nav-item-active">📊 Dashboard</div>
           </nav>
-          <button onClick={handleLogout} className="logout-btn">🚪 Logout</button>
+          <button onClick={handleLogout} className="logout-btn">Logout</button>
         </div>
         
         <div className="main-content">
           <div className="header">
             <h1>Welcome back, {company.name}!</h1>
-            <div className="badge">{company.subdomain}.businessos.com</div>
+            <div className="badge">{company.subdomain}.portal</div>
           </div>
           
           <div className="stats-grid">
@@ -314,25 +296,13 @@ function App() {
                 <button onClick={disable2FA} className="small-btn-danger">Disable 2FA</button>
               )}
             </div>
-            <div className="stat-card">
-              <div className="stat-icon">🏢</div>
-              <div className="stat-number">1</div>
-              <div className="stat-label">Company</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-icon">👤</div>
-              <div className="stat-number">1</div>
-              <div className="stat-label">Admin User</div>
-            </div>
           </div>
           
-          {/* 2FA Setup Modal Popup */}
           {show2FASetup && (
             <div className="modal">
               <div className="modal-content">
                 <h2>🔐 Setup Two-Factor Authentication</h2>
-                <p>Scan this QR code with Google Authenticator:</p>
-                {twoFAQRCode && <QRCodeSVG value={twoFAQRCode} size={200} />}
+                {twoFAQRCode && <QRCodeSVG value={twoFAQRCode} size={180} />}
                 <p className="secret-text">Secret: <strong>{twoFASecret}</strong></p>
                 <input
                   type="text"
@@ -346,41 +316,29 @@ function App() {
               </div>
             </div>
           )}
-          
-          <div className="card">
-            <h2>✅ Module 1: Authentication Complete</h2>
-            <p style={{ marginTop: 10, color: '#666' }}>All data securely stored in MySQL database</p>
-            <ul>
-              <li>✓ Login with JWT</li>
-              <li>✓ Register with Company</li>
-              <li>✓ Forgot Password Lifecycle</li>
-              <li>✓ Two-Factor Authentication (2FA)</li>
-              <li>✓ Secure Logout Cleanup</li>
-              <li>✓ TypeScript Typing Enforcement</li>
-            </ul>
-          </div>
         </div>
       </div>
     );
   }
 
-  // Authentication View (Sign In / Sign Up Forms)
   return (
     <div className="auth-container">
       <div className="auth-card fade-in">
         <div className="auth-header">
-          <div className="auth-logo">🏢 BusinessOS</div>
+          <h1 className="auth-logo">Login Now</h1>
           <p className="auth-subtitle">Multi-Tenant ERP Platform with 2FA Security</p>
         </div>
         
         <div className="tab-container">
           <button 
+            type="button"
             onClick={() => { setIsLogin(true); setShow2FAInput(false); setForgotPasswordMode(false); setError(''); setSuccess(''); }} 
             className={isLogin && !forgotPasswordMode ? 'active-tab' : 'tab'}
           >
             Login
           </button>
           <button 
+            type="button"
             onClick={() => { setIsLogin(false); setShow2FAInput(false); setForgotPasswordMode(false); setError(''); setSuccess(''); }} 
             className={!isLogin ? 'active-tab' : 'tab'}
           >
@@ -404,17 +362,7 @@ function App() {
                 className="auth-input"
               />
               <button type="submit" className="auth-btn">Send Reset Link</button>
-              <button
-                type="button"
-                className="link-btn"
-                onClick={() => {
-                  setForgotPasswordMode(false);
-                  setForgotStep('email');
-                  setForgotEmail('');
-                  setError('');
-                  setSuccess('');
-                }}
-              >Back to Login</button>
+              <button type="button" className="link-btn" onClick={() => setForgotPasswordMode(false)}>Back to Login</button>
             </form>
           ) : (
             <form onSubmit={handleResetPassword}>
@@ -436,20 +384,6 @@ function App() {
                 className="auth-input"
               />
               <button type="submit" className="auth-btn">Update Password</button>
-              <button
-                type="button"
-                className="link-btn"
-                onClick={() => {
-                  setForgotPasswordMode(false);
-                  setForgotStep('email');
-                  setForgotEmail('');
-                  setNewPassword('');
-                  setConfirmPassword('');
-                  setResetToken('');
-                  setError('');
-                  setSuccess('');
-                }}
-              >Cancel</button>
             </form>
           )
         ) : isLogin ? (
@@ -470,28 +404,17 @@ function App() {
             )}
             
             <button type="submit" className="auth-btn">Sign In</button>
-            <button
-              type="button"
-              className="link-btn"
-              onClick={() => {
-                setForgotPasswordMode(true);
-                setForgotStep('email');
-                setError('');
-                setSuccess('');
-              }}
-            >Forgot Password?</button>
+            <button type="button" className="link-btn" onClick={() => { setForgotPasswordMode(true); setForgotStep('email'); }}>Forgot Password?</button>
           </form>
         ) : (
           <form onSubmit={handleRegister}>
-            <input type="text" name="companyName" placeholder="Company Name" onChange={handleChange} required className="auth-input" />
-            <input type="text" name="name" placeholder="Your Full Name" onChange={handleChange} required className="auth-input" />
+            <input type="text" name="company_name" placeholder="Company Name" onChange={handleChange} required className="auth-input" />
+            <input type="text" name="admin_name" placeholder="Admin Name" onChange={handleChange} required className="auth-input" />
             <input type="email" name="email" placeholder="Email address" onChange={handleChange} required className="auth-input" />
             <input type="password" name="password" placeholder="Password (min 6 characters)" onChange={handleChange} required className="auth-input" />
             <button type="submit" className="auth-btn">Create Account</button>
           </form>
         )}
-        
-        <p className="auth-footer">All-in-one authentication solution with JWT and 2FA security.</p>
       </div>
     </div>
   );
