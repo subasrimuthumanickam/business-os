@@ -1,4 +1,9 @@
 /* Reset and Base Styles */
+
+
+#root, .App, main {
+  background: transparent !important;
+}
 * {
   margin: 0;
   padding: 0;
@@ -16,16 +21,21 @@ body {
   background: #0a0a0a;
   color: #ffffff;
 }
-
+.dashboard-container {
+  padding-top: 0;
+}
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #0a0a0a;
+
   min-height: 100vh;
   color: #ffffff;
+}
+[data-theme="light"] body {
+  color: #000000;
 }
 
 /* Layout */
@@ -244,30 +254,34 @@ body {
 }
 /* Main Content Area */
 .main-content {
-  flex: 1;
-  overflow-y: auto;
-  background: transparent;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 .content-wrapper {
   max-width: 1400px;
   margin: 0 auto;
   padding: 24px;
+  background: transparent !important;  /* Add this line */
 }
 
-/* Dashboard Shell */
 .dashboard-shell {
   max-width: 1400px;
   margin: 0 auto;
+  padding: 24px;
+}
+html, body {
+  min-height: 100vh;
+  height: 100%;
 }
 
 /* Hero Section */
-.dashboard-hero {
-  background: #111827;
-  border-radius: 24px;
-  border: 1px solid #1f2937;
-  padding: 32px;
-  margin-bottom: 32px;
+.dashboard-hero,
+.stat-card,
+.action-card,
+.card {
+  background: #111827;  /* Keep cards dark */
 }
 
 .hero-content {
@@ -375,6 +389,7 @@ body {
   grid-template-columns: repeat(4, 1fr);
   gap: 24px;
   margin-bottom: 32px;
+  margin-top: 24px;
 }
 
 .stat-card {
@@ -617,13 +632,14 @@ body {
     max-width: none;
   }
   
-  .content-wrapper {
-    padding: 16px;
-  }
+ .content-wrapper {
+  padding: 24px;
+}
   
   .dashboard-hero {
-    padding: 20px;
-  }
+  margin-top: 0;
+  margin-bottom: 32px;
+}
 }
 /* ======================================== */
 /* THEME TOGGLE BUTTON - ADD THIS AT THE END */

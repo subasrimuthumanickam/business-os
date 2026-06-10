@@ -30,7 +30,9 @@ const Sidebar: React.FC = () => {
           </NavLink>
         ))}
       </nav>
+      
     </aside>
+    
   );
 };
 
