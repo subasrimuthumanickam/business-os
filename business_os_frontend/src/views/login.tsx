@@ -163,7 +163,7 @@ function Login() {
         setToken(data.token);
         setCompany(data.company);
         setSuccess('Company registered successfully!');
-        navigate('/dashboard');  // ✅ Add this line
+        navigate('/client/dashboard');  // 
       } else {
         setError(data.error || data.message || 'Registration failed.');
       }
@@ -171,6 +171,42 @@ function Login() {
       setError('Network error. Is backend running?');
     }
   };
+
+  // const handleLogin = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+  //   e.preventDefault();
+  //   setError('');
+  //   setSuccess('');
+
+  //   try {
+  //     const response = await fetch('http://localhost:5000/api/login-2fa', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({
+  //         email: formData.email,
+  //         password: formData.password,
+  //         twoFACode: formData.twoFACode
+  //       })
+  //     });
+
+  //     const data = await response.json();
+
+  //     if (response.ok) {
+  //       localStorage.setItem('token', data.token);
+  //       setToken(data.token);
+  //       setCompany(data.company);
+  //       setSuccess('Login successful!');
+  //       setShow2FAInput(false);
+  //       navigate('/dashboard'); 
+  //     } else if (data.requires2FA) {
+  //       setShow2FAInput(true);
+  //       setError('2FA required. Enter your verification code:');
+  //     } else {
+  //       setError(data.error || 'Login failed.');
+  //     }
+  //   } catch (err) {
+  //     setError('Network error. Is backend running?');
+  //   }
+  // };
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
@@ -196,7 +232,18 @@ function Login() {
         setCompany(data.company);
         setSuccess('Login successful!');
         setShow2FAInput(false);
-        navigate('/dashboard'); 
+        
+        // 🚀 ROLE BASED REDIRECT LOGIC START
+        // Check if backend returns data.role or data.user.role (adjust according to your backend response structure)
+        const userRole = data.role || (data.user && data.user.role); 
+
+        if (userRole === 'superadmin') {
+          navigate('/superadmin-dashboard'); // Or whatever your SuperAdmin route path is
+        } else {
+          navigate('/client/dashboard'); // Dynamic redirecting directly to Client Side Dashboard!
+        }
+        // 🚀 ROLE BASED REDIRECT LOGIC END
+
       } else if (data.requires2FA) {
         setShow2FAInput(true);
         setError('2FA required. Enter your verification code:');
@@ -207,7 +254,6 @@ function Login() {
       setError('Network error. Is backend running?');
     }
   };
-
   const handleForgotPassword = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setError('');
