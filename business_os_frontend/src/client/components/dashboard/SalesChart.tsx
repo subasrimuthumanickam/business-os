@@ -1,4 +1,4 @@
- import React from 'react';
+import React from 'react';
 
 interface SalesData {
   month: string;
@@ -27,21 +27,38 @@ const SalesChart: React.FC<SalesChartProps> = ({ data = [] }) => {
     <div className="dashboard-card">
       <div className="card-header">
         <h3>Sales Overview</h3>
-        <select className="chart-select">
+        <select className="chart-select" style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
           <option>Last 6 months</option>
           <option>Last year</option>
         </select>
       </div>
-      <div className="chart-container">
+      <div className="chart-container" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '20px', padding: '20px', minHeight: '250px' }}>
         {chartData.map((item, index) => (
-          <div key={index} className="chart-bar-wrapper">
+          <div key={index} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
             <div 
-              className="chart-bar" 
-              style={{ height: `${(item.revenue / maxRevenue) * 150}px` }}
+              style={{ 
+                width: '100%', 
+                height: `${(item.revenue / maxRevenue) * 150}px`,
+                background: 'linear-gradient(180deg, #4f46e5 0%, #7c3aed 100%)',
+                borderRadius: '8px 8px 0 0',
+                position: 'relative',
+                transition: 'height 0.5s ease'
+              }}
             >
-              <span className="chart-value">₹{item.revenue / 1000}K</span>
+              <span style={{ 
+                position: 'absolute', 
+                top: '-25px', 
+                left: '50%', 
+                transform: 'translateX(-50%)',
+                fontSize: '11px',
+                color: '#4f46e5',
+                fontWeight: 500,
+                whiteSpace: 'nowrap'
+              }}>
+                ₹{item.revenue / 1000}K
+              </span>
             </div>
-            <div className="chart-label">{item.month}</div>
+            <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>{item.month}</div>
           </div>
         ))}
       </div>
