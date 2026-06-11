@@ -44,7 +44,7 @@ interface JWTPayload {
 // ============= REGISTER API =============
 app.post('/api/register', async (req: Request<{}, {}, RegisterBody>, res: Response): Promise<any> => {
   const { company_name, admin_name, email, password } = req.body;
-
+console.log("data",req.body)
   // Basic validation
   if (!company_name || !email || !password || !admin_name) {
     return res.status(400).json({ error: 'All fields required' });
