@@ -7,6 +7,12 @@ import SuperAdminDashboard from './components/dashboard/SuperAdminDashboard';
 import CompaniesPage from './components/dashboard/CompaniesPage';
 import RevenuePage from './components/dashboard/RevenuePage';
 import SettingsPage from './components/dashboard/SettingsPage';
+
+// Import Client Routes
+import ClientRoutes from './client/routes/ClientRoutes';
+
+// Import Client CSS
+import './client/styles/client.css';
 import './index.css';
 import './styles/global.css';
 
@@ -15,33 +21,20 @@ function App() {
     <ThemeProvider>
       <BrowserRouter>
         <Routes>
-          {/* Always show login page at root */}
+          {/* Login Page */}
           <Route path="/" element={<Login />} />
           
-          {/* Dashboard routes - protected */}
-          <Route path="/dashboard" element={
-            <Layout>
-              <SuperAdminDashboard />
-            </Layout>
-          } />
+          {/* Super Admin Routes */}
+          <Route path="/dashboard" element={<Layout><SuperAdminDashboard /></Layout>} />
+          <Route path="/companies" element={<Layout><CompaniesPage /></Layout>} />
+          <Route path="/revenue" element={<Layout><RevenuePage /></Layout>} />
+          <Route path="/settings" element={<Layout><SettingsPage /></Layout>} />
           
-          <Route path="/companies" element={
-            <Layout>
-              <CompaniesPage />
-            </Layout>
-          } />
+          {/* Client Routes - All client features under /client/* */}
+          <Route path="/client/*" element={<ClientRoutes />} />
           
-          <Route path="/revenue" element={
-            <Layout>
-              <RevenuePage />
-            </Layout>
-          } />
-          
-          <Route path="/settings" element={
-            <Layout>
-              <SettingsPage />
-            </Layout>
-          } />
+          {/* Client Login (optional) */}
+          <Route path="/client-login" element={<div>Client Login Page</div>} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
