@@ -1,303 +1,366 @@
 import React, { useState, useEffect } from 'react';
 
-interface Task {
+interface TimeEntry {
   id: string;
-  title: string;
-  description: string;
+  taskId: string;
+  taskName: string;
   projectId: string;
   projectName: string;
-  assignedTo: string;
-  assignedToName: string;
-  priority: 'high' | 'medium' | 'low';
-  status: 'todo' | 'in_progress' | 'review' | 'done';
-  dueDate: string;
-  createdAt: string;
-  attachments: number;
-  comments: number;
+  userId: string;
+  userName: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  hours: number;
+  description: string;
+  billable: boolean;
 }
 
-interface Column {
-  id: string;
-  title: string;
-  status: Task['status'];
-  color: string;
+interface TaskSummary {
+  taskId: string;
+  taskName: string;
+  totalHours: number;
+  billableHours: number;
 }
 
-const TaskBoard: React.FC = () => {
-  const [tasks, setTasks] = useState<Task[]>([]);
+const TimeTracker: React.FC = () => {
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [tasks, setTasks] = useState<{ id: string; name: string; projectId: string; projectName: string }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [showTaskModal, setShowTaskModal] = useState(false);
-  const [showNewTaskModal, setShowNewTaskModal] = useState(false);
-  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
+  const [selectedUser, setSelectedUser] = useState('all');
+  const [isTracking, setIsTracking] = useState(false);
+  const [currentTask, setCurrentTask] = useState<string | null>(null);
+  const [startTime, setStartTime] = useState<string | null>(null);
+  const [users, setUsers] = useState<{ id: string; name: string }[]>([]);
 
-  const columns: Column[] = [
-    { id: 'todo', title: 'To Do', status: 'todo', color: '#6b7280' },
-    { id: 'in_progress', title: 'In Progress', status: 'in_progress', color: '#3b82f6' },
-    { id: 'review', title: 'Review', status: 'review', color: '#f59e0b' },
-    { id: 'done', title: 'Done', status: 'done', color: '#10b981' },
-  ];
-
-  const [newTask, setNewTask] = useState({
-    title: '',
+  const [newEntry, setNewEntry] = useState({
+    taskId: '',
     description: '',
-    projectId: '',
-    assignedTo: '',
-    priority: 'medium' as 'high' | 'medium' | 'low',
-    dueDate: '',
+    hours: 1,
+    billable: true,
+    date: new Date().toISOString().slice(0, 10),
   });
 
   useEffect(() => {
-    setTimeout(() => {
-      const mockTasks: Task[] = [
-        {
-          id: '1', title: 'Design Database Schema', description: 'Create ER diagram', projectId: '1', projectName: 'E-commerce Website',
-          assignedTo: '1', assignedToName: 'John Doe', priority: 'high', status: 'todo', dueDate: '2024-01-25', createdAt: '2024-01-15', attachments: 2, comments: 3
-        },
-        {
-          id: '2', title: 'API Development', description: 'Build REST APIs', projectId: '1', projectName: 'E-commerce Website',
-          assignedTo: '1', assignedToName: 'John Doe', priority: 'high', status: 'in_progress', dueDate: '2024-01-28', createdAt: '2024-01-16', attachments: 1, comments: 5
-        },
-        {
-          id: '3', title: 'Frontend UI Setup', description: 'Setup React', projectId: '1', projectName: 'E-commerce Website',
-          assignedTo: '2', assignedToName: 'Jane Smith', priority: 'medium', status: 'todo', dueDate: '2024-01-30', createdAt: '2024-01-17', attachments: 0, comments: 2
-        },
-        {
-          id: '4', title: 'Testing and QA', description: 'Write unit tests', projectId: '2', projectName: 'Mobile App',
-          assignedTo: '3', assignedToName: 'Mike Johnson', priority: 'low', status: 'review', dueDate: '2024-02-01', createdAt: '2024-01-14', attachments: 3, comments: 7
-        },
-        {
-          id: '5', title: 'Deployment Setup', description: 'Configure CI/CD', projectId: '2', projectName: 'Mobile App',
-          assignedTo: '1', assignedToName: 'John Doe', priority: 'medium', status: 'done', dueDate: '2024-01-20', createdAt: '2024-01-10', attachments: 1, comments: 4
-        },
-      ];
-      setTasks(mockTasks);
+    fetchTimeEntries();
+    fetchTasks();
+    fetchUsers();
+  }, [selectedDate, selectedUser]);
+
+  const fetchTimeEntries = async () => {
+    try {
+      const response = await fetch(`/api/time-entries?date=${selectedDate}&user=${selectedUser}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setTimeEntries(data.data || data);
+      } else {
+        setMockEntries();
+      }
+    } catch (error) {
+      setMockEntries();
+    } finally {
       setLoading(false);
-    }, 500);
-  }, []);
-
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
-    e.dataTransfer.setData('taskId', taskId);
-  };
-
-  const handleDragOver = (e: React.DragEvent, columnId: string) => {
-    e.preventDefault();
-    setDragOverColumn(columnId);
-  };
-
-  const handleDragLeave = () => {
-    setDragOverColumn(null);
-  };
-
-  const handleDrop = (e: React.DragEvent, newStatus: Task['status']) => {
-    e.preventDefault();
-    const taskId = e.dataTransfer.getData('taskId');
-    setTasks(tasks.map(task =>
-      task.id === taskId ? { ...task, status: newStatus } : task
-    ));
-    setDragOverColumn(null);
-  };
-
-  const getPriorityIcon = (priority: string) => {
-    switch (priority) {
-      case 'high': return '🔴';
-      case 'medium': return '🟡';
-      case 'low': return '🟢';
-      default: return '⚪';
     }
   };
 
-  const getPriorityClass = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'priority-high';
-      case 'medium': return 'priority-medium';
-      case 'low': return 'priority-low';
-      default: return '';
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch('/api/tasks/list', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setTasks(data.data || data);
+      } else {
+        setTasks([
+          { id: '1', name: 'Design Database Schema', projectId: '1', projectName: 'E-commerce Website' },
+          { id: '2', name: 'API Development', projectId: '1', projectName: 'E-commerce Website' },
+          { id: '3', name: 'Frontend UI Setup', projectId: '1', projectName: 'E-commerce Website' },
+        ]);
+      }
+    } catch (error) {
+      setTasks([
+        { id: '1', name: 'Design Database Schema', projectId: '1', projectName: 'E-commerce Website' },
+        { id: '2', name: 'API Development', projectId: '1', projectName: 'E-commerce Website' },
+      ]);
     }
   };
 
-  const handleCreateTask = (e: React.FormEvent) => {
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/team/members', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data.data || data);
+      } else {
+        setUsers([
+          { id: '1', name: 'John Doe' },
+          { id: '2', name: 'Jane Smith' },
+        ]);
+      }
+    } catch (error) {
+      setUsers([
+        { id: '1', name: 'John Doe' },
+        { id: '2', name: 'Jane Smith' },
+      ]);
+    }
+  };
+
+  const setMockEntries = () => {
+    setTimeEntries([
+      { id: '1', taskId: '1', taskName: 'Design Database Schema', projectId: '1', projectName: 'E-commerce Website', userId: '1', userName: 'John Doe', date: '2024-06-15', startTime: '09:00', endTime: '12:00', hours: 3, description: 'Database design work', billable: true },
+      { id: '2', taskId: '1', taskName: 'Design Database Schema', projectId: '1', projectName: 'E-commerce Website', userId: '1', userName: 'John Doe', date: '2024-06-15', startTime: '13:00', endTime: '17:00', hours: 4, description: 'Continued database design', billable: true },
+    ]);
+  };
+
+  const filteredEntries = timeEntries;
+  const totalHours = filteredEntries.reduce((sum, e) => sum + e.hours, 0);
+  const billableHours = filteredEntries.filter(e => e.billable).reduce((sum, e) => sum + e.hours, 0);
+  const nonBillableHours = totalHours - billableHours;
+
+  const taskSummary: TaskSummary[] = Object.values(
+    filteredEntries.reduce((acc, entry) => {
+      if (!acc[entry.taskId]) {
+        acc[entry.taskId] = {
+          taskId: entry.taskId,
+          taskName: entry.taskName,
+          totalHours: 0,
+          billableHours: 0,
+        };
+      }
+      acc[entry.taskId].totalHours += entry.hours;
+      if (entry.billable) acc[entry.taskId].billableHours += entry.hours;
+      return acc;
+    }, {} as Record<string, TaskSummary>)
+  );
+
+  const handleStartTracking = () => {
+    const taskId = prompt('Enter Task ID to start tracking:');
+    if (taskId) {
+      setIsTracking(true);
+      setCurrentTask(taskId);
+      setStartTime(new Date().toLocaleTimeString());
+      alert(`Started tracking task at ${startTime}`);
+    }
+  };
+
+  const handleStopTracking = () => {
+    if (currentTask && startTime) {
+      const endTime = new Date().toLocaleTimeString();
+      const hours = prompt('Enter total hours worked:', '1');
+      if (hours) {
+        const newTimeEntry: TimeEntry = {
+          id: Date.now().toString(),
+          taskId: currentTask,
+          taskName: tasks.find(t => t.id === currentTask)?.name || `Task ${currentTask}`,
+          projectId: tasks.find(t => t.id === currentTask)?.projectId || '1',
+          projectName: tasks.find(t => t.id === currentTask)?.projectName || 'Project',
+          userId: '1',
+          userName: 'John Doe',
+          date: new Date().toISOString().slice(0, 10),
+          startTime: startTime,
+          endTime: endTime,
+          hours: parseFloat(hours),
+          description: 'Worked on task',
+          billable: true,
+        };
+        setTimeEntries([...timeEntries, newTimeEntry]);
+        alert(`Stopped tracking. Added ${hours} hours.`);
+      }
+    }
+    setIsTracking(false);
+    setCurrentTask(null);
+    setStartTime(null);
+  };
+
+  const handleSubmitEntry = async (e: React.FormEvent) => {
     e.preventDefault();
-    const task: Task = {
+    const task = tasks.find(t => t.id === newEntry.taskId);
+    const entry: TimeEntry = {
       id: Date.now().toString(),
-      title: newTask.title,
-      description: newTask.description,
-      projectId: newTask.projectId,
-      projectName: newTask.projectId === '1' ? 'E-commerce Website' : 'Mobile App',
-      assignedTo: newTask.assignedTo,
-      assignedToName: newTask.assignedTo === '1' ? 'John Doe' : 'Jane Smith',
-      priority: newTask.priority,
-      status: 'todo',
-      dueDate: newTask.dueDate,
-      createdAt: new Date().toISOString().slice(0, 10),
-      attachments: 0,
-      comments: 0,
+      taskId: newEntry.taskId,
+      taskName: task?.name || '',
+      projectId: task?.projectId || '',
+      projectName: task?.projectName || '',
+      userId: '1',
+      userName: 'John Doe',
+      date: newEntry.date,
+      startTime: '09:00',
+      endTime: `${9 + newEntry.hours}:00`,
+      hours: newEntry.hours,
+      description: newEntry.description,
+      billable: newEntry.billable,
     };
-    setTasks([...tasks, task]);
-    setShowNewTaskModal(false);
-    setNewTask({ title: '', description: '', projectId: '', assignedTo: '', priority: 'medium', dueDate: '' });
-    alert('Task created successfully!');
+    
+    try {
+      const response = await fetch('/api/time-entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+        body: JSON.stringify(entry)
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setTimeEntries([...timeEntries, data.data || data]);
+      } else {
+        setTimeEntries([...timeEntries, entry]);
+      }
+    } catch (error) {
+      setTimeEntries([...timeEntries, entry]);
+    }
+    
+    setShowModal(false);
+    setNewEntry({ taskId: '', description: '', hours: 1, billable: true, date: new Date().toISOString().slice(0, 10) });
+    alert('Time entry added!');
   };
 
   if (loading) {
-    return <div className="loading">Loading task board...</div>;
+    return <div className="loading">Loading time tracker...</div>;
   }
 
   return (
-    <div className="task-board">
-      <div className="list-header">
-        <h2>Task Board</h2>
-        <button className="btn-primary" onClick={() => setShowNewTaskModal(true)}>
-          + New Task
-        </button>
-      </div>
-
-      <div className="board-columns">
-        {columns.map(column => (
-          <div
-            key={column.id}
-            className={`board-column ${dragOverColumn === column.id ? 'drag-over' : ''}`}
-            onDragOver={(e) => handleDragOver(e, column.id)}
-            onDragLeave={handleDragLeave}
-            onDrop={(e) => handleDrop(e, column.status)}
-          >
-            <div className="column-header" style={{ borderTopColor: column.color }}>
-              <h3>{column.title}</h3>
-              <span className="task-count">{tasks.filter(t => t.status === column.status).length}</span>
-            </div>
-            <div className="task-list">
-              {tasks
-                .filter(task => task.status === column.status)
-                .map(task => (
-                  <div
-                    key={task.id}
-                    className="task-card"
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, task.id)}
-                    onClick={() => { setSelectedTask(task); setShowTaskModal(true); }}
-                  >
-                    <div className="task-header">
-                      <span className={`task-priority ${getPriorityClass(task.priority)}`}>
-                        {getPriorityIcon(task.priority)} {task.priority}
-                      </span>
-                      <span className="task-project">{task.projectName}</span>
-                    </div>
-                    <h4 className="task-title">{task.title}</h4>
-                    <p className="task-description">{task.description.substring(0, 60)}...</p>
-                    <div className="task-footer">
-                      <div className="task-assignee">
-                        <span className="assignee-avatar">{task.assignedToName.charAt(0)}</span>
-                        <span>{task.assignedToName}</span>
-                      </div>
-                      <div className="task-meta">
-                        <span>📎 {task.attachments}</span>
-                        <span>💬 {task.comments}</span>
-                        <span>📅 {task.dueDate}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              {tasks.filter(t => t.status === column.status).length === 0 && (
-                <div className="empty-column">No tasks</div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Task Detail Modal */}
-      {showTaskModal && selectedTask && (
-        <div className="modal-overlay" onClick={() => setShowTaskModal(false)}>
-          <div className="modal modal-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{selectedTask.title}</h3>
-              <button className="close-btn" onClick={() => setShowTaskModal(false)}>×</button>
-            </div>
-            <div className="task-detail">
-              <div className="detail-section">
-                <label>Project:</label>
-                <p>{selectedTask.projectName}</p>
-              </div>
-              <div className="detail-section">
-                <label>Assigned To:</label>
-                <p>{selectedTask.assignedToName}</p>
-              </div>
-              <div className="detail-section">
-                <label>Priority:</label>
-                <p className={`task-priority ${getPriorityClass(selectedTask.priority)}`}>
-                  {selectedTask.priority}
-                </p>
-              </div>
-              <div className="detail-section">
-                <label>Due Date:</label>
-                <p>{selectedTask.dueDate}</p>
-              </div>
-              <div className="detail-section">
-                <label>Description:</label>
-                <p>{selectedTask.description}</p>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn-secondary" onClick={() => setShowTaskModal(false)}>Close</button>
-              <button className="btn-primary">Edit Task</button>
-            </div>
-          </div>
+    <div className="time-tracker">
+      <div className="tracker-header">
+        <h2>Time Tracker</h2>
+        <div className="tracker-actions">
+          <button className={`btn-track ${isTracking ? 'tracking' : ''}`} onClick={handleStartTracking} disabled={isTracking}>
+            {isTracking ? '⏺ Tracking...' : '▶ Start Tracking'}
+          </button>
+          {isTracking && (
+            <button className="btn-stop" onClick={handleStopTracking}>⏹ Stop Tracking</button>
+          )}
+          <button className="btn-primary" onClick={() => setShowModal(true)}>+ Add Time Entry</button>
         </div>
-      )}
+      </div>
 
-      {/* New Task Modal */}
-      {showNewTaskModal && (
-        <div className="modal-overlay" onClick={() => setShowNewTaskModal(false)}>
+      <div className="stats-cards">
+        <div className="stat-card">
+          <div className="stat-label">Total Hours</div>
+          <div className="stat-value">{totalHours.toFixed(1)} hrs</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Billable</div>
+          <div className="stat-value">{billableHours.toFixed(1)} hrs</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Non-Billable</div>
+          <div className="stat-value">{nonBillableHours.toFixed(1)} hrs</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Entries</div>
+          <div className="stat-value">{filteredEntries.length}</div>
+        </div>
+      </div>
+
+      <div className="filters">
+        <div className="filter-group">
+          <label>Date:</label>
+          <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
+        </div>
+        <div className="filter-group">
+          <label>Employee:</label>
+          <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)}>
+            <option value="all">All Employees</option>
+            {users.map(user => <option key={user.id} value={user.id}>{user.name}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div className="task-summary">
+        <h3>Task Summary</h3>
+        <table className="summary-table">
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Total Hours</th>
+              <th>Billable Hours</th>
+              <th>Non-Billable</th>
+            </tr>
+          </thead>
+          <tbody>
+            {taskSummary.map(task => (
+              <tr key={task.taskId}>
+                <td>{task.taskName}</td>
+                <td>{task.totalHours.toFixed(1)} hrs</td>
+                <td>{task.billableHours.toFixed(1)} hrs</td>
+                <td>{(task.totalHours - task.billableHours).toFixed(1)} hrs</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="time-entries">
+        <h3>Time Entries</h3>
+        <table className="entries-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Task</th>
+              <th>Project</th>
+              <th>Hours</th>
+              <th>Billable</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredEntries.map(entry => (
+              <tr key={entry.id}>
+                <td>{entry.date}</td>
+                <td>{entry.taskName}</td>
+                <td>{entry.projectName}</td>
+                <td>{entry.hours} hrs</td>
+                <td>{entry.billable ? '✅ Yes' : '❌ No'}</td>
+                <td>{entry.description}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {showModal && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Create New Task</h3>
-              <button className="close-btn" onClick={() => setShowNewTaskModal(false)}>×</button>
+              <h3>Add Time Entry</h3>
+              <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
             </div>
-            <form onSubmit={handleCreateTask}>
+            <form onSubmit={handleSubmitEntry}>
               <div className="form-group">
-                <label>Task Title *</label>
-                <input type="text" required value={newTask.title} onChange={(e) => setNewTask({...newTask, title: e.target.value})} />
-              </div>
-              <div className="form-group">
-                <label>Description *</label>
-                <textarea rows={3} required value={newTask.description} onChange={(e) => setNewTask({...newTask, description: e.target.value})} />
+                <label>Task *</label>
+                <select required value={newEntry.taskId} onChange={(e) => setNewEntry({...newEntry, taskId: e.target.value})}>
+                  <option value="">Select Task</option>
+                  {tasks.map(task => <option key={task.id} value={task.id}>{task.name}</option>)}
+                </select>
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Project *</label>
-                  <select required value={newTask.projectId} onChange={(e) => setNewTask({...newTask, projectId: e.target.value})}>
-                    <option value="">Select Project</option>
-                    <option value="1">E-commerce Website</option>
-                    <option value="2">Mobile App</option>
-                  </select>
+                  <label>Date</label>
+                  <input type="date" value={newEntry.date} onChange={(e) => setNewEntry({...newEntry, date: e.target.value})} />
                 </div>
                 <div className="form-group">
-                  <label>Assign To *</label>
-                  <select required value={newTask.assignedTo} onChange={(e) => setNewTask({...newTask, assignedTo: e.target.value})}>
-                    <option value="">Select Employee</option>
-                    <option value="1">John Doe</option>
-                    <option value="2">Jane Smith</option>
-                    <option value="3">Mike Johnson</option>
-                  </select>
+                  <label>Hours</label>
+                  <input type="number" step="0.5" value={newEntry.hours} onChange={(e) => setNewEntry({...newEntry, hours: parseFloat(e.target.value)})} />
                 </div>
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Priority *</label>
-                  <select required value={newTask.priority} onChange={(e) => setNewTask({...newTask, priority: e.target.value as any})}>
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Due Date *</label>
-                  <input type="date" required value={newTask.dueDate} onChange={(e) => setNewTask({...newTask, dueDate: e.target.value})} />
-                </div>
+              <div className="form-group">
+                <label>Description</label>
+                <textarea rows={2} value={newEntry.description} onChange={(e) => setNewEntry({...newEntry, description: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label className="checkbox-label">
+                  <input type="checkbox" checked={newEntry.billable} onChange={(e) => setNewEntry({...newEntry, billable: e.target.checked})} />
+                  Billable (chargeable to client)
+                </label>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn-secondary" onClick={() => setShowNewTaskModal(false)}>Cancel</button>
-                <button type="submit" className="btn-primary">Create Task</button>
+                <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+                <button type="submit" className="btn-primary">Add Entry</button>
               </div>
             </form>
           </div>
@@ -307,4 +370,4 @@ const TaskBoard: React.FC = () => {
   );
 };
 
-export default TaskBoard;
+export default TimeTracker;

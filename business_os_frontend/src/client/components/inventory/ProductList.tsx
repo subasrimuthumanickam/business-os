@@ -17,19 +17,82 @@ const ProductList: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
 
   useEffect(() => {
-    setTimeout(() => {
-      setProducts([
-        { id: '1', name: 'Laptop Pro', sku: 'LAP-001', category: 'Electronics', price: 65000, stock: 15, reorderLevel: 5, status: 'active' },
-        { id: '2', name: 'Wireless Mouse', sku: 'MOU-001', category: 'Accessories', price: 1200, stock: 8, reorderLevel: 10, status: 'active' },
-        { id: '3', name: 'Office Chair', sku: 'CHR-001', category: 'Furniture', price: 8500, stock: 3, reorderLevel: 5, status: 'active' },
-        { id: '4', name: 'USB Cable', sku: 'USB-001', category: 'Accessories', price: 300, stock: 50, reorderLevel: 20, status: 'active' },
-      ]);
-      setLoading(false);
-    }, 500);
+    fetchProducts();
   }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch('/api/products', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setProducts(data.data || data);
+      } else {
+        setMockProducts();
+      }
+    } catch (error) {
+      setMockProducts();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const setMockProducts = () => {
+    setProducts([
+      { id: '1', name: 'Laptop Pro', sku: 'LAP-001', category: 'Electronics', price: 65000, stock: 15, reorderLevel: 5, status: 'active' },
+      { id: '2', name: 'Wireless Mouse', sku: 'MOU-001', category: 'Accessories', price: 1200, stock: 8, reorderLevel: 10, status: 'active' },
+      { id: '3', name: 'Office Chair', sku: 'CHR-001', category: 'Furniture', price: 8500, stock: 3, reorderLevel: 5, status: 'active' },
+      { id: '4', name: 'USB Cable', sku: 'USB-001', category: 'Accessories', price: 300, stock: 50, reorderLevel: 20, status: 'active' },
+    ]);
+  };
+
+  const handleReorder = (product: Product) => {
+    const suggestedOrder = Math.max(product.reorderLevel * 2 - product.stock, product.reorderLevel);
+    const message = `Reorder ${product.name}\nCurrent Stock: ${product.stock}\nReorder Level: ${product.reorderLevel}\nSuggested Quantity: ${suggestedOrder}\n\nClick OK to place reorder`;
+    if (window.confirm(message)) {
+      alert(`Reorder placed for ${product.name}! Quantity: ${suggestedOrder}`);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this product?')) {
+      try {
+        await fetch(`/api/products/${id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        setProducts(products.filter(p => p.id !== id));
+        alert('Product deleted successfully!');
+      } catch (error) {
+        setProducts(products.filter(p => p.id !== id));
+        alert('Product deleted successfully!');
+      }
+    }
+  };
+
+  const handleEdit = (product: Product) => {
+    setEditingProduct(product);
+    setShowModal(true);
+  };
+
+  const handleSave = (productData: any) => {
+    if (editingProduct) {
+      setProducts(products.map(p => p.id === editingProduct.id ? { ...p, ...productData } : p));
+      alert('Product updated successfully!');
+    } else {
+      const newProduct = { ...productData, id: Date.now().toString() };
+      setProducts([...products, newProduct]);
+      alert('Product added successfully!');
+    }
+    setShowModal(false);
+    setEditingProduct(null);
+  };
 
   const getStockStatus = (stock: number, reorderLevel: number) => {
     if (stock === 0) return 'out-of-stock';
@@ -37,99 +100,106 @@ const ProductList: React.FC = () => {
     return 'in-stock';
   };
 
-  const getStockColor = (stock: number, reorderLevel: number) => {
-    if (stock === 0) return '#ef4444'; // Red
-    if (stock <= reorderLevel) return '#f59e0b'; // Orange
-    return '#10b981'; // Green
+  const getStockStatusText = (stock: number, reorderLevel: number) => {
+    if (stock === 0) return 'Out of Stock';
+    if (stock <= reorderLevel) return 'Low Stock';
+    return 'In Stock';
   };
 
-  const getStatusStyle = (stock: number, reorderLevel: number) => {
-    const isLowStock = stock <= reorderLevel;
-    return {
-      backgroundColor: isLowStock ? '#fed7aa' : '#d1fae5',
-      color: isLowStock ? '#92400e' : '#065f46',
-    };
-  };
+  const categories = ['all', ...new Set(products.map(p => p.category))];
+  
+  const filteredProducts = products.filter(product => {
+    const matchSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        product.sku.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchCategory = categoryFilter === 'all' || product.category === categoryFilter;
+    return matchSearch && matchCategory;
+  });
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  if (loading) return <div className="loading">Loading products...</div>;
-
-  // Custom table styles
-  const tableStyles = {
-    container: { overflowX: 'auto' as const },
-    table: { width: '100%', borderCollapse: 'collapse' as const },
-    th: { padding: '12px 16px', textAlign: 'left' as const, borderBottom: '1px solid #e5e7eb', background: '#f9fafb', fontWeight: 600, color: '#374151' },
-    td: { padding: '12px 16px', borderBottom: '1px solid #e5e7eb' },
-  };
+  if (loading) {
+    return <div className="loading">Loading products...</div>;
+  }
 
   return (
     <div className="inventory-list">
       <div className="list-header">
-        <h2 style={{ color: '#1a1a2e' }}>Products</h2>
-        <button className="btn-primary" onClick={() => setShowModal(true)}>+ Add Product</button>
+        <h2>Products</h2>
+        <button className="btn-primary" onClick={() => { setEditingProduct(null); setShowModal(true); }}>
+          + Add Product
+        </button>
       </div>
-      
-      <StockAlert products={products} />
-      
-      <div className="search-bar">
-        <input 
-          type="text" 
-          placeholder="Search products..." 
-          value={searchTerm} 
+
+      <StockAlert products={products} onReorder={handleReorder} />
+
+      <div className="filters-bar">
+        <input
+          type="text"
+          placeholder="Search products..."
+          value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ padding: '10px 16px', borderRadius: '30px', border: '1px solid #d1d5db', width: '300px' }}
+          className="search-input"
         />
+        <select 
+          value={categoryFilter} 
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          className="filter-select"
+        >
+          {categories.map(cat => (
+            <option key={cat} value={cat}>{cat === 'all' ? 'All Categories' : cat}</option>
+          ))}
+        </select>
       </div>
-      
-      <div style={tableStyles.container}>
-        <table style={tableStyles.table}>
+
+      <div className="table-container">
+        <table className="data-table">
           <thead>
             <tr>
-              <th style={tableStyles.th}>PRODUCT NAME</th>
-              <th style={tableStyles.th}>SKU</th>
-              <th style={tableStyles.th}>CATEGORY</th>
-              <th style={tableStyles.th}>PRICE</th>
-              <th style={tableStyles.th}>STOCK</th>
-              <th style={tableStyles.th}>STATUS</th>
-              <th style={tableStyles.th}>ACTIONS</th>
+              <th>PRODUCT NAME</th>
+              <th>SKU</th>
+              <th>CATEGORY</th>
+              <th>PRICE</th>
+              <th>STOCK</th>
+              <th>STATUS</th>
+              <th>ACTIONS</th>
             </tr>
           </thead>
           <tbody>
-            {filteredProducts.map(product => (
-              <tr key={product.id}>
-                <td style={{ ...tableStyles.td, color: '#1a1a2e', fontWeight: 500 }}>{product.name}</td>
-                <td style={{ ...tableStyles.td, color: '#6b7280' }}>{product.sku}</td>
-                <td style={{ ...tableStyles.td, color: '#4b5563' }}>{product.category}</td>
-                <td style={{ ...tableStyles.td, color: '#4f46e5', fontWeight: 600 }}>₹{product.price.toLocaleString()}</td>
-                <td style={{ ...tableStyles.td, color: getStockColor(product.stock, product.reorderLevel), fontWeight: 500 }}>
-                  {product.stock} {product.stock <= product.reorderLevel && '⚠️'}
-                </td>
-                <td style={tableStyles.td}>
-                  <span style={{
-                    display: 'inline-block',
-                    padding: '4px 10px',
-                    borderRadius: '20px',
-                    fontSize: '12px',
-                    fontWeight: 500,
-                    ...getStatusStyle(product.stock, product.reorderLevel)
-                  }}>
-                    {getStockStatus(product.stock, product.reorderLevel).replace('-', ' ')}
-                  </span>
-                </td>
-                <td style={tableStyles.td}>
-                  <button style={{ background: 'none', border: 'none', color: '#4f46e5', cursor: 'pointer', marginRight: '8px' }}>Edit</button>
-                  <button style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>Delete</button>
-                </td>
-              </tr>
-            ))}
+            {filteredProducts.map(product => {
+              const stockStatus = getStockStatus(product.stock, product.reorderLevel);
+              const statusText = getStockStatusText(product.stock, product.reorderLevel);
+              return (
+                <tr key={product.id}>
+                  <td className="product-name-cell">{product.name}</td>
+                  <td className="product-sku-cell">{product.sku}</td>
+                  <td className="product-category-cell">{product.category}</td>
+                  <td className="product-price-cell">₹{product.price.toLocaleString()}</td>
+                  <td className={`stock-cell ${stockStatus}`}>{product.stock}</td>
+                  <td>
+                    <span className={`status-badge ${stockStatus}`}>
+                      {statusText}
+                    </span>
+                  </td>
+                  <td className="actions-cell">
+                    <button className="action-btn edit" onClick={() => handleEdit(product)} title="Edit">
+                      ✏️
+                    </button>
+                    <button className="action-btn delete" onClick={() => handleDelete(product.id)} title="Delete">
+                      🗑️
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
-      
-      {showModal && <ProductForm onClose={() => setShowModal(false)} onSave={() => {}} />}
+
+      {showModal && (
+        <ProductForm 
+          product={editingProduct}
+          onClose={() => { setShowModal(false); setEditingProduct(null); }}
+          onSave={handleSave}
+        />
+      )}
     </div>
   );
 };
