@@ -1,149 +1,148 @@
-import React, { useState } from 'react';
+// import React, { useState } from 'react';
+// import './CustomerForm.css';
 
-interface Customer {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  gstNumber?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  pincode?: string;
-  status: 'active' | 'inactive';
-}
+// interface CustomerFormProps {
+//   onSubmit: (data: { name: string; email: string; location: string }) => void;
+//   onCancel: () => void;
+// }
+
+// export const CustomerForm: React.FC<CustomerFormProps> = ({ onSubmit, onCancel }) => {
+//   const [name, setName] = useState('');
+//   const [email, setEmail] = useState('');
+//   const [location, setLocation] = useState('');
+
+//   const handleSubmit = (e: React.FormEvent) => {
+//     e.preventDefault();
+//     if (!name || !email) {
+//       alert("Name and Email are required fields.");
+//       return;
+//     }
+//     onSubmit({ name, email, location });
+//   };
+
+//   return (
+//     <div className="form-card">
+//       <h3>Register New SaaS Platform Customer</h3>
+//       <p className="form-subtitle">Add a brand partner entity entry directly to your isolated workspace cluster database context.</p>
+      
+//       <form onSubmit={handleSubmit}>
+//         <div className="form-group">
+//           <label htmlFor="cust-name">Full Corporate/Customer Name *</label>
+//           <input 
+//             id="cust-name"
+//             type="text" 
+//             placeholder="e.g. Eleanor Pena" 
+//             value={name} 
+//             onChange={(e) => setName(e.target.value)} 
+//             required 
+//           />
+//         </div>
+
+//         <div className="form-group">
+//           <label htmlFor="cust-email">Active Communication Email Address *</label>
+//           <input 
+//             id="cust-email"
+//             type="email" 
+//             placeholder="customer@domain.com" 
+//             value={email} 
+//             onChange={(e) => setEmail(e.target.value)} 
+//             required 
+//           />
+//         </div>
+
+//         <div className="form-group">
+//           <label htmlFor="cust-loc">Operational Headquarters / Location</label>
+//           <input 
+//             id="cust-loc"
+//             type="text" 
+//             placeholder="e.g. Corona, Michigan" 
+//             value={location} 
+//             onChange={(e) => setLocation(e.target.value)} 
+//           />
+//         </div>
+
+//         <div className="form-actions-row">
+//           <button type="button" className="btn-secondary" onClick={onCancel}>Cancel</button>
+//           <button type="submit" className="btn-primary">Save Profile Context</button>
+//         </div>
+//       </form>
+//     </div>
+//   );
+// };
+
+// export default CustomerForm;
+import React, { useState, useEffect } from 'react';
+import './CustomerForm.css';
 
 interface CustomerFormProps {
-  customer?: Customer | null;
-  onClose: () => void;
-  onSave: (data: any) => void;
+  onSubmit: (data: { name: string; email: string; location: string }) => void;
+  onCancel: () => void;
+  initialData?: { name: string; email: string; location: string };
 }
 
-const CustomerForm: React.FC<CustomerFormProps> = ({ customer, onClose, onSave }) => {
-  const [formData, setFormData] = useState({
-    name: customer?.name || '',
-    email: customer?.email || '',
-    phone: customer?.phone || '',
-    gstNumber: customer?.gstNumber || '',
-    address: customer?.address || '',
-    city: customer?.city || '',
-    state: customer?.state || '',
-    pincode: customer?.pincode || '',
-    status: customer?.status || 'active',
-  });
+export const CustomerForm: React.FC<CustomerFormProps> = ({ onSubmit, onCancel, initialData }) => {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [location, setLocation] = useState('');
+
+  // Pre-populate fields automatically if editing mode is active
+  useEffect(() => {
+    if (initialData) {
+      setName(initialData.name);
+      setEmail(initialData.email);
+      setLocation(initialData.location);
+    }
+  }, [initialData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.phone) {
-      alert('Please fill all required fields');
-      return;
-    }
-    onSave(formData);
+    if (!name || !email) return;
+    onSubmit({ name, email, location });
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>{customer ? 'Edit Customer' : 'Add New Customer'}</h3>
-          <button className="close-btn" onClick={onClose}>×</button>
+    <div className="form-card">
+      <h3>{initialData ? 'Update Customer Profile' : 'Register New SaaS Platform Customer'}</h3>
+      <p className="form-subtitle">Modify configurations or add custom brand enterprise metrics inside your system terminal profile context.</p>
+      
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="cust-name">Full Customer Name *</label>
+          <input 
+            id="cust-name"
+            type="text" 
+            value={name} 
+            onChange={(e) => setName(e.target.value)} 
+            required 
+          />
         </div>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Customer Name *</label>
-            <input 
-              type="text" 
-              required
-              value={formData.name} 
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
-              placeholder="Enter customer name"
-            />
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label>Email Address *</label>
-              <input 
-                type="email" 
-                required
-                value={formData.email} 
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                placeholder="Enter email address"
-              />
-            </div>
-            <div className="form-group">
-              <label>Phone Number *</label>
-              <input 
-                type="tel" 
-                required
-                value={formData.phone} 
-                onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                placeholder="Enter phone number"
-              />
-            </div>
-          </div>
-          <div className="form-group">
-            <label>GST Number</label>
-            <input 
-              type="text" 
-              value={formData.gstNumber} 
-              onChange={(e) => setFormData({...formData, gstNumber: e.target.value})}
-              placeholder="Enter GST number"
-            />
-          </div>
-          <div className="form-group">
-            <label>Address</label>
-            <textarea 
-              rows={2} 
-              value={formData.address} 
-              onChange={(e) => setFormData({...formData, address: e.target.value})}
-              placeholder="Enter address"
-            />
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label>City</label>
-              <input 
-                type="text" 
-                value={formData.city} 
-                onChange={(e) => setFormData({...formData, city: e.target.value})}
-                placeholder="City"
-              />
-            </div>
-            <div className="form-group">
-              <label>State</label>
-              <input 
-                type="text" 
-                value={formData.state} 
-                onChange={(e) => setFormData({...formData, state: e.target.value})}
-                placeholder="State"
-              />
-            </div>
-            <div className="form-group">
-              <label>Pincode</label>
-              <input 
-                type="text" 
-                value={formData.pincode} 
-                onChange={(e) => setFormData({...formData, pincode: e.target.value})}
-                placeholder="Pincode"
-              />
-            </div>
-          </div>
-          <div className="form-group">
-            <label>Status</label>
-            <select 
-              value={formData.status} 
-              onChange={(e) => setFormData({...formData, status: e.target.value as 'active' | 'inactive'})}
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </div>
-          <div className="modal-footer">
-            <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn-primary">{customer ? 'Update' : 'Create'}</button>
-          </div>
-        </form>
-      </div>
+
+        <div className="form-group">
+          <label htmlFor="cust-email">Communication Email Address *</label>
+          <input 
+            id="cust-email"
+            type="email" 
+            value={email} 
+            onChange={(e) => setEmail(e.target.value)} 
+            required 
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="cust-loc">Operational Location</label>
+          <input 
+            id="cust-loc"
+            type="text" 
+            value={location} 
+            onChange={(e) => setLocation(e.target.value)} 
+          />
+        </div>
+
+        <div className="form-actions-row">
+          <button type="button" className="btn-secondary" onClick={onCancel}>Cancel</button>
+          <button type="submit" className="btn-primary">{initialData ? 'Save Changes' : 'Save Profile Context'}</button>
+        </div>
+      </form>
     </div>
   );
 };

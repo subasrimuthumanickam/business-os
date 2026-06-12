@@ -1,0 +1,337 @@
+.erp-view-wrapper {
+  font-family: "Times New Roman", Times, serif;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  background-color: #f8f9fc;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+/* ==========================================================================
+   SECTION 1: ERP Company Profile Top Banner
+   ========================================================================== */
+.erp-profile-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #ededee;
+}
+
+.profile-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.company-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0;
+  color: #1a1d20;
+}
+
+.header-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-create-invoice {
+  background-color: transparent;
+  color: #6342e8;
+  border: 1px solid #6342e8;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 14px;
+  font-family: "Times New Roman", Times, serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-create-invoice:hover {
+  background-color: #6342e8;
+  color: #ffffff;
+}
+
+.btn-circle-dots {
+  background-color: #f1f3f7;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  color: #71777d;
+}
+
+/* Financial Base Metrics Dashboard Rows */
+.erp-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid #ededee;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.metric-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border-right: 1px solid #ededee;
+}
+
+.metric-box:last-child {
+  border-right: none;
+}
+
+.metric-icon {
+  font-size: 24px;
+  color: #a0aec0;
+}
+
+.metric-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-number {
+  font-size: 22px;
+  font-weight: bold;
+  color: #1a1d20;
+}
+
+.metric-label {
+  font-size: 13px;
+  color: #a0aec0;
+  margin-top: 2px;
+}
+
+/* Tenant Metadata Configuration */
+.metadata-details-panel {
+  display: flex;
+  gap: 60px;
+  padding-top: 8px;
+}
+
+.meta-column {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 250px;
+}
+
+.meta-field {
+  display: flex;
+  align-items: baseline;
+}
+
+.meta-label {
+  width: 110px;
+  color: #a0aec0;
+  font-size: 14px;
+}
+
+.meta-value {
+  color: #2d3748;
+  font-weight: 500;
+  font-size: 15px;
+}
+
+
+/* ==========================================================================
+   SECTION 2: Tabular Invoice History Rows Feed
+   ========================================================================== */
+.invoice-history-section {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #ededee;
+}
+
+.history-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.history-header-row h3 {
+  font-size: 18px;
+  margin: 0;
+  color: #2d3748;
+}
+
+.history-filters {
+  display: flex;
+  gap: 10px;
+}
+
+.dropdown-select {
+  background-color: #f8f9fc;
+  border: 1px solid #ededee;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 13px;
+  color: #4a5568;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Feed Rows */
+.invoice-feed-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.invoice-feed-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #ffffff;
+  border: 1px solid #f0f2f5;
+  border-radius: 8px;
+  padding: 14px 20px;
+  transition: transform 0.15s ease;
+}
+
+.invoice-feed-row:hover {
+  background-color: #fbfbfe;
+}
+
+.feed-left-block {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: 25%;
+}
+
+.btn-pdf-download {
+  background-color: #edf2f7;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  color: #4a5568;
+  font-weight: bold;
+  font-size: 13px;
+  font-family: "Times New Roman", Times, serif;
+  cursor: pointer;
+}
+
+.btn-pdf-download:hover {
+  background-color: #e2e8f0;
+}
+
+.invoice-code-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.invoice-date {
+  color: #a0aec0;
+  font-size: 13px;
+}
+
+.invoice-code {
+  color: #2d3748;
+  font-weight: bold;
+  font-size: 14px;
+  margin-top: 2px;
+}
+
+/* Middle metrics column values */
+.feed-metrics-block {
+  display: flex;
+  gap: 48px;
+  width: 45%;
+}
+
+.feed-amount-item {
+  display: flex;
+  flex-direction: column;
+  min-width: 100px;
+}
+
+.amount-val {
+  font-size: 15px;
+  font-weight: bold;
+  color: #2d3748;
+}
+
+.amount-lbl {
+  font-size: 12px;
+  color: #a0aec0;
+  margin-top: 2px;
+}
+
+/* Control buttons inside line feed items */
+.feed-actions-block {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  width: 30%;
+}
+
+.btn-fix-payment {
+  background-color: #6342e8;
+  color: #ffffff;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 13px;
+  font-family: "Times New Roman", Times, serif;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(99, 66, 232, 0.2);
+}
+
+.btn-fix-payment:hover {
+  background-color: #5130d4;
+}
+
+.btn-circle-dots-sm {
+  background: none;
+  border: 1px solid #e2e8f0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #71777d;
+  font-size: 12px;
+}
+
+/* Paid states styling timeline badges */
+.badge-paid-timeline {
+  background-color: #e6fffa;
+  color: #319795;
+  border: 1px solid #b2f5ea;
+  padding: 6px 18px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.btn-revert-cross {
+  background-color: #edf2f7;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #718096;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.btn-revert-cross:hover {
+  background-color: #fee2e2;
+  color: #ef4444;
+}
