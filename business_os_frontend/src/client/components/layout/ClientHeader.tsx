@@ -1,12 +1,61 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 interface ClientHeaderProps {
   onMenuClick: () => void;
 }
 
+interface UserProfileState {
+  name: string;
+  role: string;
+}
+
 const ClientHeader: React.FC<ClientHeaderProps> = ({ onMenuClick }) => {
-  const [notifications, setNotifications] = React.useState(3);
-  const [showProfileMenu, setShowProfileMenu] = React.useState(false);
+  const [notifications, setNotifications] = useState(3);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [user, setUser] = useState<UserProfileState>({
+    name: 'Loading...',
+    role: 'User'
+  });
+
+  useEffect(() => {
+    const fetchCurrentSessionUser = async () => {
+      try {
+        const token = localStorage.getItem('authToken'); 
+        
+        if (!token) {
+          setUser({ name: 'Guest Identity', role: 'Anonymous' });
+          return;
+        }
+
+        // Axios calling with explicit validation Bearer structure mapping context parameter
+        const response = await axios.get('http://localhost:5000/api/auth/me', {
+          headers: { Authorization: `Bearer ${token}` } 
+        });
+
+        if (response.data && response.data.success) {
+          setUser({
+            name: response.data.data.name,
+            role: response.data.data.role
+          });
+        }
+      } catch (err) {
+        console.error("Session identity framework loading error:", err);
+        setUser({ name: 'Guest Identity', role: 'Anonymous' }); 
+      }
+    };
+
+    fetchCurrentSessionUser();
+  }, []);
+
+  const getInitials = (fullName: string) => {
+    if (!fullName || fullName === 'Loading...' || fullName === 'Guest Identity') return 'GI';
+    const parts = fullName.trim().split(' ');
+    if (parts.length > 1) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return parts[0][0].toUpperCase();
+  };
 
   return (
     <header className="client-header">
@@ -47,17 +96,19 @@ const ClientHeader: React.FC<ClientHeaderProps> = ({ onMenuClick }) => {
         </div>
         
         <div className="user-profile" onClick={() => setShowProfileMenu(!showProfileMenu)}>
-          <div className="user-avatar">JD</div>
+          <div className="user-avatar">{getInitials(user.name)}</div>
+          
           <div className="user-info-text">
-            <span className="user-name">John Doe</span>
-            <span className="user-subtext">Administrator</span>
+            <span className="user-name">{user.name}</span>
+            <span className="user-subtext">{user.role}</span>
           </div>
+          
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="6 9 12 15 18 9" />
           </svg>
           
           {showProfileMenu && (
-            <div className="profile-menu">
+            <div className="profile-menu" onClick={(e) => e.stopPropagation()}>
               <a href="/profile">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -73,7 +124,10 @@ const ClientHeader: React.FC<ClientHeaderProps> = ({ onMenuClick }) => {
                 Settings
               </a>
               <hr />
-              <a href="/logout">
+              <a href="#logout" onClick={() => {
+                localStorage.removeItem('authToken');
+                window.location.href = '/login';      
+              }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                   <polyline points="16 17 21 12 16 7" />

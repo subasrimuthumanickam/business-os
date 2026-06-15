@@ -2,6 +2,7 @@ import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import '../index.css';
 import { useNavigate } from 'react-router-dom'; 
+
 // Define interfaces for TypeScript typings
 interface Company {
   id: number;
@@ -27,7 +28,9 @@ function Login() {
     password: '',
     twoFACode: ''
   });
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  
+  // 🎯 FIXED: Check storage using 'authToken' matching ClientHeader structure key!
+  const [token, setToken] = useState<string | null>(localStorage.getItem('authToken'));
   const [company, setCompany] = useState<Company | null>(null);
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
@@ -159,11 +162,12 @@ function Login() {
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem('token', data.token);
+        // 🎯 FIXED: Keep consistent storage usage token prefix key string
+        localStorage.setItem('authToken', data.token);
         setToken(data.token);
         setCompany(data.company);
         setSuccess('Company registered successfully!');
-        navigate('/client/dashboard');  // 
+        navigate('/client/dashboard');  
       } else {
         setError(data.error || data.message || 'Registration failed.');
       }
@@ -171,42 +175,6 @@ function Login() {
       setError('Network error. Is backend running?');
     }
   };
-
-  // const handleLogin = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
-  //   e.preventDefault();
-  //   setError('');
-  //   setSuccess('');
-
-  //   try {
-  //     const response = await fetch('http://localhost:5000/api/login-2fa', {
-  //       method: 'POST',
-  //       headers: { 'Content-Type': 'application/json' },
-  //       body: JSON.stringify({
-  //         email: formData.email,
-  //         password: formData.password,
-  //         twoFACode: formData.twoFACode
-  //       })
-  //     });
-
-  //     const data = await response.json();
-
-  //     if (response.ok) {
-  //       localStorage.setItem('token', data.token);
-  //       setToken(data.token);
-  //       setCompany(data.company);
-  //       setSuccess('Login successful!');
-  //       setShow2FAInput(false);
-  //       navigate('/dashboard'); 
-  //     } else if (data.requires2FA) {
-  //       setShow2FAInput(true);
-  //       setError('2FA required. Enter your verification code:');
-  //     } else {
-  //       setError(data.error || 'Login failed.');
-  //     }
-  //   } catch (err) {
-  //     setError('Network error. Is backend running?');
-  //   }
-  // };
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
@@ -227,22 +195,21 @@ function Login() {
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem('token', data.token);
+        // 🎯 FIXED: Saved to exact 'authToken' string key matching ClientHeader layout expectation pipeline!
+        localStorage.setItem('authToken', data.token);
         setToken(data.token);
         setCompany(data.company);
         setSuccess('Login successful!');
         setShow2FAInput(false);
         
-        // 🚀 ROLE BASED REDIRECT LOGIC START
-        // Check if backend returns data.role or data.user.role (adjust according to your backend response structure)
-        const userRole = data.role || (data.user && data.user.role); 
+        // 🚀 ROLE BASED REDIRECT SECURITY MAPPED SYNTAX SYNC
+        const userRole = data.role || (data.user && data.user.role) || (data.data && data.data.role); 
 
-        if (userRole === 'superadmin') {
-          navigate('/superadmin-dashboard'); // Or whatever your SuperAdmin route path is
+        if (userRole === 'superadmin' || userRole === 'Administrator') {
+          navigate('/superadmin-dashboard'); 
         } else {
-          navigate('/client/dashboard'); // Dynamic redirecting directly to Client Side Dashboard!
+          navigate('/client/dashboard'); 
         }
-        // 🚀 ROLE BASED REDIRECT LOGIC END
 
       } else if (data.requires2FA) {
         setShow2FAInput(true);
@@ -254,6 +221,7 @@ function Login() {
       setError('Network error. Is backend running?');
     }
   };
+
   const handleForgotPassword = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setError('');
@@ -327,40 +295,36 @@ function Login() {
   };
 
   const handleLogout = (): void => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');
     setToken(null);
     setCompany(null);
     setTwoFAEnabled(false);
     setShow2FAInput(false);
   };
 
- 
-
-  // Authentication View (Sign In / Sign Up Forms)
   return (
     <div className="auth-container">
       <div className="auth-card fade-in">
-        {/* <div className="auth-header">
-          <p className="auth-subtitle">Multi-Tenant ERP Platform with 2FA Security</p>
-        </div> */}
         <div className="auth-header">
-  <div className="auth-logo">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"/>
-    </svg>
-  </div>
-  <h2 className="auth-title">Sign in with email</h2>
-  <p className="auth-subtitle">Make a new doc to bring your words, data, and teams together. For free</p>
-</div>
+          <div className="auth-logo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"/>
+            </svg>
+          </div>
+          <h2 className="auth-title">Sign in with email</h2>
+          <p className="auth-subtitle">Make a new doc to bring your words, data, and teams together. For free</p>
+        </div>
         
         <div className="tab-container">
           <button 
+            type="button"
             onClick={() => { setIsLogin(true); setShow2FAInput(false); setForgotPasswordMode(false); setError(''); setSuccess(''); }} 
             className={isLogin && !forgotPasswordMode ? 'active-tab' : 'tab'}
           >
             Login
           </button>
           <button 
+            type="button"
             onClick={() => { setIsLogin(false); setShow2FAInput(false); setForgotPasswordMode(false); setError(''); setSuccess(''); }} 
             className={!isLogin ? 'active-tab' : 'tab'}
           >
@@ -428,6 +392,7 @@ function Login() {
                   setResetToken('');
                   setError('');
                   setSuccess('');
+                  setIsLogin(true);
                 }}
               >Cancel</button>
             </form>
