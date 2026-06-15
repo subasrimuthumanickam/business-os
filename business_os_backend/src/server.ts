@@ -5,6 +5,7 @@ import cors from 'cors';
 import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
 import db from './config/db.js'; // Points correctly to your MySQL configuration wrapper
+import CustomerRoutes from './routes/customer.routes.js';
 
 const app = express();
 const PORT = 5000;
@@ -13,6 +14,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this-later'
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// 2. REGISTER THE CUSTOMER ROUTE WITH PREFIX BASE PATH
+app.use('/api/customers', CustomerRoutes);
 
 // Interfaces for incoming requests
 interface RegisterBody {
@@ -66,6 +70,17 @@ console.log("data",req.body)
       return res.status(400).json({ error: 'Company already exists' });
     }
 
+    const existingUser = await new Promise<any>((resolve, reject) => {
+      db.get('SELECT id FROM users WHERE email = ?', [email], (err: any, row: any) => {
+        if (err) return reject(err);
+        resolve(row);
+      });
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+
     // Insert company - Handled correctly for MySQL wrappers returning execution results
     const companyId = await new Promise<number>((resolve, reject) => {
       db.run('INSERT INTO companies (company_name, subdomain) VALUES (?, ?)', 
@@ -109,7 +124,10 @@ console.log("data",req.body)
 
   } catch (error: any) {
     console.error(error);
-    if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+    if (error?.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+    if (error?.code === 'ER_NO_REFERENCED_ROW_2') {
       return res.status(500).json({ error: 'Foreign key constraint fails. Ensure Role ID 1 exists in the roles table.' });
     }
     return res.status(500).json({ error: 'Server error during registration' });

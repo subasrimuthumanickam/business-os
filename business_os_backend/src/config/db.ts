@@ -1,11 +1,10 @@
-// src/config/db.ts
 import mysql from 'mysql2';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 // Create a connection pool to MySQL
-const pool = mysql.createPool({
+const mysqlPool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
@@ -15,10 +14,12 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// Wrapper object matching SQLite behavior...
+const pool = mysqlPool.promise();
+
+// Wrapper object matching SQLite behavior... (UPDATED)
 const db = {
   get: (sql: string, params: any[], callback: (err: any, row: any) => void) => {
-    pool.query(sql, params, (err, results: any) => {
+    mysqlPool.query(sql, params, (err, results: any) => {
       if (err) return callback(err, null);
       const row = results && results.length > 0 ? results[0] : null;
       callback(null, row);
@@ -26,7 +27,7 @@ const db = {
   },
 
   run: function (sql: string, params: any[], callback: (this: any, err: any) => void) {
-    pool.query(sql, params, function (err, results: any) {
+    mysqlPool.query(sql, params, function (err, results: any) {
       if (err) return callback(err);
       
       const context = {
@@ -36,7 +37,18 @@ const db = {
       
       callback.call(context, null);
     });
+  },
+
+  // ⚠️ ADD THIS NEW METHOD HERE: For fetching multiple rows/arrays matching SQLite behavior
+  all: (sql: string, params: any[], callback: (err: any, rows: any[]) => void) => {
+    mysqlPool.query(sql, params, (err, results: any) => {
+      if (err) return callback(err, []);
+      // Ensure it always returns an array
+      const rows = Array.isArray(results) ? results : [];
+      callback(null, rows);
+    });
   }
 };
 
+export { pool };
 export default db;
