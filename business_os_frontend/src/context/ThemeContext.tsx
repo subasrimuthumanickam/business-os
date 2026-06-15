@@ -1,4 +1,55 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+// // src/context/ThemeContext.tsx
+// import React, { createContext, useContext, useState, useEffect } from 'react';
+
+// type ThemeMode = 'light' | 'dark';
+
+// interface ThemeContextType {
+//   theme: ThemeMode;
+//   toggleTheme: () => void;
+// }
+
+// const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+// export const useTheme = () => {
+//   const context = useContext(ThemeContext);
+//   if (!context) {
+//     throw new Error('useTheme must be used within a ThemeProvider');
+//   }
+//   return context;
+// };
+
+// export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+//   // Check localStorage for saved theme or default to 'dark' (white UI on black bg)
+//   const [theme, setTheme] = useState<ThemeMode>(() => {
+//     const savedTheme = localStorage.getItem('theme');
+//     return (savedTheme as ThemeMode) || 'dark';
+//   });
+
+//   useEffect(() => {
+//     // Apply theme to document root
+//     const root = document.documentElement;
+//     if (theme === 'dark') {
+//       root.classList.add('theme-dark');
+//       root.classList.remove('theme-light');
+//     } else {
+//       root.classList.add('theme-light');
+//       root.classList.remove('theme-dark');
+//     }
+//     localStorage.setItem('theme', theme);
+//   }, [theme]);
+
+//   const toggleTheme = () => {
+//     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+//   };
+
+//   return (
+//     <ThemeContext.Provider value={{ theme, toggleTheme }}>
+//       {children}
+//     </ThemeContext.Provider>
+//   );
+// };
+// src/context/ThemeContext.tsx
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark';
 
@@ -19,30 +70,31 @@ export const useTheme = () => {
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
-    const savedTheme = localStorage.getItem('theme');
-    return (savedTheme as Theme) || 'dark';
+    // Check localStorage first
+    const savedTheme = localStorage.getItem('theme') as Theme;
+    if (savedTheme) return savedTheme;
+    
+    // Check system preference
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
   });
 
   useEffect(() => {
+    // Update localStorage
     localStorage.setItem('theme', theme);
     
-    // DIRECT STYLE MANIPULATION - This will override any CSS
+    // Update document class
     if (theme === 'dark') {
-      document.body.style.backgroundColor = '#0a0a0a';
-      document.body.style.color = '#ffffff';
-      document.body.style.background = '#0a0a0a';
+      document.documentElement.classList.add('dark');
     } else {
-      document.body.style.backgroundColor = '#f5f5f5';
-      document.body.style.color = '#000000';
-      document.body.style.background = '#f5f5f5';
+      document.documentElement.classList.remove('dark');
     }
-    
-    console.log('Theme changed to:', theme); // Check console to see if this runs
   }, [theme]);
 
   const toggleTheme = () => {
-    console.log('Toggle clicked, current theme:', theme); // Check console
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
   };
 
   return (
