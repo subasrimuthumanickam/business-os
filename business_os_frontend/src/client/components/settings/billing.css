@@ -1,0 +1,108 @@
+/* Billing Settings Styles */
+
+/* Plan Card */
+.billing-card {
+  @apply bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-6 text-white mb-6;
+}
+
+.plan-info h3 {
+  @apply text-lg font-semibold;
+}
+
+.plan-price {
+  @apply text-3xl font-bold mt-2;
+}
+
+.plan-price span {
+  @apply text-sm font-normal;
+}
+
+.plan-actions {
+  @apply flex gap-3 mt-4;
+}
+
+.btn-upgrade {
+  @apply px-4 py-2 bg-white text-indigo-600 text-sm font-semibold rounded-lg hover:bg-gray-100 transition-colors cursor-pointer;
+}
+
+.btn-cancel-plan {
+  @apply px-4 py-2 bg-white/20 text-white text-sm font-semibold rounded-lg hover:bg-white/30 transition-colors cursor-pointer;
+}
+
+/* Payment Methods */
+.payment-methods h3 {
+  @apply text-base font-semibold text-gray-900 mb-3;
+}
+
+.payment-card {
+  @apply flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 mb-2;
+}
+
+.payment-info {
+  @apply flex items-center gap-3;
+}
+
+.payment-icon {
+  @apply text-xl;
+}
+
+.payment-details {
+  @apply text-sm text-gray-700;
+}
+
+.payment-expiry {
+  @apply text-xs text-gray-400;
+}
+
+.payment-default {
+  @apply text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full;
+}
+
+.payment-actions {
+  @apply flex gap-2;
+}
+
+.btn-payment-edit {
+  @apply text-sm text-indigo-600 hover:text-indigo-700 cursor-pointer;
+}
+
+.btn-payment-delete {
+  @apply text-sm text-red-600 hover:text-red-700 cursor-pointer;
+}
+
+.btn-add-payment {
+  @apply mt-2 w-full py-2 text-sm text-indigo-600 border border-dashed border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer;
+}
+
+/* Billing History */
+.billing-history h3 {
+  @apply text-base font-semibold text-gray-900 mb-3;
+}
+
+.billing-table {
+  @apply w-full text-sm;
+}
+
+.billing-table th {
+  @apply text-left py-2 text-gray-500 font-medium border-b border-gray-200;
+}
+
+.billing-table td {
+  @apply py-2 border-b border-gray-100;
+}
+
+.status-paid {
+  @apply text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full;
+}
+
+.btn-download {
+  @apply text-indigo-600 hover:text-indigo-700 cursor-pointer;
+}
+
+.load-more-container {
+  @apply mt-4 text-center;
+}
+
+.btn-load-more {
+  @apply px-4 py-2 text-sm text-indigo-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer;
+}

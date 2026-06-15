@@ -1,0 +1,29 @@
+/* Profile Settings Styles */
+
+.profile-settings .field-group {
+  @apply mb-5;
+}
+
+.profile-settings .field-group label {
+  @apply block text-sm font-medium text-gray-700 mb-1.5;
+}
+
+.profile-settings .field-group input {
+  @apply w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none;
+}
+
+.avatar-upload {
+  @apply flex items-center gap-4 mt-4;
+}
+
+.avatar-preview {
+  @apply w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white text-lg font-semibold;
+}
+
+.btn-upload {
+  @apply px-4 py-2 text-sm border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer;
+}
+
+.btn-remove {
+  @apply px-4 py-2 text-sm text-red-600 hover:text-red-700 transition-colors cursor-pointer;
+}

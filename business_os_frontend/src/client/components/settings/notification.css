@@ -1,0 +1,42 @@
+/* Notification Settings Styles */
+
+.notification-options {
+  @apply space-y-3;
+}
+
+.notification-item {
+  @apply flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-200;
+}
+
+.notification-info h4 {
+  @apply font-semibold text-gray-900;
+}
+
+.notification-info p {
+  @apply text-sm text-gray-500;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  @apply relative inline-block w-12 h-6;
+}
+
+.toggle-switch input {
+  @apply opacity-0 w-0 h-0;
+}
+
+.toggle-slider {
+  @apply absolute cursor-pointer top-0 left-0 right-0 bottom-0 bg-gray-300 transition-all duration-300 rounded-full;
+}
+
+.toggle-slider:before {
+  @apply absolute content-[""] h-5 w-5 left-0.5 bottom-0.5 bg-white transition-all duration-300 rounded-full;
+}
+
+input:checked + .toggle-slider {
+  @apply bg-indigo-600;
+}
+
+input:checked + .toggle-slider:before {
+  @apply transform translate-x-6;
+}

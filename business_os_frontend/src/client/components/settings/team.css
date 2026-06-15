@@ -1,0 +1,50 @@
+/* Team Settings Styles */
+
+.invite-section {
+  @apply flex gap-3 mb-6 flex-wrap;
+}
+
+.invite-input {
+  @apply flex-1 px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none min-w-[200px];
+}
+
+.role-select {
+  @apply px-4 py-2.5 border border-gray-200 rounded-xl bg-white cursor-pointer outline-none;
+}
+
+.btn-invite {
+  @apply px-6 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors cursor-pointer;
+}
+
+/* Team Table */
+.team-table {
+  @apply w-full text-sm;
+}
+
+.team-table th {
+  @apply text-left py-3 text-gray-500 font-medium border-b border-gray-200;
+}
+
+.team-table td {
+  @apply py-3 border-b border-gray-100;
+}
+
+.status-active {
+  @apply text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full;
+}
+
+.status-invited {
+  @apply text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full;
+}
+
+/* Action Buttons */
+.action-edit {
+  @apply text-amber-500 hover:text-amber-600 mr-2 cursor-pointer bg-transparent border-none text-base;
+}
+
+.action-delete {
+  @apply text-red-500 hover:text-red-600 cursor-pointer bg-transparent border-none text-base;
+}
+.action-resend {
+  @apply text-blue-500 hover:text-blue-600 mr-2 cursor-pointer bg-transparent border-none text-base;
+}
