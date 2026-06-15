@@ -6,6 +6,7 @@ import {
   removeCustomer 
 } from '../controllers/customer.controller.js'; 
 
+
 const router = Router();
 
 router.get('/all', getAllCustomers);
