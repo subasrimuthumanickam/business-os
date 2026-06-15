@@ -1,4 +1,8 @@
 /* Profile Settings Styles */
+.profile-settings {
+  @apply w-full max-w-2xl;
+}
+
 
 .profile-settings .field-group {
   @apply mb-5;

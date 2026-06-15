@@ -1,5 +1,7 @@
 /* Workspace Settings Styles */
-
+ .workspace-settings {
+  @apply w-full max-w-2xl;
+}
 .workspace-settings .field-group {
   @apply mb-5;
 }

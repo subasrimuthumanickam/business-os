@@ -1,4 +1,4 @@
-/* Billing Settings Styles */
+/* Billing Settings Styles - Tailwind CSS only (no custom CSS needed for visibility) */
 
 /* Plan Card */
 .billing-card {
@@ -6,15 +6,15 @@
 }
 
 .plan-info h3 {
-  @apply text-lg font-semibold;
+  @apply text-lg font-semibold text-white;
 }
 
 .plan-price {
-  @apply text-3xl font-bold mt-2;
+  @apply text-3xl font-bold mt-2 text-white;
 }
 
 .plan-price span {
-  @apply text-sm font-normal;
+  @apply text-sm font-normal text-white/80;
 }
 
 .plan-actions {
@@ -47,56 +47,70 @@
 }
 
 .payment-details {
-  @apply text-sm text-gray-700;
+  @apply text-sm text-gray-800 font-medium;
 }
 
 .payment-expiry {
-  @apply text-xs text-gray-400;
+  @apply text-xs text-gray-500;
 }
 
 .payment-default {
-  @apply text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full;
+  @apply text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium;
 }
 
 .payment-actions {
-  @apply flex gap-2;
+  @apply flex gap-3;
+}
+
+.btn-set-default {
+  @apply text-xs text-indigo-600 hover:text-indigo-700 font-medium cursor-pointer;
 }
 
 .btn-payment-edit {
-  @apply text-sm text-indigo-600 hover:text-indigo-700 cursor-pointer;
+  @apply text-sm text-indigo-600 hover:text-indigo-700 cursor-pointer font-medium;
 }
 
 .btn-payment-delete {
-  @apply text-sm text-red-600 hover:text-red-700 cursor-pointer;
+  @apply text-sm text-red-600 hover:text-red-700 cursor-pointer font-medium;
 }
 
 .btn-add-payment {
-  @apply mt-2 w-full py-2 text-sm text-indigo-600 border border-dashed border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer;
+  @apply mt-2 w-full py-2 text-sm text-indigo-600 border border-dashed border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer font-medium;
 }
 
-/* Billing History */
+/* Billing History Table - VISIBLE TEXT FIXED */
 .billing-history h3 {
   @apply text-base font-semibold text-gray-900 mb-3;
 }
 
 .billing-table {
-  @apply w-full text-sm;
+  @apply w-full text-sm border-collapse;
 }
 
 .billing-table th {
-  @apply text-left py-2 text-gray-500 font-medium border-b border-gray-200;
+  @apply text-left py-3 px-3 text-gray-700 font-semibold border-b border-gray-200 bg-gray-50;
 }
 
 .billing-table td {
-  @apply py-2 border-b border-gray-100;
+  @apply py-3 px-3 border-b border-gray-100;
+}
+
+/* Table row text - DARK and VISIBLE */
+.billing-table td {
+  @apply text-gray-800;
+}
+
+/* Amount column specific */
+.billing-table td:nth-child(3) {
+  @apply font-semibold text-gray-900;
 }
 
 .status-paid {
-  @apply text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full;
+  @apply text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium inline-block;
 }
 
 .btn-download {
-  @apply text-indigo-600 hover:text-indigo-700 cursor-pointer;
+  @apply text-indigo-600 hover:text-indigo-800 cursor-pointer font-medium text-sm transition-colors;
 }
 
 .load-more-container {
@@ -104,5 +118,17 @@
 }
 
 .btn-load-more {
-  @apply px-4 py-2 text-sm text-indigo-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer;
+  @apply px-4 py-2 text-sm text-indigo-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer font-medium;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .billing-table th,
+  .billing-table td {
+    @apply px-2 py-2 text-xs;
+  }
+  
+  .btn-download {
+    @apply text-xs;
+  }
 }

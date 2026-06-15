@@ -65,7 +65,8 @@ const BillingSettings: React.FC = () => {
       { id: 2, date: '01/05/2024', invoiceNo: 'INV-002', amount: 149, status: 'Paid' },
       { id: 3, date: '01/04/2024', invoiceNo: 'INV-003', amount: 149, status: 'Paid' },
       { id: 4, date: '01/03/2024', invoiceNo: 'INV-004', amount: 149, status: 'Paid' },
-      { id: 5, date: '01/02/2024', invoiceNo: 'INV-005', amount: 149, status: 'Paid' }
+      { id: 5, date: '01/02/2024', invoiceNo: 'INV-005', amount: 149, status: 'Paid' },
+      { id: 6, date: '01/01/2024', invoiceNo: 'INV-006', amount: 149, status: 'Paid' }
     ]);
   };
 
@@ -115,17 +116,17 @@ const BillingSettings: React.FC = () => {
     }, 500);
   };
 
-  if (loading) return <div className="text-center py-8">Loading...</div>;
+  if (loading) return <div className="text-center py-8 text-gray-700">Loading...</div>;
 
   return (
     <div className="billing-settings">
       <h2 className="text-xl font-semibold text-gray-900 mb-2">Billing & Subscription</h2>
-      <p className="text-sm text-gray-500 mb-6">Manage your subscription and payment methods</p>
+      <p className="text-sm text-gray-600 mb-6">Manage your subscription and payment methods</p>
       
       <div className="billing-card">
         <div className="plan-info">
           <h3>Current Plan: {plan.name}</h3>
-          <p className="plan-price">₹{plan.price} <span>/ month</span></p>
+          <p className="plan-price">${plan.price} <span>/ month</span></p>
           <p className="text-sm opacity-90 mt-1">{plan.features.join(' • ')}</p>
         </div>
         <div className="plan-actions">
@@ -158,28 +159,36 @@ const BillingSettings: React.FC = () => {
 
       <div className="billing-history">
         <h3>Billing History</h3>
-        <table className="billing-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Invoice #</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {invoices.slice(0, invoiceLimit).map(invoice => (
-              <tr key={invoice.id}>
-                <td>{invoice.date}</td>
-                <td>{invoice.invoiceNo}</td>
-                <td>₹{invoice.amount}</td>
-                <td><span className="status-paid">{invoice.status}</span></td>
-                <td><button className="btn-download" onClick={() => handleDownloadInvoice(invoice.invoiceNo)}>Download PDF</button></td>
+        <div className="overflow-x-auto">
+          <table className="billing-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Invoice #</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {invoices.slice(0, invoiceLimit).map(invoice => (
+                <tr key={invoice.id}>
+                  <td className="text-gray-800 font-medium">{invoice.date}</td>
+                  <td className="text-gray-800 font-medium">{invoice.invoiceNo}</td>
+                  <td className="text-gray-800 font-semibold">${invoice.amount}</td>
+                  <td>
+                    <span className="status-paid">{invoice.status}</span>
+                  </td>
+                  <td>
+                    <button className="btn-download" onClick={() => handleDownloadInvoice(invoice.invoiceNo)}>
+                      Download PDF
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         {invoiceLimit < invoices.length && (
           <div className="load-more-container">
             <button className="btn-load-more" onClick={handleLoadMore} disabled={loadingMore}>

@@ -32,11 +32,11 @@
     --header-height: 70px;
   }
 
-  body {
-    @apply bg-[#f4f7fe] text-[#1b2559] min-h-screen p-5 overflow-x-hidden;
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    font-size: 14px;
-  }
+ body {
+  @apply bg-gray-100 text-[#1b2559] min-h-screen p-5 overflow-x-hidden;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+}
 
   #root {
     @apply bg-transparent;
