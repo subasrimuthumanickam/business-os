@@ -6,6 +6,7 @@ import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
 import db from './config/db.js'; // Points correctly to your MySQL configuration wrapper
 import CustomerRoutes from './routes/customer.routes.js';
+import AuthRoutes from './routes/authRoutes.js';
 
 const app = express();
 const PORT = 5000;
@@ -17,6 +18,7 @@ app.use(express.json());
 
 // 2. REGISTER THE CUSTOMER ROUTE WITH PREFIX BASE PATH
 app.use('/api/customers', CustomerRoutes);
+app.use('/api/auth', AuthRoutes); // Assuming auth routes are also in customer.routes.js
 
 // Interfaces for incoming requests
 interface RegisterBody {
