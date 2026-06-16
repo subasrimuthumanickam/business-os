@@ -1,197 +1,229 @@
-.form-card {
-  background: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 24px;
-  max-width: 500px;
-  font-family: "Times New Roman", Times, serif;
-}
 
-.form-card h3 {
-  margin: 0 0 4px 0;
-  font-size: 22px;
-}
+/* =============================================
+   New Customer Form - Zoho Books Style
+   ============================================= */
 
-.form-subtitle {
-  color: var(--text-muted);
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+.ncf-page {
+  min-height: 100vh;
+  background: #f5f6f8;
+  font-family: 'times new roman', serif;
   font-size: 14px;
-  margin: 0 0 20px 0;
+  color: #2d2d2d;
+  padding: 24px 16px;
 }
 
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
+.ncf-container {
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 28px 32px 32px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
-.form-group label {
+.ncf-title {
+  font-size: 20px;
   font-weight: 600;
-  font-size: 14px;
-  color: var(--text-main);
-}
-
-.form-group input {
-  padding: 10px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-size: 14px;
-  font-family: "Times New Roman", Times, serif;
-  outline: none;
-}
-
-.form-group input:focus {
-  border-color: var(--primary-color);
-}
-
-.form-actions-row {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
-}
-.form-card-scroller {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 28px;
-  max-width: 780px;
-  margin: 20px auto;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-}
-
-.form-card-header {
-  border-bottom: 1px solid #f0f2f5;
-  padding-bottom: 16px;
+  color: #1a1a1a;
   margin-bottom: 24px;
 }
 
-.form-card-header h3 {
-  margin: 0;
-  font-size: 1.35rem;
-  color: #1e293b;
-  font-weight: 600;
-}
-
-.form-subtitle {
-  font-size: 0.88rem;
-  color: #64748b;
-  margin: 6px 0 0 0;
-}
-
-.zoho-styled-form {
+/* ---- Rows ---- */
+.ncf-row {
   display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-/* Horizontal alignment mapping row structure */
-.form-group.row-align {
-  display: grid;
-  grid-template-columns: 220px 1fr;
   align-items: center;
-  gap: 16px;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+.ncf-row--top { align-items: flex-start; }
+
+.ncf-label {
+  width: 200px;
+  min-width: 200px;
+  color: #555;
+  font-size: 13.5px;
+}
+.ncf-label--required::after {
+  content: '*';
+  color: #e53e3e;
+  margin-left: 3px;
+}
+.ncf-info {
+  color: #aaa;
+  font-size: 12px;
+  cursor: help;
 }
 
-.main-label {
-  font-size: 0.9rem;
-  color: #475569;
-  font-weight: 500;
-}
-
-.main-label.highlighted {
-  color: #ef4444; /* Highlights key fields */
-}
-
-/* Form Controls Styling */
-.zoho-styled-form input[type="text"],
-.zoho-styled-form input[type="email"],
-.zoho-styled-form select {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  color: #334155;
-  background-color: #ffffff;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.zoho-styled-form input:focus,
-.zoho-styled-form select:focus {
+/* ---- Inputs ---- */
+.ncf-input, .ncf-select, .ncf-textarea {
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  padding: 7px 10px;
+  font-size: 13.5px;
+  color: #1a1a1a;
+  background: #fff;
   outline: none;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  transition: border 0.15s;
+}
+.ncf-input:focus, .ncf-select:focus, .ncf-textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59,130,246,0.12);
+}
+.ncf-input--error { border-color: #e53e3e; }
+.ncf-input--md, .ncf-select--md { width: 280px; }
+
+.ncf-input-wrap { display: flex; flex-direction: column; gap: 3px; }
+.ncf-error { color: #e53e3e; font-size: 12px; }
+
+.ncf-textarea {
+  width: 380px;
+  resize: vertical;
+  line-height: 1.5;
 }
 
-/* Complex multi-input row layout wrappers */
-.radio-group {
+/* ---- Contact row ---- */
+.ncf-contact-row {
   display: flex;
-  gap: 24px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
+.ncf-select--sal { width: 90px; }
+.ncf-contact-row .ncf-input { width: 160px; }
 
-.radio-container {
+/* ---- Phone row ---- */
+.ncf-phone-row {
+  display: flex;
+  gap: 8px;
+}
+.ncf-phone-row .ncf-input { width: 170px; }
+
+/* ---- Radios ---- */
+.ncf-radios { display: flex; gap: 20px; }
+.ncf-radio-label {
   display: flex;
   align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13.5px;
+}
+.ncf-radio-label input { accent-color: #3b82f6; }
+
+/* ---- Checkboxes ---- */
+.ncf-checkbox-label {
+  display: flex;
+  align-items: flex-start;
   gap: 8px;
   cursor: pointer;
+  font-size: 13.5px;
+}
+.ncf-checkbox-label input { margin-top: 2px; accent-color: #3b82f6; }
+
+.ncf-hint {
+  font-size: 12px;
+  color: #888;
+  max-width: 440px;
+  line-height: 1.5;
+  margin-top: -8px;
+  margin-left: 212px;
 }
 
-.radio-label {
-  font-size: 0.9rem;
-  color: #334155;
-}
-
-.triple-input-row {
-  display: grid;
-  grid-template-columns: 100px 1fr 1fr;
-  gap: 10px;
-}
-
-.dual-input-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-/* Buttons Action Panel */
-.form-actions-row {
+/* ---- Tabs ---- */
+.ncf-tabs {
   display: flex;
-  justify-content: flex-start;
-  gap: 12px;
-  margin-top: 12px;
-  padding-top: 20px;
-  border-top: 1px solid #f0f2f5;
+  gap: 0;
+  border-bottom: 2px solid #e5e7eb;
+  margin: 24px 0 20px;
+  overflow-x: auto;
 }
-
-.btn-primary {
-  background: #4f46e5;
-  color: #ffffff;
+.ncf-tab {
+  background: none;
   border: none;
-  padding: 9px 18px;
-  border-radius: 6px;
-  font-weight: 500;
-  font-size: 0.88rem;
+  padding: 9px 16px;
+  font-size: 13.5px;
+  color: #666;
   cursor: pointer;
-  transition: background 0.15s;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  white-space: nowrap;
+  transition: color 0.15s;
 }
-
-.btn-primary:hover {
-  background: #4338ca;
-}
-
-.btn-secondary {
-  background: #ffffff;
-  color: #475569;
-  border: 1px solid #cbd5e1;
-  padding: 9px 18px;
-  border-radius: 6px;
+.ncf-tab:hover { color: #3b82f6; }
+.ncf-tab--active {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
   font-weight: 500;
-  font-size: 0.88rem;
-  cursor: pointer;
-  transition: background 0.15s;
 }
 
-.btn-secondary:hover {
-  background: #f8fafc;
+/* ---- Tab Content ---- */
+.ncf-tab-content { padding-bottom: 8px; }
+.ncf-tab-content--empty {
+  padding: 32px 0;
+  text-align: center;
+  color: #aaa;
+}
+
+/* ---- Actions ---- */
+.ncf-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.ncf-btn {
+  padding: 8px 22px;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+}
+.ncf-btn--primary {
+  background: #3b82f6;
+  color: #fff;
+  border-color: #2563eb;
+}
+.ncf-btn--primary:hover { background: #2563eb; }
+.ncf-btn--primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.ncf-btn--secondary {
+  background: #fff;
+  color: #444;
+  border-color: #d1d5db;
+}
+.ncf-btn--secondary:hover { background: #f5f6f8; }
+
+/* ---- Toast ---- */
+.ncf-toast {
+  position: fixed;
+  top: 20px;
+  right: 24px;
+  z-index: 9999;
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  animation: slideIn 0.25s ease;
+}
+.ncf-toast--success { background: #22c55e; color: #fff; }
+.ncf-toast--error { background: #ef4444; color: #fff; }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 600px) {
+  .ncf-container { padding: 18px 14px; }
+  .ncf-row { flex-direction: column; align-items: flex-start; }
+  .ncf-label { width: auto; }
+  .ncf-input--md, .ncf-select--md, .ncf-textarea { width: 100%; }
+  .ncf-contact-row .ncf-input { width: 130px; }
+  .ncf-hint { margin-left: 0; }
 }

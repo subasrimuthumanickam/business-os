@@ -7,6 +7,7 @@ import QRCode from 'qrcode';
 import db from './config/db.js'; // Points correctly to your MySQL configuration wrapper
 import CustomerRoutes from './routes/customer.routes.js';
 import AuthRoutes from './routes/authRoutes.js';
+import invoiceRoutes from './routes/invoice.routes.js';
 
 const app = express();
 const PORT = 5000;
@@ -19,6 +20,7 @@ app.use(express.json());
 // 2. REGISTER THE CUSTOMER ROUTE WITH PREFIX BASE PATH
 app.use('/api/customers', CustomerRoutes);
 app.use('/api/auth', AuthRoutes); // Assuming auth routes are also in customer.routes.js
+app.use('/api/invoices', invoiceRoutes); // Register invoice routes
 
 // Interfaces for incoming requests
 interface RegisterBody {

@@ -11,6 +11,8 @@ import SettingsPage from './components/dashboard/SettingsPage';
 // Import Client Routes
 import ClientRoutes from './client/routes/ClientRoutes';
 
+import CreateInvoice from "./client/components/billing/CreateInvoice";
+
 // Import Client CSS
 import './client/styles/client.css';
 import './index.css';
@@ -38,6 +40,11 @@ function App() {
           
           {/* Client Login (optional) */}
           <Route path="/client-login" element={<div>Client Login Page</div>} />
+
+          <Route
+  path="/billing/create-invoice"
+  element={<CreateInvoice />}
+/>
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
