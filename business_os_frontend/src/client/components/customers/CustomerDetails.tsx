@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./CustomerDetails.css";
 import {
   ResponsiveContainer,
@@ -8,8 +8,11 @@ import {
   YAxis,
   Tooltip
 } from "recharts";
-import CreateInvoice from "../billing/CreateInvoice";
 import { useNavigate } from "react-router-dom";
+
+// =============================================
+// Types
+// =============================================
 
 interface CustomerProps {
   customer: {
@@ -22,173 +25,278 @@ interface CustomerProps {
     billing_address?: string;
     shipping_address?: string;
     customer_type?: string;
+    location?: string;
   };
+  onEdit?: () => void; // CustomerList-ல் edit trigger பண்ண
 }
 
-const incomeData = [
-  { month: "Jan", amount: 1500 },
-  { month: "Feb", amount: 3000 },
-  { month: "Mar", amount: 4500 },
-  { month: "Apr", amount: 6000 },
-  { month: "May", amount: 8500 },
-  { month: "Jun", amount: 12000 }
-];
+interface Invoice {
+  id: number;
+  invoice_number: string;
+  invoice_date: string;
+  due_date: string;
+  status: string;
+  total: number;
+  subtotal: number;
+  tax: number;
+}
 
-const invoices = [
-  {
-    invoiceNo: "INV-001",
-    date: "2026-06-01",
-    status: "Paid",
-    amount: "$1200"
-  },
-  {
-    invoiceNo: "INV-002",
-    date: "2026-06-10",
-    status: "Pending",
-    amount: "$950"
-  }
-];
+interface Payment {
+  id: number;
+  amount: number;
+  payment_date: string;
+  payment_mode: string;
+  reference_number?: string;
+}
 
-const activities = [
-  "Customer Created",
-  "Invoice Generated",
-  "Payment Received",
-  "Sales Order Created"
-];
+interface OverviewStats {
+  receivables: number;
+  unusedCredits: number;
+  totalIncome: number;
+  invoiceCount: number;
+}
 
-const CustomerDetails: React.FC<CustomerProps> = ({ customer }) => {
+const API = "http://localhost:5000/api";
 
-    const navigate = useNavigate();
+const TABS = ["overview", "comments", "transactions", "related", "mails", "statement"];
+const TAB_LABELS: Record<string, string> = {
+  overview: "Overview",
+  comments: "Comments",
+  transactions: "Transactions",
+  related: "Related Lists",
+  mails: "Mails",
+  statement: "Statement",
+};
+
+// =============================================
+// Component
+// =============================================
+
+const CustomerDetails: React.FC<CustomerProps> = ({ customer, onEdit }) => {
+  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState("overview");
+
+  // ---- Data States ----
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [stats, setStats] = useState<OverviewStats>({
+    receivables: 0,
+    unusedCredits: 0,
+    totalIncome: 0,
+    invoiceCount: 0,
+  });
+  const [chartData, setChartData] = useState<{ month: string; amount: number }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // ---- Dropdown State ----
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // =============================================
+  // Fetch Data
+  // =============================================
+
+  useEffect(() => {
+    fetchAllData();
+
+    // Close dropdown outside click
+    const handleOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [customer.id]);
+
+  const fetchAllData = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([fetchInvoices(), fetchPayments()]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchInvoices = async () => {
+    try {
+      const res = await fetch(`${API}/customers/${customer.id}/invoices`);
+      const data = await res.json();
+      if (data.success) {
+        const invList: Invoice[] = data.data || [];
+        setInvoices(invList);
+        computeStats(invList);
+        buildChartData(invList);
+      }
+    } catch (err) {
+      console.error("Invoice fetch error:", err);
+    }
+  };
+
+  const fetchPayments = async () => {
+    try {
+      const res = await fetch(`${API}/customers/${customer.id}/payments`);
+      const data = await res.json();
+      if (data.success) {
+        setPayments(data.data || []);
+      }
+    } catch (err) {
+      console.error("Payment fetch error:", err);
+    }
+  };
+
+  // ---- Compute overview stats from invoices ----
+  const computeStats = (invList: Invoice[]) => {
+    const totalIncome = invList.reduce((sum, inv) => sum + (inv.total || 0), 0);
+    const receivables = invList
+      .filter((inv) => inv.status === "Draft" || inv.status === "Pending")
+      .reduce((sum, inv) => sum + (inv.total || 0), 0);
+
+    setStats({
+      receivables,
+      unusedCredits: 0,
+      totalIncome,
+      invoiceCount: invList.length,
+    });
+  };
+
+  // ---- Build chart data by month from invoices ----
+  const buildChartData = (invList: Invoice[]) => {
+    const monthMap: Record<string, number> = {};
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    invList.forEach((inv) => {
+      if (!inv.invoice_date) return;
+      const date = new Date(inv.invoice_date);
+      const month = monthNames[date.getMonth()];
+      monthMap[month] = (monthMap[month] || 0) + (inv.total || 0);
+    });
+
+    const chart = monthNames
+      .filter((m) => monthMap[m])
+      .map((m) => ({ month: m, amount: monthMap[m] }));
+
+    setChartData(chart.length > 0 ? chart : [{ month: "No Data", amount: 0 }]);
+  };
+
+  // =============================================
+  // Transaction Navigation
+  // =============================================
+
+  const handleTransaction = (type: string) => {
+    setDropdownOpen(false);
+    const state = { customerId: customer.id, customerName: customer.name };
+
+    switch (type) {
+      case "invoice":
+        navigate("/billing/create-invoice", { state });
+        break;
+      case "payment":
+        navigate("/billing/payments/new", { state });
+        break;
+      case "estimate":
+        navigate("/billing/estimates/new", { state });
+        break;
+      case "sales-order":
+        navigate("/billing/sales-orders/new", { state });
+        break;
+      case "credit-note":
+        navigate("/billing/credit-notes/new", { state });
+        break;
+    }
+  };
+
+  // ---- Status badge color ----
+  const getStatusClass = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case "paid": return "badge badge--paid";
+      case "draft": return "badge badge--draft";
+      case "pending": return "badge badge--pending";
+      case "overdue": return "badge badge--overdue";
+      default: return "badge badge--draft";
+    }
+  };
+
+  const formatCurrency = (amount: number, currency = "INR") => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: currency === "USD" ? "USD" : "INR",
+      maximumFractionDigits: 2,
+    }).format(amount || 0);
+  };
+
+  // =============================================
+  // Render
+  // =============================================
 
   return (
     <div className="customer-details-page">
 
-      {/* Header */}
+      {/* ---- Top Bar ---- */}
       <div className="customer-topbar">
         <h2>{customer.name}</h2>
 
         <div className="topbar-actions">
-          <button className="btn-outline">Edit</button>
+          {/* Edit Button */}
+          <button className="btn-outline" onClick={onEdit}>
+            ✏ Edit
+          </button>
 
-          {/* <select className="transaction-dropdown">
-            <option>New Transaction</option>
-            <option>Invoice</option>
-            <option>Customer Payment</option>
-            <option>Estimate</option>
-            <option>Sales Order</option>
-            <option>Credit Note</option>
-          </select> */}
-          <select
-  className="transaction-dropdown"
-  onChange={(e) => {
-    const value = e.target.value;
+          {/* Custom Dropdown — Zoho Style */}
+          <div className="txn-dropdown-wrap" ref={dropdownRef}>
+            <button
+              className="txn-dropdown-btn"
+              onClick={() => setDropdownOpen((prev) => !prev)}
+            >
+              New Transaction
+              <span className="txn-arrow">{dropdownOpen ? "▲" : "▼"}</span>
+            </button>
 
-    if (value === "invoice") {
-      navigate("/billing/create-invoice", {
-        state: {
-          customerId: customer.id,
-          customerName: customer.name
-        }
-      });
-    }
-  }}
->
-  <option value="">
-    New Transaction
-  </option>
-
-  <option value="invoice">
-    Invoice
-  </option>
-
-  <option value="payment">
-    Customer Payment
-  </option>
-
-  <option value="estimate">
-    Estimate
-  </option>
-
-  <option value="sales-order">
-    Sales Order
-  </option>
-
-  <option value="credit-note">
-    Credit Note
-  </option>
-</select>
+            {dropdownOpen && (
+              <ul className="txn-dropdown-menu">
+                <li onClick={() => handleTransaction("invoice")}>📄 Invoice</li>
+                <li onClick={() => handleTransaction("payment")}>💳 Customer Payment</li>
+                <li onClick={() => handleTransaction("estimate")}>📋 Estimate</li>
+                <li onClick={() => handleTransaction("sales-order")}>🛒 Sales Order</li>
+                <li onClick={() => handleTransaction("credit-note")}>📝 Credit Note</li>
+              </ul>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* ---- Tabs ---- */}
       <div className="customer-tabs">
-        <button
-          className={activeTab === "overview" ? "active" : ""}
-          onClick={() => setActiveTab("overview")}
-        >
-          Overview
-        </button>
-
-        <button
-          className={activeTab === "comments" ? "active" : ""}
-          onClick={() => setActiveTab("comments")}
-        >
-          Comments
-        </button>
-
-        <button
-          className={activeTab === "transactions" ? "active" : ""}
-          onClick={() => setActiveTab("transactions")}
-        >
-          Transactions
-        </button>
-
-        <button
-          className={activeTab === "related" ? "active" : ""}
-          onClick={() => setActiveTab("related")}
-        >
-          Related Lists
-        </button>
-
-        <button
-          className={activeTab === "mails" ? "active" : ""}
-          onClick={() => setActiveTab("mails")}
-        >
-          Mails
-        </button>
-
-        <button
-          className={activeTab === "statement" ? "active" : ""}
-          onClick={() => setActiveTab("statement")}
-        >
-          Statement
-        </button>
+        {TABS.map((tab) => (
+          <button
+            key={tab}
+            className={activeTab === tab ? "active" : ""}
+            onClick={() => setActiveTab(tab)}
+          >
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
       </div>
 
       <div className="customer-content">
 
-        {/* Sidebar */}
+        {/* ---- Sidebar ---- */}
         <div className="customer-sidebar">
-
           <div className="profile-card">
             <div className="avatar">
               {customer.name?.charAt(0).toUpperCase()}
             </div>
-
             <h3>{customer.name}</h3>
             <p>{customer.email}</p>
           </div>
 
           <div className="info-section">
             <h4>Address</h4>
-
             <div className="info-row">
               <span>Billing</span>
               <p>{customer.billing_address || "Not Added"}</p>
             </div>
-
             <div className="info-row">
               <span>Shipping</span>
               <p>{customer.shipping_address || "Not Added"}</p>
@@ -197,195 +305,192 @@ const CustomerDetails: React.FC<CustomerProps> = ({ customer }) => {
 
           <div className="info-section">
             <h4>Other Details</h4>
-
             <div className="info-row">
-              <span>Customer Type</span>
+              <span>Type</span>
               <p>{customer.customer_type || "Business"}</p>
             </div>
-
             <div className="info-row">
               <span>Currency</span>
-              <p>{customer.currency || "USD"}</p>
+              <p>{customer.currency || "INR"}</p>
             </div>
-
             <div className="info-row">
               <span>Phone</span>
               <p>{customer.phone_work || "-"}</p>
             </div>
+            {customer.location && (
+              <div className="info-row">
+                <span>Location</span>
+                <p>{customer.location}</p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Main Content */}
+        {/* ---- Main Content ---- */}
         <div className="customer-main">
 
-          {activeTab === "overview" && (
-            // <>
-            //   <div className="summary-grid">
+          {loading && (
+            <div className="loading-state">Loading customer data...</div>
+          )}
 
-            //     <div className="summary-card">
-            //       <h4>Receivables</h4>
-            //       <h2>$0.00</h2>
-            //     </div>
-
-            //     <div className="summary-card">
-            //       <h4>Unused Credits</h4>
-            //       <h2>$0.00</h2>
-            //     </div>
-
-            //     <div className="summary-card">
-            //       <h4>Total Income</h4>
-            //       <h2>$0.00</h2>
-            //     </div>
-
-            //     <div className="summary-card">
-            //       <h4>Invoices</h4>
-            //       <h2>0</h2>
-            //     </div>
-
-            //   </div>
-
-            //   <div className="chart-card">
-            //     <h3>Income Overview</h3>
-            //     <div className="chart-placeholder">
-            //       Income chart will be loaded here
-            //     </div>
-            //   </div>
-            // </>
+          {/* Overview Tab */}
+          {!loading && activeTab === "overview" && (
             <>
-  <div className="summary-grid">
+              {/* Summary Cards */}
+              <div className="summary-grid">
+                <div className="summary-card">
+                  <h4>Receivables</h4>
+                  <h2>{formatCurrency(stats.receivables, customer.currency)}</h2>
+                </div>
+                <div className="summary-card">
+                  <h4>Unused Credits</h4>
+                  <h2>{formatCurrency(stats.unusedCredits, customer.currency)}</h2>
+                </div>
+                <div className="summary-card">
+                  <h4>Total Income</h4>
+                  <h2>{formatCurrency(stats.totalIncome, customer.currency)}</h2>
+                </div>
+                <div className="summary-card">
+                  <h4>Invoices</h4>
+                  <h2>{stats.invoiceCount}</h2>
+                </div>
+              </div>
 
-    <div className="summary-card">
-      <h4>Receivables</h4>
-      <h2>$14,500</h2>
-    </div>
+              {/* Receivables Table */}
+              {stats.receivables > 0 && (
+                <div className="receivable-card">
+                  <h3>Receivables</h3>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Currency</th>
+                        <th>Outstanding</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>{customer.currency || "INR"}</td>
+                        <td>{formatCurrency(stats.receivables, customer.currency)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
-    <div className="summary-card">
-      <h4>Unused Credits</h4>
-      <h2>$1,200</h2>
-    </div>
+              {/* Chart */}
+              <div className="chart-card">
+                <h3>Income Overview</h3>
+                {chartData.length > 0 && chartData[0].month !== "No Data" ? (
+                  <ResponsiveContainer width="100%" height={280}>
+                    <AreaChart data={chartData}>
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip formatter={(val: any) => formatCurrency(val, customer.currency)} />
+                      <Area
+                        type="monotone"
+                        dataKey="amount"
+                        stroke="#2563eb"
+                        fill="#93c5fd"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="empty-chart">No invoice data yet</div>
+                )}
+              </div>
 
-    <div className="summary-card">
-      <h4>Total Income</h4>
-      <h2>$52,400</h2>
-    </div>
-
-    <div className="summary-card">
-      <h4>Invoices</h4>
-      <h2>12</h2>
-    </div>
-
-  </div>
-
-  <div className="receivable-card">
-    <h3>Receivables</h3>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Currency</th>
-          <th>Outstanding</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr>
-          <td>USD</td>
-          <td>$14,500</td>
-        </tr>
-
-        <tr>
-          <td>INR</td>
-          <td>₹2,50,000</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div className="chart-card">
-
-    <h3>Income Overview</h3>
-
-    <ResponsiveContainer width="100%" height={300}>
-      <AreaChart data={incomeData}>
-        <XAxis dataKey="month" />
-        <YAxis />
-        <Tooltip />
-
-        <Area
-          type="monotone"
-          dataKey="amount"
-          stroke="#2563eb"
-          fill="#93c5fd"
-        />
-      </AreaChart>
-    </ResponsiveContainer>
-
-  </div>
-
-  <div className="activity-card">
-
-    <h3>Recent Activity</h3>
-
-    {activities.map((activity, index) => (
-      <div key={index} className="timeline-item">
-        {activity}
-      </div>
-    ))}
-
-  </div>
-</>
+              {/* Recent Invoices as Activity */}
+              <div className="activity-card">
+                <h3>Recent Activity</h3>
+                {invoices.length === 0 ? (
+                  <p className="empty-text">No activity yet</p>
+                ) : (
+                  invoices.slice(0, 5).map((inv) => (
+                    <div key={inv.id} className="timeline-item">
+                      <span className="timeline-dot" />
+                      <div>
+                        <strong>{inv.invoice_number}</strong> created —{" "}
+                        <span className={getStatusClass(inv.status)}>{inv.status}</span>
+                      </div>
+                      <span className="timeline-date">{inv.invoice_date}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
           )}
 
-          {activeTab === "transactions" && (
+          {/* Transactions Tab */}
+          {!loading && activeTab === "transactions" && (
             <div className="table-card">
-              <h3>Transactions</h3>
+              <h3>Invoices</h3>
+              {invoices.length === 0 ? (
+                <div className="empty-card">No invoices found for this customer</div>
+              ) : (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Invoice No</th>
+                      <th>Date</th>
+                      <th>Due Date</th>
+                      <th>Status</th>
+                      <th>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoices.map((inv) => (
+                      <tr key={inv.id}>
+                        <td><strong>{inv.invoice_number}</strong></td>
+                        <td>{inv.invoice_date}</td>
+                        <td>{inv.due_date}</td>
+                        <td><span className={getStatusClass(inv.status)}>{inv.status}</span></td>
+                        <td>{formatCurrency(inv.total, customer.currency)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
 
-              <table>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Transaction</th>
-                    <th>Status</th>
-                    <th>Amount</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {invoices.map((invoice, index) => (
-                  <tr key={index}>
-                  <td>{invoice.date}</td>
-                  <td>{invoice.invoiceNo}</td>
-                  <td>{invoice.status}</td>
-                  <td>{invoice.amount}</td>
-                  </tr>
-                ))}
-                </tbody>
-              </table>
+              {payments.length > 0 && (
+                <>
+                  <h3 style={{ marginTop: "24px" }}>Payments</h3>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Mode</th>
+                        <th>Reference</th>
+                        <th>Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {payments.map((pay) => (
+                        <tr key={pay.id}>
+                          <td>{pay.payment_date}</td>
+                          <td>{pay.payment_mode}</td>
+                          <td>{pay.reference_number || "-"}</td>
+                          <td>{formatCurrency(pay.amount, customer.currency)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
+              )}
             </div>
           )}
 
+          {/* Other Tabs */}
           {activeTab === "comments" && (
-            <div className="empty-card">
-              No comments available
-            </div>
+            <div className="empty-card">No comments available</div>
           )}
-
           {activeTab === "related" && (
-            <div className="empty-card">
-              Related records will appear here
-            </div>
+            <div className="empty-card">Related records will appear here</div>
           )}
-
           {activeTab === "mails" && (
-            <div className="empty-card">
-              Email history will appear here
-            </div>
+            <div className="empty-card">Email history will appear here</div>
           )}
-
           {activeTab === "statement" && (
-            <div className="empty-card">
-              Customer statement will appear here
-            </div>
+            <div className="empty-card">Customer statement will appear here</div>
           )}
 
         </div>
