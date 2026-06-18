@@ -3,6 +3,7 @@ import CustomerForm from './CustomerForm';
 import CustomerDetails from './CustomerDetails';
 import * as customerService from '../../services/customerService';
 import './CustomerList.css';
+import { Search } from "lucide-react";
 
 // 🎯 Matching the full schema entity layout from our SQLite upgrade data types
 interface Customer {
@@ -203,44 +204,40 @@ export const CustomerList: React.FC = () => {
 
           <div className="filter-bar">
             <div className="search-wrapper">
-              <span className="search-icon">🔍</span>
-              <input 
-                type="text" 
-                placeholder="Search tenant registries" 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+  <Search size={16} className="search-icon" />
+  <input
+    type="text"
+    placeholder="Search customers"
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+  />
+</div>
           </div>
 
           <div className="table-responsive">
             <table className="customer-table">
               <thead>
-                <tr>
-                  <th style={{ width: '40px' }}><input type="checkbox" /></th>
-                  <th>Customers</th>
-                  <th>Email Address</th>
-                  <th>Location</th>
-                  <th>Orders</th>
-                  <th>Amount Spent</th>
-                  <th style={{ textAlign: 'center', width: '100px' }}>Action</th>
+              <tr>
+                <th>Customer Name</th>
+                <th>Company Name</th>
+                <th>Mobile Number</th>
+                <th>Email Address</th>
+                <th>Receivables</th>
+                <th>Location</th>
+                <th>Action</th>
                 </tr>
               </thead>
-              <tbody>
+              {/* <tbody>
                 {filteredCustomers.map((customer) => (
                   <tr key={customer.id}>
-                    <td><input type="checkbox" /></td>
                     <td 
                       className="customer-name-cell clickable-name" 
                       onClick={() => setViewingCustomer(customer)}
                     >
-                      {/* Displays display_name if exists, else falls back to old name column row */}
                       {customer.display_name || customer.name}
                     </td>
                     <td className="customer-email-cell">{customer.email}</td>
                     <td>{customer.location || '—'}</td>
-                    <td>{customer.orders !== null ? `${customer.orders} Orders` : '0 Orders'}</td>
-                    <td>{Number(customer.amountSpent || 0).toFixed(2)}</td>
                     <td style={{ textAlign: 'center' }} className="action-cell">
                       <button className="btn-dots" onClick={() => toggleDropdown(customer.id)}>•••</button>
                       
@@ -254,7 +251,75 @@ export const CustomerList: React.FC = () => {
                     </td>
                   </tr>
                 ))}
-              </tbody>
+              </tbody> */}
+              <tbody>
+  {filteredCustomers.map((customer) => (
+    <tr key={customer.id}>
+      <td
+        className="customer-name-cell clickable-name"
+        onClick={() => setViewingCustomer(customer)}
+      >
+        {customer.display_name}
+      </td>
+
+      <td>{customer.company_name || "-"}</td>
+
+      <td>
+        {customer.phone_mobile ||
+          customer.phone_work ||
+          "-"}
+      </td>
+
+      <td>{customer.email}</td>
+
+      <td>
+        ₹ {Number(customer.amountSpent || 0).toFixed(2)}
+      </td>
+
+      <td>{customer.location || "-"}</td>
+
+     <td style={{ textAlign: "center" }} className="action-cell">
+  <button
+    className="btn-dots"
+    onClick={() => toggleDropdown(customer.id)}
+  >
+    •••
+  </button>
+
+  {activeDropdownId === customer.id && (
+    <div className="action-dropdown">
+      <button
+        className="dropdown-item"
+        onClick={() => {
+          setViewingCustomer(customer);
+          setActiveDropdownId(null);
+        }}
+      >
+        👁 View
+      </button>
+
+      <button
+        className="dropdown-item"
+        onClick={() => {
+          setEditingCustomer(customer);
+          setActiveDropdownId(null);
+        }}
+      >
+        ✏ Edit
+      </button>
+
+      <button
+        className="dropdown-item delete-item"
+        onClick={() => handleDelete(customer.id)}
+      >
+        🗑 Delete
+      </button>
+    </div>
+  )}
+</td>
+    </tr>
+  ))}
+</tbody>
             </table>
           </div>
         </>

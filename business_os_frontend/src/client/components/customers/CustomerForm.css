@@ -175,27 +175,35 @@
 }
 
 .ncf-btn {
-  padding: 8px 22px;
-  border-radius: 5px;
+  min-width: 110px;
+  height: 42px;
+  padding: 0 24px;
+  border-radius: 6px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  border: 1px solid transparent;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
 }
+
 .ncf-btn--primary {
-  background: #3b82f6;
-  color: #fff;
-  border-color: #2563eb;
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border: 1px solid #2563eb !important;
 }
-.ncf-btn--primary:hover { background: #2563eb; }
-.ncf-btn--primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.ncf-btn--primary:hover {
+  background-color: #1d4ed8 !important;
+}
+
 .ncf-btn--secondary {
   background: #fff;
-  color: #444;
-  border-color: #d1d5db;
+  color: #374151;
+  border: 1px solid #d1d5db;
 }
-.ncf-btn--secondary:hover { background: #f5f6f8; }
+
+.ncf-btn--secondary:hover {
+  background: #f9fafb;
+}
 
 /* ---- Toast ---- */
 .ncf-toast {
@@ -226,4 +234,67 @@
   .ncf-input--md, .ncf-select--md, .ncf-textarea { width: 100%; }
   .ncf-contact-row .ncf-input { width: 130px; }
   .ncf-hint { margin-left: 0; }
+}
+/* Tablet */
+@media (max-width: 992px) {
+  .ncf-container {
+    max-width: 95%;
+    padding: 24px;
+  }
+
+  .ncf-label {
+    width: 180px;
+    min-width: 180px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+
+  .ncf-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .ncf-label {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .ncf-input,
+  .ncf-input--md,
+  .ncf-select,
+  .ncf-select--md,
+  .ncf-textarea {
+    width: 100% !important;
+  }
+
+  .ncf-contact-row,
+  .ncf-phone-row {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .ncf-contact-row .ncf-input,
+  .ncf-phone-row .ncf-input {
+    width: 100% !important;
+  }
+
+  .ncf-select--sal {
+    width: 100%;
+  }
+
+  .ncf-actions {
+    flex-direction: column;
+  }
+
+  .ncf-btn {
+    width: 100%;
+  }
+
+  .ncf-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+  }
 }
