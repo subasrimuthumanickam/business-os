@@ -7,19 +7,27 @@ interface CustomerOption {
   email: string;
 }
 
+interface PayableInvoice {
+  id: number;
+  invoice_number: string;
+  total: number;
+  status?: string;
+}
+
 interface CreatePaymentProps {
   customer: any;
+  invoice?: PayableInvoice | null;
   onClose: () => void;
 }
 
 const PAYMENT_MODES = ["Cash", "Bank Transfer", "UPI", "Cheque", "Card", "Other"];
 
-const CreatePayment: React.FC<CreatePaymentProps> = ({ customer, onClose }) => {
+const CreatePayment: React.FC<CreatePaymentProps> = ({ customer, invoice, onClose }) => {
   const getTodayDate = () => new Date().toISOString().split("T")[0];
 
   const [paymentNumber, setPaymentNumber] = useState("");
   const [paymentDate, setPaymentDate] = useState(getTodayDate());
-  const [amount, setAmount] = useState<number>(0);
+  const [amount, setAmount] = useState<number>(Number(invoice?.total) || 0);
   const [paymentMode, setPaymentMode] = useState(PAYMENT_MODES[0]);
   const [referenceNumber, setReferenceNumber] = useState("");
   const [notes, setNotes] = useState("");
@@ -100,6 +108,7 @@ const CreatePayment: React.FC<CreatePaymentProps> = ({ customer, onClose }) => {
 
     const payload = {
       customer_id: customerId,
+      invoice_id: invoice ? invoice.id : null,
       payment_number: paymentNumber,
       payment_date: paymentDate,
       amount,
@@ -145,6 +154,19 @@ const CreatePayment: React.FC<CreatePaymentProps> = ({ customer, onClose }) => {
       </div>
 
       <div className="pay-card">
+        {/* Invoice context — only shown when paying a specific invoice */}
+        {invoice && (
+          <div className="pay-invoice-banner">
+            <span className="pay-invoice-banner-icon">🧾</span>
+            <div>
+              <strong>Paying Invoice {invoice.invoice_number}</strong>
+              <span className="pay-invoice-banner-amount">
+                Outstanding ₹{(Number(invoice.total) || 0).toFixed(2)}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Row 1: Number / Date / Mode */}
         <div className="pay-header-grid">
           <div className="pay-field">

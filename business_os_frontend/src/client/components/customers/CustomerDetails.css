@@ -259,7 +259,7 @@
 
 .table-card th,
 .table-card td {
-  padding: 14px;
+  padding: 12px;
   border-bottom: 1px solid #e5e7eb;
   text-align: left;
 }
@@ -267,6 +267,9 @@
 .table-card th {
   background: #f9fafb;
   font-weight: 600;
+}
+.table-card td {
+  white-space: nowrap; 
 }
 
 /* Empty States */
