@@ -111,22 +111,27 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({ onSubmit, onCancel, 
     e.preventDefault();
     if (!validate()) return;
 
-    onSubmit({
-      customer_type:    customerType,
-      salutation:       salutation || null,
-      first_name:       firstName  || null,
-      last_name:        lastName   || null,
-      company_name:     companyName || null,
-      display_name:     displayName,
-      email,
-      phone_work:       phoneWork   || null,
-      phone_mobile:     phoneMobile || null,
-      currency,
-      location:         location   || null,
-      tax_rule:         taxRule,
-      billing_address:  billingAddress,
-      shipping_address: shippingAddress,
-    });
+    const finalCompanyName =
+  customerType === "Individual"
+    ? "Individual"
+    : (companyName || null);
+
+onSubmit({
+  customer_type: customerType,
+  salutation: salutation || null,
+  first_name: firstName || null,
+  last_name: lastName || null,
+  company_name: finalCompanyName,
+  display_name: displayName,
+  email,
+  phone_work: phoneWork || null,
+  phone_mobile: phoneMobile || null,
+  currency,
+  location: location || null,
+  tax_rule: taxRule,
+  billing_address: billingAddress,
+  shipping_address: shippingAddress,
+});
   };
 
   // =============================================

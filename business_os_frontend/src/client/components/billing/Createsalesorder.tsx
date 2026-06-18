@@ -1,54 +1,50 @@
-
 import React, { useEffect, useState, useRef } from "react";
-import "./CreateInvoice.css";
+import "./Createsalesorder.css";
 
-interface InvoiceItem {
+interface SalesOrderItem {
   item_name: string;
   quantity: number;
   rate: number;
   amount: number;
 }
 
-interface CreateInvoiceProps {
-  customer: any;
-  onClose: () => void;
-}
-
-// Customer search result type
 interface CustomerOption {
   id: number;
   display_name: string;
   email: string;
 }
 
-// const CreateInvoice: React.FC = () => {
-const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, onClose }) => {
+interface CreateSalesOrderProps {
+  customer: any;
+  onClose: () => void;
+}
+
+const CreateSalesOrder: React.FC<CreateSalesOrderProps> = ({ customer, onClose }) => {
   const getTodayDate = () => new Date().toISOString().split("T")[0];
-  const getDueDate = () => {
+  const getShipmentDate = () => {
     const date = new Date();
-    date.setDate(date.getDate() + 30);
+    date.setDate(date.getDate() + 7);
     return date.toISOString().split("T")[0];
   };
 
-  const [invoiceNumber, setInvoiceNumber] = useState("");
-  const [invoiceDate, setInvoiceDate] = useState(getTodayDate());
-  const [dueDate, setDueDate] = useState(getDueDate());
+  const [orderNumber, setOrderNumber] = useState("");
+  const [orderDate, setOrderDate] = useState(getTodayDate());
+  const [shipmentDate, setShipmentDate] = useState(getShipmentDate());
 
-  // ✅ Customer search state
+  // Customer search state
   const [customerSearch, setCustomerSearch] = useState("");
   const [customerId, setCustomerId] = useState<number | null>(null);
   const [customerOptions, setCustomerOptions] = useState<CustomerOption[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  const [items, setItems] = useState<InvoiceItem[]>([
+  const [items, setItems] = useState<SalesOrderItem[]>([
     { item_name: "", quantity: 1, rate: 0, amount: 0 },
   ]);
 
   useEffect(() => {
-    generateInvoiceNumber();
+    generateOrderNumber();
 
-    // Close dropdown on outside click
     const handleOutsideClick = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
         setShowDropdown(false);
@@ -58,15 +54,22 @@ const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, onClose }) => {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
-  const generateInvoiceNumber = () => {
+  // Auto-fill customer from props
+  useEffect(() => {
+    if (customer) {
+      setCustomerSearch(customer.name);
+      setCustomerId(Number(customer.id));
+    }
+  }, [customer]);
+
+  const generateOrderNumber = () => {
     const random = Math.floor(10000 + Math.random() * 90000);
-    setInvoiceNumber(`INV-${random}`);
+    setOrderNumber(`SO-${random}`);
   };
 
-  // ✅ Search customers from DB as user types
   const handleCustomerSearch = async (value: string) => {
     setCustomerSearch(value);
-    setCustomerId(null); // reset selected id when typing
+    setCustomerId(null);
 
     if (value.trim().length < 1) {
       setCustomerOptions([]);
@@ -76,8 +79,8 @@ const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, onClose }) => {
 
     try {
       const res = await fetch(
-  `http://localhost:5000/api/customers/search?q=${encodeURIComponent(value)}`
-);
+        `http://localhost:5000/api/customers/search?q=${encodeURIComponent(value)}`
+      );
       const data = await res.json();
       if (data.success) {
         setCustomerOptions(data.data);
@@ -88,24 +91,16 @@ const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, onClose }) => {
     }
   };
 
-  // ✅ When user selects a customer from dropdown
   const handleSelectCustomer = (customer: CustomerOption) => {
     setCustomerSearch(customer.display_name);
     setCustomerId(customer.id);
     setCustomerOptions([]);
     setShowDropdown(false);
   };
-   useEffect(() => {
-    // Auto-fill customer details from props
-    if (customer) {
-      setCustomerSearch(customer.name);
-      setCustomerId(Number(customer.id));
-    }
-  }, [customer]);
 
   const handleItemChange = (
     index: number,
-    field: keyof InvoiceItem,
+    field: keyof SalesOrderItem,
     value: string | number
   ) => {
     const updatedItems = [...items];
@@ -131,17 +126,16 @@ const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, onClose }) => {
   const grandTotal = subtotal + tax;
 
   const handleSave = async () => {
-    // ✅ Validate customer selected
     if (!customerId) {
       alert("Please select a valid customer from the dropdown.");
       return;
     }
 
     const payload = {
-      customer_id: customerId, // ✅ Real DB customer_id
-      invoice_number: invoiceNumber,
-      invoice_date: invoiceDate,
-      due_date: dueDate,
+      customer_id: customerId,
+      order_number: orderNumber,
+      order_date: orderDate,
+      expected_shipment_date: shipmentDate,
       status: "Draft",
       subtotal,
       tax,
@@ -149,10 +143,8 @@ const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, onClose }) => {
       items,
     };
 
-    console.log("Payload => ", payload);
-
     try {
-      const response = await fetch("http://localhost:5000/api/invoices/create", {
+      const response = await fetch("http://localhost:5000/api/sales-orders/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -161,13 +153,13 @@ const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, onClose }) => {
       const data = await response.json();
 
       if (response.ok) {
-        alert("Invoice Created Successfully!");
-        generateInvoiceNumber();
+        alert("Sales Order Created Successfully!");
+        generateOrderNumber();
         setCustomerSearch("");
         setCustomerId(null);
         setItems([{ item_name: "", quantity: 1, rate: 0, amount: 0 }]);
       } else {
-        alert(data.message || "Failed to Save Invoice");
+        alert(data.message || "Failed to Save Sales Order");
       }
     } catch (error) {
       console.error(error);
@@ -176,39 +168,40 @@ const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, onClose }) => {
   };
 
   return (
-    <div className="create-invoice-page">
-      <div className="invoice-title-bar">
-        <h1>Create Invoice</h1>
-        <button className="close-btn" onClick={onClose}>Back to Details</button>
+    <div className="create-sales-order-page">
+      <div className="sales-order-title-bar">
+        <h1>Create Sales Order</h1>
+        <button className="close-btn" onClick={onClose}>
+          Back to Details
+        </button>
       </div>
 
-      <div className="invoice-card">
-
+      <div className="sales-order-card">
         {/* Header */}
-        <div className="invoice-header">
+        <div className="sales-order-header">
           <div>
-            <label>Invoice Number</label>
-            <input value={invoiceNumber} readOnly />
+            <label>Sales Order Number</label>
+            <input value={orderNumber} readOnly />
           </div>
           <div>
-            <label>Invoice Date</label>
+            <label>Order Date</label>
             <input
               type="date"
-              value={invoiceDate}
-              onChange={(e) => setInvoiceDate(e.target.value)}
+              value={orderDate}
+              onChange={(e) => setOrderDate(e.target.value)}
             />
           </div>
           <div>
-            <label>Due Date</label>
+            <label>Expected Shipment Date</label>
             <input
               type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
+              value={shipmentDate}
+              onChange={(e) => setShipmentDate(e.target.value)}
             />
           </div>
         </div>
 
-        {/* ✅ Customer Search with Autocomplete */}
+        {/* Customer Search with Autocomplete */}
         <div className="form-group" ref={searchRef} style={{ position: "relative" }}>
           <label>
             Customer Name
@@ -225,7 +218,6 @@ const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, onClose }) => {
             className={!customerId && customerSearch ? "input-warn" : ""}
           />
 
-          {/* Dropdown */}
           {showDropdown && customerOptions.length > 0 && (
             <ul className="customer-dropdown">
               {customerOptions.map((c) => (
@@ -241,7 +233,6 @@ const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, onClose }) => {
             </ul>
           )}
 
-          {/* No results */}
           {showDropdown && customerOptions.length === 0 && customerSearch.length > 0 && (
             <ul className="customer-dropdown">
               <li className="customer-dropdown-item no-result">No customers found</li>
@@ -317,12 +308,11 @@ const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, onClose }) => {
         </div>
 
         <button className="save-btn" onClick={handleSave}>
-          Save Invoice
+          Save Sales Order
         </button>
-
       </div>
     </div>
   );
 };
 
-export default CreateInvoice;
+export default CreateSalesOrder;

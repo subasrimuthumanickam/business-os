@@ -41,10 +41,10 @@ function App() {
           {/* Client Login (optional) */}
           <Route path="/client-login" element={<div>Client Login Page</div>} />
 
-          <Route
+          {/* <Route
   path="/billing/create-invoice"
-  element={<CreateInvoice />}
-/>
+  element={<CreateInvoice />} */}
+
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

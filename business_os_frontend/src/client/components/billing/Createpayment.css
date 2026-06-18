@@ -1,0 +1,249 @@
+.pay-page {
+  min-height: 100vh;
+  background: #f5f7fb;
+  padding: 24px;
+}
+
+.pay-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.pay-titlebar h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.pay-close-btn {
+  padding: 10px 18px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  color: #374151;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.pay-close-btn:hover {
+  background: #f3f4f6;
+}
+
+.pay-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 28px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  max-width: 820px;
+}
+
+/* Generic field wrapper, scoped to this page only */
+
+.pay-field {
+  margin-bottom: 22px;
+  position: relative;
+}
+
+.pay-field label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: #374151;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.pay-field input,
+.pay-field select,
+.pay-field textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.pay-field input:focus,
+.pay-field select:focus,
+.pay-field textarea:focus {
+  border-color: #2563eb;
+}
+
+.pay-field textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.pay-readonly {
+  background: #f9fafb;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+/* Row 1: Number / Date / Mode */
+
+.pay-header-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+/* Row 2: Customer search */
+
+.pay-id-badge {
+  font-size: 11px;
+  color: #16a34a;
+  font-weight: 500;
+  background: #dcfce7;
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+
+.pay-input-warn {
+  border-color: #f59e0b !important;
+  background: #fffbeb;
+}
+
+.pay-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  z-index: 999;
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 4px 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.pay-dropdown-item {
+  display: flex;
+  flex-direction: column;
+  padding: 9px 14px;
+  cursor: pointer;
+  gap: 2px;
+  transition: background 0.12s;
+}
+
+.pay-dropdown-item:hover {
+  background: #f0f7ff;
+}
+
+.pay-dropdown-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.pay-dropdown-email {
+  font-size: 12px;
+  color: #888;
+}
+
+.pay-no-result {
+  cursor: default;
+  color: #aaa;
+  font-size: 13px;
+}
+
+.pay-no-result:hover {
+  background: none;
+}
+
+/* Row 3: Amount + Reference */
+
+.pay-amount-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.pay-amount-field input {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* Footer: running total + save */
+
+.pay-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.pay-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.pay-summary-label {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.pay-summary-amount {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.pay-save-btn {
+  padding: 12px 28px;
+  background: #16a34a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.pay-save-btn:hover {
+  background: #15803d;
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+  .pay-header-grid,
+  .pay-amount-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pay-page {
+    padding: 16px;
+  }
+
+  .pay-card {
+    padding: 18px;
+  }
+
+  .pay-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .pay-save-btn {
+    width: 100%;
+  }
+}
