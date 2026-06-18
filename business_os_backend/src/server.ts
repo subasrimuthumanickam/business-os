@@ -8,6 +8,7 @@ import db from './config/db.js'; // Points correctly to your MySQL configuration
 import CustomerRoutes from './routes/customer.routes.js';
 import AuthRoutes from './routes/authRoutes.js';
 import invoiceRoutes from './routes/invoice.routes.js';
+import reportRoutes from './routes/report.routes.js';
 
 const app = express();
 const PORT = 5000;
@@ -21,6 +22,7 @@ app.use(express.json());
 app.use('/api/customers', CustomerRoutes);
 app.use('/api/auth', AuthRoutes); // Assuming auth routes are also in customer.routes.js
 app.use('/api/invoices', invoiceRoutes); // Register invoice routes
+app.use('/api/reports', reportRoutes);
 
 // Interfaces for incoming requests
 interface RegisterBody {
