@@ -27,7 +27,7 @@ const LeaveRequest: React.FC<LeaveRequestProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
 
@@ -38,7 +38,7 @@ const LeaveRequest: React.FC<LeaveRequestProps> = ({
   }, []);
 
   const fetchLeaveRequests = async () => {
-    setLoading(true);
+    // setLoading(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
       const mockRequests: LeaveRequest[] = [
@@ -109,7 +109,7 @@ const LeaveRequest: React.FC<LeaveRequestProps> = ({
     } catch (error) {
       console.error('Error fetching leave requests:', error);
     } finally {
-      setLoading(false);
+      // setLoading(false);
     }
   };
 
@@ -208,13 +208,13 @@ const LeaveRequest: React.FC<LeaveRequestProps> = ({
   const rejectedCount = requests.filter(r => r.status === 'rejected').length;
   const totalDays = requests.reduce((sum, r) => sum + r.days, 0);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="flex items-center justify-center py-12">
+  //       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div>

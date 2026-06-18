@@ -26,7 +26,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -51,7 +51,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   }, []);
 
   const fetchExpenses = async () => {
-    setLoading(true);
+    // setLoading(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
       const mockExpenses: Expense[] = [
@@ -115,7 +115,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
     } catch (error) {
       console.error('Error fetching expenses:', error);
     } finally {
-      setLoading(false);
+      // setLoading(false);
     }
   };
 
@@ -228,13 +228,13 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
   const uniqueCategories = [...new Set(expenses.map(e => e.category))];
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="flex items-center justify-center py-12">
+  //       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div>

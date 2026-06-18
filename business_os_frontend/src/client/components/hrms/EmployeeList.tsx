@@ -14,7 +14,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDepartment, setFilterDepartment] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
@@ -28,7 +28,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
   }, []);
 
   const fetchEmployees = async () => {
-    setLoading(true);
+    // setLoading(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
       const mockEmployees: Employee[] = [
@@ -116,7 +116,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
     } catch (error) {
       console.error('Error fetching employees:', error);
     } finally {
-      setLoading(false);
+      // setLoading(false);
     }
   };
 
@@ -238,13 +238,13 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
     setShowAddModal(true);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="flex items-center justify-center py-12">
+  //       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div>

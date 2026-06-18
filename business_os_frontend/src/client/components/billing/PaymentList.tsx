@@ -49,7 +49,7 @@ const PaymentList: React.FC<PaymentListProps> = ({
   }, []);
 
   const fetchData = async () => {
-    setLoading(true);
+    
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
       
@@ -148,7 +148,7 @@ const PaymentList: React.FC<PaymentListProps> = ({
     } catch (error) {
       console.error('Error fetching payment data:', error);
     } finally {
-      setLoading(false);
+      
     }
   };
 
@@ -223,13 +223,7 @@ const PaymentList: React.FC<PaymentListProps> = ({
   const successfulPayments = payments.filter((p: Payment) => p.status === 'successful').length;
   const successRate = payments.length > 0 ? Math.round((successfulPayments / payments.length) * 100) : 0;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+ 
 
   return (
     <div className="space-y-6">

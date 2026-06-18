@@ -22,7 +22,7 @@ const PerformanceTracker: React.FC<PerformanceTrackerProps> = ({
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
@@ -70,7 +70,7 @@ const PerformanceTracker: React.FC<PerformanceTrackerProps> = ({
   };
 
   const fetchReviews = async () => {
-    setLoading(true);
+    // setLoading(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
       const mockReviews: PerformanceReview[] = [
@@ -104,7 +104,7 @@ const PerformanceTracker: React.FC<PerformanceTrackerProps> = ({
     } catch (error) {
       console.error('Error fetching reviews:', error);
     } finally {
-      setLoading(false);
+      // setLoading(false);
     }
   };
 
@@ -294,13 +294,13 @@ const PerformanceTracker: React.FC<PerformanceTrackerProps> = ({
     return matchesSearch && matchesStatus;
   });
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="flex items-center justify-center py-12">
+  //       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="space-y-6">

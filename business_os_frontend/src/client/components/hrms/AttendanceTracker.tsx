@@ -24,7 +24,7 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
   const [records, setRecords] = useState<AttendanceRecord[]>(propRecords || []);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [showMarkModal, setShowMarkModal] = useState(false);
   const [markData, setMarkData] = useState({
@@ -41,7 +41,7 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
   }, [selectedDate]);
 
   const fetchAttendance = async () => {
-    setLoading(true);
+    // setLoading(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
       const mockRecords: AttendanceRecord[] = [
@@ -117,7 +117,7 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
     } catch (error) {
       console.error('Error fetching attendance:', error);
     } finally {
-      setLoading(false);
+      // setLoading(false);
     }
   };
 
@@ -200,13 +200,13 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
     return overtime > 0 ? `${overtime}h` : '-';
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="flex items-center justify-center py-12">
+  //       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div>

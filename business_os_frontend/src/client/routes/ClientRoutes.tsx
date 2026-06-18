@@ -5,7 +5,7 @@ import ClientLayout from '../components/layout/ClientLayout';
 // Import all Views
 import ClientDashboardView from '../views/ClientDashboardView';
 import CustomerView from '../views/CustomerView';
-import InventoryView from '../views/InventoryView';
+
 import BillingView from '../views/BillingView';
 import HRMSView from '../views/HRMSView';
 import ProjectView from '../views/ProjectView';
@@ -26,10 +26,10 @@ const ClientRoutes: React.FC = () => {
       <Route path="customers/:id" element={<ClientLayout><CustomerView /></ClientLayout>} />
       
       {/* Inventory */}
-      <Route path="inventory" element={<ClientLayout><InventoryView /></ClientLayout>} />
+      {/* <Route path="inventory" element={<ClientLayout><InventoryView /></ClientLayout>} />
       <Route path="inventory/products" element={<ClientLayout><InventoryView /></ClientLayout>} />
-      <Route path="inventory/categories" element={<ClientLayout><InventoryView /></ClientLayout>} />
-      
+      <Route path="inventory/categories" element={<ClientLayout><InventoryView /></ClientLayout>} /> */}
+       
       {/* Billing */}
       <Route path="billing" element={<ClientLayout><BillingView /></ClientLayout>} />
       <Route path="billing/invoices" element={<ClientLayout><BillingView /></ClientLayout>} />

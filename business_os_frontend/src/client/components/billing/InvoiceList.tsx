@@ -29,7 +29,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
 }) => {
   const [invoices, setInvoices] = useState<Invoice[]>(propInvoices || []);
   const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -43,7 +43,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
   }, []);
 
   const fetchInvoices = async () => {
-    setLoading(true);
+    // setLoading(true);
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -124,7 +124,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
     } catch (error) {
       console.error('Error fetching invoices:', error);
     } finally {
-      setLoading(false);
+      // setLoading(false);
     }
   };
 
@@ -217,13 +217,13 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="flex items-center justify-center py-12">
+  //       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div>
