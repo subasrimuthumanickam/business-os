@@ -1,393 +1,1765 @@
+// // src/client/components/projects/TaskBoard.tsx
+// import React, { useState, useEffect } from 'react';
+// import { 
+//   Plus, 
+//   MoreVertical, 
+//   Edit, 
+//   Trash2, 
+//   Clock, 
+//   CheckCircle,
+//   Circle,
+//   AlertCircle,
+//   Calendar,
+//   X,
+//   Tag,
+//   Users,
+//   ChevronDown,
+//   Filter,
+//   Search,
+//   RefreshCw,
+//   Save,
+//   User,
+//   ArrowLeft,
+//   DollarSign,
+//   Briefcase,
+//   LayoutDashboard
+// } from 'lucide-react';
+
+// interface Subtask {
+//   title: string;
+//   completed: boolean;
+// }
+
+// interface Task {
+//   id: string;
+//   title: string;
+//   description: string;
+//   status: 'todo' | 'in-progress' | 'review' | 'done';
+//   priority: 'low' | 'medium' | 'high' | 'urgent';
+//   assignee: string;
+//   dueDate: string;
+//   estimatedHours: number;
+//   loggedHours: number;
+//   tags: string[];
+//   projectName: string;
+//   createdAt: string;
+//   updatedAt: string;
+//   comments: number;
+//   attachments: number;
+//   subtasks: Subtask[];
+// }
+
+// // ==================== EDIT TASK PAGE ====================
+// interface EditTaskPageProps {
+//   task: Task;
+//   onBack: () => void;
+//   onSave: (taskData: any) => void;
+// }
+
+// const EditTaskPage: React.FC<EditTaskPageProps> = ({ task, onBack, onSave }) => {
+//   const [formData, setFormData] = useState({
+//     title: task.title,
+//     description: task.description,
+//     status: task.status,
+//     priority: task.priority,
+//     assignee: task.assignee,
+//     dueDate: task.dueDate,
+//     estimatedHours: task.estimatedHours,
+//     tags: task.tags.join(', '),
+//     projectName: task.projectName,
+//   });
+
+//   const [errors, setErrors] = useState<Record<string, string>>({});
+//   const [isSaving, setIsSaving] = useState(false);
+
+//   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+//     const { name, value } = e.target;
+//     setFormData(prev => ({ ...prev, [name]: value }));
+//     if (errors[name]) {
+//       setErrors(prev => ({ ...prev, [name]: '' }));
+//     }
+//   };
+
+//   const handleSubmit = () => {
+//     const newErrors: Record<string, string> = {};
+//     if (!formData.title.trim()) newErrors.title = 'Task title is required';
+//     if (!formData.assignee) newErrors.assignee = 'Please select an assignee';
+//     if (!formData.dueDate) newErrors.dueDate = 'Please select a due date';
+//     if (formData.estimatedHours <= 0) newErrors.estimatedHours = 'Estimated hours must be greater than 0';
+
+//     if (Object.keys(newErrors).length > 0) {
+//       setErrors(newErrors);
+//       return;
+//     }
+
+//     setIsSaving(true);
+//     const tagsArray = formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+
+//     setTimeout(() => {
+//       onSave({
+//         ...formData,
+//         tags: tagsArray,
+//       });
+//       setIsSaving(false);
+//     }, 500);
+//   };
+
+//   return (
+//     <div className="p-6 bg-gray-50 min-h-screen">
+//       <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
+//         <div className="flex items-center gap-3">
+//           <button onClick={onBack} className="p-2 text-gray-600 hover:text-purple-600 rounded-lg hover:bg-purple-50 transition">
+//             <ArrowLeft className="w-5 h-5" />
+//           </button>
+//           <div>
+//             <h1 className="text-2xl font-bold text-gray-900">Edit Task</h1>
+//             <p className="text-sm text-gray-500">Update task details</p>
+//           </div>
+//         </div>
+//         <div className="flex items-center gap-2">
+//           <button onClick={onBack} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm flex items-center">
+//             <X className="w-4 h-4 mr-1.5" /> Cancel
+//           </button>
+//           <button onClick={handleSubmit} disabled={isSaving} className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm flex items-center disabled:opacity-50">
+//             <Save className="w-4 h-4 mr-1.5" />
+//             {isSaving ? 'Saving...' : 'Update Task'}
+//           </button>
+//         </div>
+//       </div>
+
+//       <div className="bg-white rounded-[30px] shadow-sm border border-gray-100 p-6 max-w-3xl">
+//         <div className="space-y-5">
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Task Title <span className="text-red-500">*</span></label>
+//             <input type="text" name="title" value={formData.title} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 ${errors.title ? 'border-red-300' : 'border-gray-300'}`} placeholder="Enter task title" />
+//             {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
+//           </div>
+
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+//             <textarea name="description" value={formData.description} onChange={handleChange} rows={4} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500" placeholder="Enter task description" />
+//           </div>
+
+//           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Status <span className="text-red-500">*</span></label>
+//               <select name="status" value={formData.status} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500">
+//                 <option value="todo">To Do</option>
+//                 <option value="in-progress">In Progress</option>
+//                 <option value="review">Review</option>
+//                 <option value="done">Done</option>
+//               </select>
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Priority <span className="text-red-500">*</span></label>
+//               <select name="priority" value={formData.priority} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500">
+//                 <option value="low">Low</option>
+//                 <option value="medium">Medium</option>
+//                 <option value="high">High</option>
+//                 <option value="urgent">Urgent</option>
+//               </select>
+//             </div>
+//           </div>
+
+//           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Assignee <span className="text-red-500">*</span></label>
+//               <select name="assignee" value={formData.assignee} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 ${errors.assignee ? 'border-red-300' : 'border-gray-300'}`}>
+//                 <option value="">Select Assignee</option>
+//                 <option value="Patricia Boyle">Patricia Boyle</option>
+//                 <option value="John Doe">John Doe</option>
+//                 <option value="Jane Smith">Jane Smith</option>
+//               </select>
+//               {errors.assignee && <p className="text-xs text-red-500 mt-1">{errors.assignee}</p>}
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Due Date <span className="text-red-500">*</span></label>
+//               <input type="date" name="dueDate" value={formData.dueDate} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 ${errors.dueDate ? 'border-red-300' : 'border-gray-300'}`} />
+//               {errors.dueDate && <p className="text-xs text-red-500 mt-1">{errors.dueDate}</p>}
+//             </div>
+//           </div>
+
+//           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Hours <span className="text-red-500">*</span></label>
+//               <input type="number" name="estimatedHours" value={formData.estimatedHours} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 ${errors.estimatedHours ? 'border-red-300' : 'border-gray-300'}`} placeholder="0" min="0" step="0.5" />
+//               {errors.estimatedHours && <p className="text-xs text-red-500 mt-1">{errors.estimatedHours}</p>}
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+//               <input type="text" name="tags" value={formData.tags} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500" placeholder="Design, Backend (comma separated)" />
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// // ==================== ADD TASK PAGE ====================
+// interface AddTaskPageProps {
+//   onBack: () => void;
+//   onSave: (taskData: any) => void;
+//   projectName?: string;
+// }
+
+// const AddTaskPage: React.FC<AddTaskPageProps> = ({ onBack, onSave, projectName }) => {
+//   const [formData, setFormData] = useState({
+//     title: '',
+//     description: '',
+//     status: 'todo' as 'todo' | 'in-progress' | 'review' | 'done',
+//     priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
+//     assignee: '',
+//     dueDate: '',
+//     estimatedHours: 0,
+//     tags: '',
+//     projectName: projectName || '',
+//   });
+
+//   const [errors, setErrors] = useState<Record<string, string>>({});
+//   const [isSaving, setIsSaving] = useState(false);
+
+//   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+//     const { name, value } = e.target;
+//     setFormData(prev => ({ ...prev, [name]: value }));
+//     if (errors[name]) {
+//       setErrors(prev => ({ ...prev, [name]: '' }));
+//     }
+//   };
+
+//   const handleSubmit = () => {
+//     const newErrors: Record<string, string> = {};
+//     if (!formData.title.trim()) newErrors.title = 'Task title is required';
+//     if (!formData.assignee) newErrors.assignee = 'Please select an assignee';
+//     if (!formData.dueDate) newErrors.dueDate = 'Please select a due date';
+//     if (formData.estimatedHours <= 0) newErrors.estimatedHours = 'Estimated hours must be greater than 0';
+
+//     if (Object.keys(newErrors).length > 0) {
+//       setErrors(newErrors);
+//       return;
+//     }
+
+//     setIsSaving(true);
+//     const tagsArray = formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+
+//     setTimeout(() => {
+//       onSave({
+//         ...formData,
+//         tags: tagsArray,
+//         loggedHours: 0,
+//         comments: 0,
+//         attachments: 0,
+//         subtasks: [],
+//         createdAt: new Date().toISOString(),
+//         updatedAt: new Date().toISOString()
+//       });
+//       setIsSaving(false);
+//     }, 500);
+//   };
+
+//   return (
+//     <div className="p-6 bg-gray-50 min-h-screen">
+//       <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
+//         <div className="flex items-center gap-3">
+//           <button onClick={onBack} className="p-2 text-gray-600 hover:text-purple-600 rounded-lg hover:bg-purple-50 transition">
+//             <ArrowLeft className="w-5 h-5" />
+//           </button>
+//           <div>
+//             <h1 className="text-2xl font-bold text-gray-900">Add New Task</h1>
+//             <p className="text-sm text-gray-500">Create a new task for your project</p>
+//           </div>
+//         </div>
+//         <div className="flex items-center gap-2">
+//           <button onClick={onBack} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm flex items-center">
+//             <X className="w-4 h-4 mr-1.5" /> Cancel
+//           </button>
+//           <button onClick={handleSubmit} disabled={isSaving} className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm flex items-center disabled:opacity-50">
+//             <Save className="w-4 h-4 mr-1.5" />
+//             {isSaving ? 'Saving...' : 'Add Task'}
+//           </button>
+//         </div>
+//       </div>
+
+//       <div className="bg-white rounded-[30px] shadow-sm border border-gray-100 p-6 max-w-3xl">
+//         <div className="space-y-5">
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Task Title <span className="text-red-500">*</span></label>
+//             <input type="text" name="title" value={formData.title} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 ${errors.title ? 'border-red-300' : 'border-gray-300'}`} placeholder="Enter task title" />
+//             {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
+//           </div>
+
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+//             <textarea name="description" value={formData.description} onChange={handleChange} rows={4} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500" placeholder="Enter task description" />
+//           </div>
+
+//           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Status <span className="text-red-500">*</span></label>
+//               <select name="status" value={formData.status} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500">
+//                 <option value="todo">To Do</option>
+//                 <option value="in-progress">In Progress</option>
+//                 <option value="review">Review</option>
+//                 <option value="done">Done</option>
+//               </select>
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Priority <span className="text-red-500">*</span></label>
+//               <select name="priority" value={formData.priority} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500">
+//                 <option value="low">Low</option>
+//                 <option value="medium">Medium</option>
+//                 <option value="high">High</option>
+//                 <option value="urgent">Urgent</option>
+//               </select>
+//             </div>
+//           </div>
+
+//           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Assignee <span className="text-red-500">*</span></label>
+//               <select name="assignee" value={formData.assignee} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 ${errors.assignee ? 'border-red-300' : 'border-gray-300'}`}>
+//                 <option value="">Select Assignee</option>
+//                 <option value="Patricia Boyle">Patricia Boyle</option>
+//                 <option value="John Doe">John Doe</option>
+//                 <option value="Jane Smith">Jane Smith</option>
+//               </select>
+//               {errors.assignee && <p className="text-xs text-red-500 mt-1">{errors.assignee}</p>}
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Due Date <span className="text-red-500">*</span></label>
+//               <input type="date" name="dueDate" value={formData.dueDate} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 ${errors.dueDate ? 'border-red-300' : 'border-gray-300'}`} />
+//               {errors.dueDate && <p className="text-xs text-red-500 mt-1">{errors.dueDate}</p>}
+//             </div>
+//           </div>
+
+//           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Hours <span className="text-red-500">*</span></label>
+//               <input type="number" name="estimatedHours" value={formData.estimatedHours} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 ${errors.estimatedHours ? 'border-red-300' : 'border-gray-300'}`} placeholder="0" min="0" step="0.5" />
+//               {errors.estimatedHours && <p className="text-xs text-red-500 mt-1">{errors.estimatedHours}</p>}
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+//               <input type="text" name="tags" value={formData.tags} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500" placeholder="Design, Backend (comma separated)" />
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// // ==================== MAIN TASK BOARD COMPONENT ====================
+// const TaskBoard: React.FC = () => {
+//   // Load tasks from localStorage on mount
+//   const loadTasksFromStorage = (): Task[] => {
+//     try {
+//       const stored = localStorage.getItem('taskBoardTasks');
+//       if (stored) {
+//         return JSON.parse(stored);
+//       }
+//     } catch (error) {
+//       console.error('Failed to load tasks from storage:', error);
+//     }
+//     return [];
+//   };
+
+//   const defaultTasks: Task[] = [
+//     {
+//       id: '1',
+//       title: 'Design Homepage',
+//       description: 'Create wireframes and design for the homepage with responsive layout',
+//       status: 'todo',
+//       priority: 'high',
+//       assignee: 'Patricia Boyle',
+//       dueDate: '2024-06-15',
+//       estimatedHours: 8,
+//       loggedHours: 0,
+//       tags: ['Design', 'UI/UX'],
+//       projectName: 'Web Designing',
+//       createdAt: '2024-06-01T10:00:00Z',
+//       updatedAt: '2024-06-01T10:00:00Z',
+//       comments: 3,
+//       attachments: 2,
+//       subtasks: [
+//         { title: 'Create wireframes', completed: false },
+//         { title: 'Design mockups', completed: false },
+//         { title: 'Get feedback', completed: false }
+//       ]
+//     },
+//     {
+//       id: '2',
+//       title: 'Develop API Integration',
+//       description: 'Integrate REST API for customer data with authentication',
+//       status: 'in-progress',
+//       priority: 'urgent',
+//       assignee: 'John Doe',
+//       dueDate: '2024-06-10',
+//       estimatedHours: 12,
+//       loggedHours: 5,
+//       tags: ['Backend', 'API'],
+//       projectName: 'Design contract for Mr. Bruce',
+//       createdAt: '2024-06-02T09:00:00Z',
+//       updatedAt: '2024-06-05T14:30:00Z',
+//       comments: 5,
+//       attachments: 1,
+//       subtasks: [
+//         { title: 'Setup API endpoints', completed: true },
+//         { title: 'Implement authentication', completed: true },
+//         { title: 'Test integration', completed: false }
+//       ]
+//     },
+//     {
+//       id: '3',
+//       title: 'User Testing',
+//       description: 'Conduct user testing sessions with target audience',
+//       status: 'review',
+//       priority: 'medium',
+//       assignee: 'Jane Smith',
+//       dueDate: '2024-06-20',
+//       estimatedHours: 6,
+//       loggedHours: 3,
+//       tags: ['Testing', 'QA'],
+//       projectName: 'Web app designing',
+//       createdAt: '2024-06-03T11:00:00Z',
+//       updatedAt: '2024-06-06T16:20:00Z',
+//       comments: 8,
+//       attachments: 4,
+//       subtasks: [
+//         { title: 'Prepare test cases', completed: true },
+//         { title: 'Conduct sessions', completed: true },
+//         { title: 'Compile results', completed: false }
+//       ]
+//     },
+//     {
+//       id: '4',
+//       title: 'Finalize Branding',
+//       description: 'Complete logo and brand guidelines document',
+//       status: 'done',
+//       priority: 'low',
+//       assignee: 'Patricia Boyle',
+//       dueDate: '2024-06-05',
+//       estimatedHours: 4,
+//       loggedHours: 4,
+//       tags: ['Design', 'Branding'],
+//       projectName: 'Design project for MR.X',
+//       createdAt: '2024-05-28T08:00:00Z',
+//       updatedAt: '2024-06-05T18:00:00Z',
+//       comments: 2,
+//       attachments: 6,
+//       subtasks: [
+//         { title: 'Create logo variations', completed: true },
+//         { title: 'Finalize brand colors', completed: true },
+//         { title: 'Create guidelines', completed: true }
+//       ]
+//     },
+//     {
+//       id: '5',
+//       title: 'Database Optimization',
+//       description: 'Optimize queries and database structure for performance',
+//       status: 'todo',
+//       priority: 'medium',
+//       assignee: 'John Doe',
+//       dueDate: '2024-06-25',
+//       estimatedHours: 10,
+//       loggedHours: 0,
+//       tags: ['Backend', 'Database'],
+//       projectName: 'Design project for Bruce',
+//       createdAt: '2024-06-04T13:00:00Z',
+//       updatedAt: '2024-06-04T13:00:00Z',
+//       comments: 1,
+//       attachments: 0,
+//       subtasks: [
+//         { title: 'Analyze current queries', completed: false },
+//         { title: 'Implement indexes', completed: false },
+//         { title: 'Performance testing', completed: false }
+//       ]
+//     }
+//   ];
+
+//   const [tasks, setTasks] = useState<Task[]>(() => {
+//     const stored = loadTasksFromStorage();
+//     return stored.length > 0 ? stored : defaultTasks;
+//   });
+
+//   const [showAddTaskPage, setShowAddTaskPage] = useState(false);
+//   const [showEditTaskPage, setShowEditTaskPage] = useState(false);
+//   const [editingTask, setEditingTask] = useState<Task | null>(null);
+//   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+//   const [searchTerm, setSearchTerm] = useState('');
+//   const [filterPriority, setFilterPriority] = useState<string>('all');
+//   const [filterAssignee, setFilterAssignee] = useState<string>('all');
+
+//   // Save tasks to localStorage whenever they change
+//   useEffect(() => {
+//     try {
+//       localStorage.setItem('taskBoardTasks', JSON.stringify(tasks));
+//     } catch (error) {
+//       console.error('Failed to save tasks to storage:', error);
+//     }
+//   }, [tasks]);
+
+//   const columns = [
+//     { id: 'todo', title: 'To Do', bgColor: 'bg-gray-50', borderColor: 'border-gray-200', headerColor: 'text-gray-700' },
+//     { id: 'in-progress', title: 'In Progress', bgColor: 'bg-blue-50', borderColor: 'border-blue-200', headerColor: 'text-blue-700' },
+//     { id: 'review', title: 'Review', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200', headerColor: 'text-yellow-700' },
+//     { id: 'done', title: 'Done', bgColor: 'bg-green-50', borderColor: 'border-green-200', headerColor: 'text-green-700' }
+//   ];
+
+//   const getPriorityColor = (priority: string) => {
+//     switch(priority) {
+//       case 'urgent': return 'bg-red-100 text-red-700 border-red-200';
+//       case 'high': return 'bg-orange-100 text-orange-700 border-orange-200';
+//       case 'medium': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+//       case 'low': return 'bg-green-100 text-green-700 border-green-200';
+//       default: return 'bg-gray-100 text-gray-600 border-gray-200';
+//     }
+//   };
+
+//   const getStatusIcon = (status: string) => {
+//     switch(status) {
+//       case 'done': return <CheckCircle className="w-4 h-4 text-green-500" />;
+//       case 'review': return <AlertCircle className="w-4 h-4 text-yellow-500" />;
+//       case 'in-progress': return <Clock className="w-4 h-4 text-blue-500" />;
+//       default: return <Circle className="w-4 h-4 text-gray-400" />;
+//     }
+//   };
+
+//   const getTasksByStatus = (status: string) => {
+//     let filtered = tasks.filter(task => task.status === status);
+//     if (searchTerm) {
+//       filtered = filtered.filter(task => 
+//         task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+//         task.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+//         task.projectName.toLowerCase().includes(searchTerm.toLowerCase())
+//       );
+//     }
+//     if (filterPriority !== 'all') {
+//       filtered = filtered.filter(task => task.priority === filterPriority);
+//     }
+//     if (filterAssignee !== 'all') {
+//       filtered = filtered.filter(task => task.assignee === filterAssignee);
+//     }
+//     return filtered;
+//   };
+
+//   const handleAddTask = (taskData: any) => {
+//     const newTask: Task = {
+//       id: String(Date.now()),
+//       title: taskData.title,
+//       description: taskData.description,
+//       status: taskData.status,
+//       priority: taskData.priority,
+//       assignee: taskData.assignee,
+//       dueDate: taskData.dueDate,
+//       estimatedHours: taskData.estimatedHours,
+//       loggedHours: 0,
+//       tags: taskData.tags || [],
+//       projectName: taskData.projectName || 'Unassigned',
+//       createdAt: new Date().toISOString(),
+//       updatedAt: new Date().toISOString(),
+//       comments: 0,
+//       attachments: 0,
+//       subtasks: []
+//     };
+//     setTasks(prev => [...prev, newTask]);
+//     setShowAddTaskPage(false);
+//   };
+
+//   const handleEditTask = (taskData: any) => {
+//     const updatedTasks = tasks.map(task => 
+//       task.id === taskData.id ? {
+//         ...task,
+//         title: taskData.title,
+//         description: taskData.description,
+//         status: taskData.status,
+//         priority: taskData.priority,
+//         assignee: taskData.assignee,
+//         dueDate: taskData.dueDate,
+//         estimatedHours: taskData.estimatedHours,
+//         tags: taskData.tags,
+//         updatedAt: new Date().toISOString()
+//       } : task
+//     );
+//     setTasks(updatedTasks);
+//     setShowEditTaskPage(false);
+//     setEditingTask(null);
+//   };
+
+//   const openEditPage = (task: Task) => {
+//     setEditingTask(task);
+//     setShowEditTaskPage(true);
+//   };
+
+//   const moveTask = (taskId: string, newStatus: Task['status']) => {
+//     setTasks(prev =>
+//       prev.map(task =>
+//         task.id === taskId ? { ...task, status: newStatus, updatedAt: new Date().toISOString() } : task
+//       )
+//     );
+//   };
+
+//   const deleteTask = (taskId: string) => {
+//     if (window.confirm('Are you sure you want to delete this task?')) {
+//       setTasks(prev => prev.filter(task => task.id !== taskId));
+//     }
+//   };
+
+//   const getInitials = (name: string) => {
+//     return name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+//   };
+
+//   const getAssigneeColor = (name: string) => {
+//     const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500', 'bg-red-500'];
+//     return colors[name.length % colors.length];
+//   };
+
+//   const getProgress = (task: Task) => {
+//     if (task.estimatedHours === 0) return 0;
+//     return Math.round((task.loggedHours / task.estimatedHours) * 100);
+//   };
+
+//   const getUniqueAssignees = () => {
+//     const assignees = tasks.map(task => task.assignee);
+//     return ['all', ...new Set(assignees)];
+//   };
+
+//   const handleDragStart = (task: Task) => setDraggedTask(task);
+//   const handleDragOver = (e: React.DragEvent) => e.preventDefault();
+//   const handleDrop = (e: React.DragEvent, status: string) => {
+//     e.preventDefault();
+//     if (draggedTask) {
+//       moveTask(draggedTask.id, status as Task['status']);
+//       setDraggedTask(null);
+//     }
+//   };
+
+//   // If Edit Task page is shown
+//   if (showEditTaskPage && editingTask) {
+//     return (
+//       <EditTaskPage
+//         task={editingTask}
+//         onBack={() => { setShowEditTaskPage(false); setEditingTask(null); }}
+//         onSave={handleEditTask}
+//       />
+//     );
+//   }
+
+//   // If Add Task page is shown
+//   if (showAddTaskPage) {
+//     return <AddTaskPage onBack={() => setShowAddTaskPage(false)} onSave={handleAddTask} />;
+//   }
+
+//   return (
+//     <div className="p-6 bg-gray-50 min-h-screen">
+//       {/* Header - SINGLE Task Board title with description */}
+//       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
+//         <div>
+//           <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+//             <LayoutDashboard className="w-6 h-6 mr-2 text-blue-600" />
+//             Task Board
+//           </h2>
+//           <p className="text-sm text-gray-500 mt-1">Manage and track tasks across your projects</p>
+//         </div>
+//         <div className="flex flex-wrap items-center gap-3">
+//           {/* Edit button */}
+//           <button
+//             onClick={() => {
+//               if (tasks.length > 0) {
+//                 openEditPage(tasks[0]);
+//               } else {
+//                 alert('No tasks to edit. Please add a task first.');
+//               }
+//             }}
+//             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center text-sm shadow-sm"
+//           >
+//             <Edit className="w-4 h-4 mr-2" />
+//             Edit
+//           </button>
+//           {/* Add Task button */}
+//           <button
+//             onClick={() => setShowAddTaskPage(true)}
+//             className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center text-sm shadow-sm"
+//           >
+//             <Plus className="w-4 h-4 mr-2" />
+//             Add Task
+//           </button>
+//           <div className="flex items-center gap-1 text-sm text-gray-500 bg-white px-3 py-2 rounded-lg shadow-sm border border-gray-200">
+//             <Users className="w-4 h-4 mr-1" />
+//             <span>{tasks.length} Total</span>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Filters */}
+//       <div className="bg-white rounded-lg shadow-sm p-4 mb-6 border border-gray-200">
+//         <div className="flex flex-wrap items-center justify-between gap-4">
+//           <div className="flex flex-wrap items-center gap-3">
+//             <div className="relative">
+//               <Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
+//               <input
+//                 type="text"
+//                 placeholder="Search tasks..."
+//                 className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 w-48 md:w-64"
+//                 value={searchTerm}
+//                 onChange={(e) => setSearchTerm(e.target.value)}
+//               />
+//             </div>
+//             <div className="relative">
+//               <select
+//                 className="appearance-none bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 pr-8 text-sm focus:ring-2 focus:ring-purple-500"
+//                 value={filterPriority}
+//                 onChange={(e) => setFilterPriority(e.target.value)}
+//               >
+//                 <option value="all">All Priorities</option>
+//                 <option value="urgent">Urgent</option>
+//                 <option value="high">High</option>
+//                 <option value="medium">Medium</option>
+//                 <option value="low">Low</option>
+//               </select>
+//               <ChevronDown className="w-4 h-4 absolute right-3 top-3 text-gray-500 pointer-events-none" />
+//             </div>
+//             <div className="relative">
+//               <select
+//                 className="appearance-none bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 pr-8 text-sm focus:ring-2 focus:ring-purple-500"
+//                 value={filterAssignee}
+//                 onChange={(e) => setFilterAssignee(e.target.value)}
+//               >
+//                 <option value="all">All Assignees</option>
+//                 {getUniqueAssignees().filter(a => a !== 'all').map(assignee => (
+//                   <option key={assignee} value={assignee}>{assignee}</option>
+//                 ))}
+//               </select>
+//               <ChevronDown className="w-4 h-4 absolute right-3 top-3 text-gray-500 pointer-events-none" />
+//             </div>
+//           </div>
+//           <button
+//             onClick={() => { setSearchTerm(''); setFilterPriority('all'); setFilterAssignee('all'); }}
+//             className="px-3 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center transition"
+//           >
+//             <RefreshCw className="w-4 h-4 mr-1" /> Reset
+//           </button>
+//         </div>
+//       </div>
+
+//       {/* Board */}
+//       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+//         {columns.map(column => {
+//           const columnTasks = getTasksByStatus(column.id);
+//           return (
+//             <div
+//               key={column.id}
+//               className={`${column.bgColor} rounded-[30px] p-4 min-h-[400px] border ${column.borderColor}`}
+//               onDragOver={handleDragOver}
+//               onDrop={(e) => handleDrop(e, column.id)}
+//             >
+//               {/* Column Header */}
+//               <div className="flex items-center justify-between mb-4">
+//                 <div className="flex items-center gap-2">
+//                   <h3 className={`font-semibold text-sm ${column.headerColor}`}>{column.title}</h3>
+//                   <span className="text-xs text-gray-500 bg-white px-2 py-0.5 rounded-full border border-gray-200">
+//                     {columnTasks.length}
+//                   </span>
+//                 </div>
+//                 <button
+//                   onClick={() => setShowAddTaskPage(true)}
+//                   className="p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-200 transition"
+//                 >
+//                   <Plus className="w-4 h-4" />
+//                 </button>
+//               </div>
+
+//               {/* Task Cards */}
+//               <div className="space-y-3">
+//                 {columnTasks.length === 0 ? (
+//                   <div className="text-center py-8 text-gray-400 text-sm">
+//                     <Circle className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+//                     <p>No tasks</p>
+//                     <button onClick={() => setShowAddTaskPage(true)} className="mt-2 text-xs text-purple-600 hover:text-purple-700">
+//                       + Add Task
+//                     </button>
+//                   </div>
+//                 ) : (
+//                   columnTasks.map(task => (
+//                     <div
+//                       key={task.id}
+//                       className="bg-white rounded-[30px] shadow-sm p-4 hover:shadow-md transition border border-gray-100 cursor-grab active:cursor-grabbing"
+//                       draggable
+//                       onDragStart={() => handleDragStart(task)}
+//                     >
+//                       {/* Task Header */}
+//                       <div className="flex items-start justify-between mb-2">
+//                         <div className="flex items-start gap-2 flex-1 min-w-0">
+//                           <div className="mt-0.5 flex-shrink-0">{getStatusIcon(task.status)}</div>
+//                           <h4 className="text-sm font-medium text-gray-800 line-clamp-2">{task.title}</h4>
+//                         </div>
+//                         <div className="flex items-center gap-0.5 flex-shrink-0 ml-2">
+//                           <button 
+//                             onClick={() => openEditPage(task)}
+//                             className="p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition" 
+//                             title="Edit"
+//                           >
+//                             <Edit className="w-3.5 h-3.5" />
+//                           </button>
+//                           <button onClick={() => deleteTask(task.id)} className="p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 transition" title="Delete">
+//                             <Trash2 className="w-3.5 h-3.5" />
+//                           </button>
+//                           <button className="p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100 transition">
+//                             <MoreVertical className="w-3.5 h-3.5" />
+//                           </button>
+//                         </div>
+//                       </div>
+
+//                       {/* Description */}
+//                       <p className="text-xs text-gray-500 mb-3 line-clamp-2">{task.description}</p>
+
+//                       {/* Priority & Project Tags */}
+//                       <div className="flex flex-wrap items-center gap-1.5 mb-3">
+//                         <span className={`text-[10px] px-2 py-0.5 rounded-full border ${getPriorityColor(task.priority)} font-medium`}>
+//                           {task.priority}
+//                         </span>
+//                         <span className="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full flex items-center border border-gray-200">
+//                           <Tag className="w-2.5 h-2.5 mr-0.5" />
+//                           <span className="truncate max-w-[60px]">{task.projectName}</span>
+//                         </span>
+//                       </div>
+
+//                       {/* Assignee & Due Date */}
+//                       <div className="flex items-center justify-between text-xs mb-3">
+//                         <div className="flex items-center gap-1.5 min-w-0">
+//                           <div className={`w-5 h-5 rounded-full ${getAssigneeColor(task.assignee)} text-white flex items-center justify-center text-[8px] font-medium flex-shrink-0`}>
+//                             {getInitials(task.assignee)}
+//                           </div>
+//                           <span className="text-gray-600 truncate max-w-[60px] text-xs">{task.assignee}</span>
+//                         </div>
+//                         <div className="flex items-center gap-1 text-gray-400 flex-shrink-0">
+//                           <Calendar className="w-3 h-3" />
+//                           <span className="text-[10px]">{task.dueDate}</span>
+//                         </div>
+//                       </div>
+
+//                       {/* Progress Bar */}
+//                       <div className="flex items-center justify-between mb-3">
+//                         <div className="flex items-center gap-1.5">
+//                           <Clock className="w-3 h-3 text-gray-400" />
+//                           <span className="text-[10px] text-gray-500">{task.loggedHours}h / {task.estimatedHours}h</span>
+//                         </div>
+//                         <div className="w-12 bg-gray-200 rounded-full h-1">
+//                           <div className="bg-blue-500 h-1 rounded-full transition-all" style={{ width: `${getProgress(task)}%` }} />
+//                         </div>
+//                       </div>
+
+//                       {/* Tags */}
+//                       {task.tags.length > 0 && (
+//                         <div className="flex flex-wrap gap-1 mb-2">
+//                           {task.tags.map((tag, index) => (
+//                             <span key={index} className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[9px] rounded border border-gray-200">
+//                               {tag}
+//                             </span>
+//                           ))}
+//                         </div>
+//                       )}
+
+//                       {/* Subtasks & Comments */}
+//                       <div className="flex items-center justify-between text-[9px] text-gray-400 border-t border-gray-100 pt-2">
+//                         <span>{task.subtasks.filter(s => s.completed).length}/{task.subtasks.length} subtasks</span>
+//                         <span>{task.comments} comments</span>
+//                       </div>
+//                     </div>
+//                   ))
+//                 )}
+//               </div>
+
+//               {/* Add Task Button */}
+//               <button
+//                 onClick={() => setShowAddTaskPage(true)}
+//                 className="mt-4 w-full py-2 text-sm text-gray-500 hover:text-gray-700 border border-dashed border-gray-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition"
+//               >
+//                 + Add Task
+//               </button>
+//             </div>
+//           );
+//         })}
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default TaskBoard;
+// src/client/components/projects/TaskBoard.tsx
+// src/client/components/projects/TaskBoard.tsx
+// src/client/components/projects/TaskBoard.tsx
 import React, { useState, useEffect } from 'react';
+import { 
+  Plus, 
+  MoreVertical, 
+  Edit, 
+  Trash2, 
+  Clock, 
+  CheckCircle,
+  Circle,
+  AlertCircle,
+  Calendar,
+  X,
+  Tag,
+  Users,
+  ChevronDown,
+  Filter,
+  Search,
+  RefreshCw,
+  Save,
+  User,
+  ArrowLeft,
+  DollarSign,
+  Briefcase,
+  LayoutDashboard
+} from 'lucide-react';
+
+interface Subtask {
+  title: string;
+  completed: boolean;
+}
 
 interface Task {
   id: string;
   title: string;
   description: string;
-  projectId: string;
-  projectName: string;
-  assignedTo: string;
-  assignedToName: string;
-  priority: 'high' | 'medium' | 'low';
-  status: 'todo' | 'in_progress' | 'review' | 'done';
+  status: 'todo' | 'in-progress' | 'review' | 'done';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  assignee: string;
   dueDate: string;
+  estimatedHours: number;
+  loggedHours: number;
+  tags: string[];
+  projectName: string;
   createdAt: string;
-  attachments: number;
+  updatedAt: string;
   comments: number;
+  attachments: number;
+  subtasks: Subtask[];
 }
 
-interface Column {
-  id: string;
-  title: string;
-  status: Task['status'];
-  color: string;
-  icon: string;
+// ==================== EDIT TASK PAGE ====================
+interface EditTaskPageProps {
+  task: Task;
+  onBack: () => void;
+  onSave: (taskData: any) => void;
 }
 
-const TaskBoard: React.FC = () => {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [showTaskModal, setShowTaskModal] = useState(false);
-  const [showNewTaskModal, setShowNewTaskModal] = useState(false);
-  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
-  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
-  const [teamMembers, setTeamMembers] = useState<{ id: string; name: string }[]>([]);
-
-  const columns: Column[] = [
-    { id: 'todo', title: 'To Do', status: 'todo', color: '#6b7280', icon: '📋' },
-    { id: 'in_progress', title: 'In Progress', status: 'in_progress', color: '#3b82f6', icon: '🔄' },
-    { id: 'review', title: 'Review', status: 'review', color: '#f59e0b', icon: '👀' },
-    { id: 'done', title: 'Done', status: 'done', color: '#10b981', icon: '✅' },
-  ];
-
-  const [newTask, setNewTask] = useState({
-    title: '',
-    description: '',
-    projectId: '',
-    assignedTo: '',
-    priority: 'medium' as 'high' | 'medium' | 'low',
-    dueDate: '',
+const EditTaskPage: React.FC<EditTaskPageProps> = ({ task, onBack, onSave }) => {
+  const [formData, setFormData] = useState({
+    title: task.title,
+    description: task.description,
+    status: task.status,
+    priority: task.priority,
+    assignee: task.assignee,
+    dueDate: task.dueDate,
+    estimatedHours: task.estimatedHours,
+    tags: task.tags.join(', '),
+    projectName: task.projectName,
   });
 
-  // Fetch data (dynamic)
-  useEffect(() => {
-    fetchTasks();
-    fetchProjects();
-    fetchTeamMembers();
-  }, []);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
 
-  const fetchTasks = async () => {
-    try {
-      const response = await fetch('/api/tasks', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleSubmit = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.title.trim()) newErrors.title = 'Task title is required';
+    if (!formData.assignee) newErrors.assignee = 'Please select an assignee';
+    if (!formData.dueDate) newErrors.dueDate = 'Please select a due date';
+    if (formData.estimatedHours <= 0) newErrors.estimatedHours = 'Estimated hours must be greater than 0';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setIsSaving(true);
+    const tagsArray = formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+
+    setTimeout(() => {
+      onSave({
+        ...formData,
+        tags: tagsArray,
       });
-      if (response.ok) {
-        const data = await response.json();
-        setTasks(data.data || data);
-      } else {
-        setMockTasks();
+      setIsSaving(false);
+    }, 500);
+  };
+
+  return (
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
+        <div className="flex items-center gap-3">
+          <button onClick={onBack} className="p-2 text-gray-600 hover:text-purple-600 rounded-lg hover:bg-purple-50 transition">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Edit Task</h1>
+            <p className="text-sm text-gray-500">Update task details</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={onBack} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm flex items-center">
+            <X className="w-4 h-4 mr-1.5" /> Cancel
+          </button>
+          <button onClick={handleSubmit} disabled={isSaving} className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm flex items-center disabled:opacity-50">
+            <Save className="w-4 h-4 mr-1.5" />
+            {isSaving ? 'Saving...' : 'Update Task'}
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-[30px] shadow-sm border border-gray-100 p-6 max-w-3xl">
+        <div className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Task Title <span className="text-red-500">*</span></label>
+            <input type="text" name="title" value={formData.title} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 ${errors.title ? 'border-red-300' : 'border-gray-300'}`} placeholder="Enter task title" />
+            {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea name="description" value={formData.description} onChange={handleChange} rows={4} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500" placeholder="Enter task description" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status <span className="text-red-500">*</span></label>
+              <select name="status" value={formData.status} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500">
+                <option value="todo">To Do</option>
+                <option value="in-progress">In Progress</option>
+                <option value="review">Review</option>
+                <option value="done">Done</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Priority <span className="text-red-500">*</span></label>
+              <select name="priority" value={formData.priority} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Assignee <span className="text-red-500">*</span></label>
+              <select name="assignee" value={formData.assignee} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 ${errors.assignee ? 'border-red-300' : 'border-gray-300'}`}>
+                <option value="">Select Assignee</option>
+                <option value="Patricia Boyle">Patricia Boyle</option>
+                <option value="John Doe">John Doe</option>
+                <option value="Jane Smith">Jane Smith</option>
+              </select>
+              {errors.assignee && <p className="text-xs text-red-500 mt-1">{errors.assignee}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Due Date <span className="text-red-500">*</span></label>
+              <input type="date" name="dueDate" value={formData.dueDate} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 ${errors.dueDate ? 'border-red-300' : 'border-gray-300'}`} />
+              {errors.dueDate && <p className="text-xs text-red-500 mt-1">{errors.dueDate}</p>}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Hours <span className="text-red-500">*</span></label>
+              <input type="number" name="estimatedHours" value={formData.estimatedHours} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 ${errors.estimatedHours ? 'border-red-300' : 'border-gray-300'}`} placeholder="0" min="0" step="0.5" />
+              {errors.estimatedHours && <p className="text-xs text-red-500 mt-1">{errors.estimatedHours}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+              <input type="text" name="tags" value={formData.tags} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500" placeholder="Design, Backend (comma separated)" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== ADD TASK PAGE ====================
+interface AddTaskPageProps {
+  onBack: () => void;
+  onSave: (taskData: any) => void;
+  projectName?: string;
+}
+
+const AddTaskPage: React.FC<AddTaskPageProps> = ({ onBack, onSave, projectName }) => {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    status: 'todo' as 'todo' | 'in-progress' | 'review' | 'done',
+    priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
+    assignee: '',
+    dueDate: '',
+    estimatedHours: 0,
+    tags: '',
+    projectName: projectName || '',
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleSubmit = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.title.trim()) newErrors.title = 'Task title is required';
+    if (!formData.assignee) newErrors.assignee = 'Please select an assignee';
+    if (!formData.dueDate) newErrors.dueDate = 'Please select a due date';
+    if (formData.estimatedHours <= 0) newErrors.estimatedHours = 'Estimated hours must be greater than 0';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setIsSaving(true);
+    const tagsArray = formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+
+    setTimeout(() => {
+      onSave({
+        ...formData,
+        tags: tagsArray,
+        loggedHours: 0,
+        comments: 0,
+        attachments: 0,
+        subtasks: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+      setIsSaving(false);
+    }, 500);
+  };
+
+  return (
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
+        <div className="flex items-center gap-3">
+          <button onClick={onBack} className="p-2 text-gray-600 hover:text-purple-600 rounded-lg hover:bg-purple-50 transition">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Add New Task</h1>
+            <p className="text-sm text-gray-500">Create a new task for your project</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={onBack} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm flex items-center">
+            <X className="w-4 h-4 mr-1.5" /> Cancel
+          </button>
+          <button onClick={handleSubmit} disabled={isSaving} className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm flex items-center disabled:opacity-50">
+            <Save className="w-4 h-4 mr-1.5" />
+            {isSaving ? 'Saving...' : 'Add Task'}
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-[30px] shadow-sm border border-gray-100 p-6 max-w-3xl">
+        <div className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Task Title <span className="text-red-500">*</span></label>
+            <input type="text" name="title" value={formData.title} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 ${errors.title ? 'border-red-300' : 'border-gray-300'}`} placeholder="Enter task title" />
+            {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea name="description" value={formData.description} onChange={handleChange} rows={4} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500" placeholder="Enter task description" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status <span className="text-red-500">*</span></label>
+              <select name="status" value={formData.status} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500">
+                <option value="todo">To Do</option>
+                <option value="in-progress">In Progress</option>
+                <option value="review">Review</option>
+                <option value="done">Done</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Priority <span className="text-red-500">*</span></label>
+              <select name="priority" value={formData.priority} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Assignee <span className="text-red-500">*</span></label>
+              <select name="assignee" value={formData.assignee} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 ${errors.assignee ? 'border-red-300' : 'border-gray-300'}`}>
+                <option value="">Select Assignee</option>
+                <option value="Patricia Boyle">Patricia Boyle</option>
+                <option value="John Doe">John Doe</option>
+                <option value="Jane Smith">Jane Smith</option>
+              </select>
+              {errors.assignee && <p className="text-xs text-red-500 mt-1">{errors.assignee}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Due Date <span className="text-red-500">*</span></label>
+              <input type="date" name="dueDate" value={formData.dueDate} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 ${errors.dueDate ? 'border-red-300' : 'border-gray-300'}`} />
+              {errors.dueDate && <p className="text-xs text-red-500 mt-1">{errors.dueDate}</p>}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Hours <span className="text-red-500">*</span></label>
+              <input type="number" name="estimatedHours" value={formData.estimatedHours} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 ${errors.estimatedHours ? 'border-red-300' : 'border-gray-300'}`} placeholder="0" min="0" step="0.5" />
+              {errors.estimatedHours && <p className="text-xs text-red-500 mt-1">{errors.estimatedHours}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+              <input type="text" name="tags" value={formData.tags} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500" placeholder="Design, Backend (comma separated)" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== MAIN TASK BOARD COMPONENT ====================
+const TaskBoard: React.FC = () => {
+  // Load tasks from localStorage on mount
+  const loadTasksFromStorage = (): Task[] => {
+    try {
+      const stored = localStorage.getItem('taskBoardTasks');
+      if (stored) {
+        return JSON.parse(stored);
       }
     } catch (error) {
-      setMockTasks();
-    } finally {
-      setLoading(false);
+      console.error('Failed to load tasks from storage:', error);
     }
+    return [];
   };
 
-  const fetchProjects = async () => {
-    try {
-      const response = await fetch('/api/projects/list', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setProjects(data.data || data);
-      } else {
-        setProjects([
-          { id: '1', name: 'E-commerce Website' },
-          { id: '2', name: 'Mobile App Development' },
-        ]);
-      }
-    } catch (error) {
-      setProjects([
-        { id: '1', name: 'E-commerce Website' },
-        { id: '2', name: 'Mobile App Development' },
-      ]);
-    }
-  };
-
-  const fetchTeamMembers = async () => {
-    try {
-      const response = await fetch('/api/team/members', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setTeamMembers(data.data || data);
-      } else {
-        setTeamMembers([
-          { id: '1', name: 'John Doe' },
-          { id: '2', name: 'Jane Smith' },
-          { id: '3', name: 'Mike Johnson' },
-        ]);
-      }
-    } catch (error) {
-      setTeamMembers([
-        { id: '1', name: 'John Doe' },
-        { id: '2', name: 'Jane Smith' },
-        { id: '3', name: 'Mike Johnson' },
-      ]);
-    }
-  };
-
-  const setMockTasks = () => {
-    setTasks([
-      {
-        id: '1', title: 'Design Database Schema', description: 'Create ER diagram for the e-commerce platform',
-        projectId: '1', projectName: 'E-commerce Website', assignedTo: '1', assignedToName: 'John Doe',
-        priority: 'high', status: 'todo', dueDate: '2024-01-25', createdAt: '2024-01-15', attachments: 2, comments: 3
-      },
-      {
-        id: '2', title: 'API Development', description: 'Build REST APIs for user authentication',
-        projectId: '1', projectName: 'E-commerce Website', assignedTo: '1', assignedToName: 'John Doe',
-        priority: 'high', status: 'in_progress', dueDate: '2024-01-28', createdAt: '2024-01-16', attachments: 1, comments: 5
-      },
-      {
-        id: '3', title: 'Frontend UI Setup', description: 'Setup React with TypeScript and Tailwind',
-        projectId: '1', projectName: 'E-commerce Website', assignedTo: '2', assignedToName: 'Jane Smith',
-        priority: 'medium', status: 'todo', dueDate: '2024-01-30', createdAt: '2024-01-17', attachments: 0, comments: 2
-      },
-      {
-        id: '4', title: 'Testing and QA', description: 'Write unit tests and integration tests',
-        projectId: '2', projectName: 'Mobile App', assignedTo: '3', assignedToName: 'Mike Johnson',
-        priority: 'low', status: 'review', dueDate: '2024-02-01', createdAt: '2024-01-14', attachments: 3, comments: 7
-      },
-      {
-        id: '5', title: 'Deployment Setup', description: 'Configure CI/CD pipeline',
-        projectId: '2', projectName: 'Mobile App', assignedTo: '1', assignedToName: 'John Doe',
-        priority: 'medium', status: 'done', dueDate: '2024-01-20', createdAt: '2024-01-10', attachments: 1, comments: 4
-      },
-    ]);
-  };
-
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
-    e.dataTransfer.setData('taskId', taskId);
-  };
-
-  const handleDragOver = (e: React.DragEvent, columnId: string) => {
-    e.preventDefault();
-    setDragOverColumn(columnId);
-  };
-
-  const handleDragLeave = () => {
-    setDragOverColumn(null);
-  };
-
-  const handleDrop = (e: React.DragEvent, newStatus: Task['status']) => {
-    e.preventDefault();
-    const taskId = e.dataTransfer.getData('taskId');
-    setTasks(tasks.map(task =>
-      task.id === taskId ? { ...task, status: newStatus } : task
-    ));
-    setDragOverColumn(null);
-    // Optional: Save to API
-    saveTaskStatus(taskId, newStatus);
-  };
-
-  const saveTaskStatus = async (taskId: string, newStatus: string) => {
-    try {
-      await fetch(`/api/tasks/${taskId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
-        body: JSON.stringify({ status: newStatus })
-      });
-    } catch (error) {
-      console.error('Failed to save status:', error);
-    }
-  };
-
-  const getPriorityIcon = (priority: string) => {
-    switch (priority) {
-      case 'high': return '🔴';
-      case 'medium': return '🟡';
-      case 'low': return '🟢';
-      default: return '⚪';
-    }
-  };
-
-  const getPriorityClass = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'priority-high';
-      case 'medium': return 'priority-medium';
-      case 'low': return 'priority-low';
-      default: return '';
-    }
-  };
-
-  const handleCreateTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const newTaskData: Task = {
-      id: Date.now().toString(),
-      title: newTask.title,
-      description: newTask.description,
-      projectId: newTask.projectId,
-      projectName: projects.find(p => p.id === newTask.projectId)?.name || '',
-      assignedTo: newTask.assignedTo,
-      assignedToName: teamMembers.find(m => m.id === newTask.assignedTo)?.name || '',
-      priority: newTask.priority,
+  const defaultTasks: Task[] = [
+    {
+      id: '1',
+      title: 'Design Homepage',
+      description: 'Create wireframes and design for the homepage with responsive layout',
       status: 'todo',
-      dueDate: newTask.dueDate,
-      createdAt: new Date().toISOString().slice(0, 10),
+      priority: 'high',
+      assignee: 'Patricia Boyle',
+      dueDate: '2024-06-15',
+      estimatedHours: 8,
+      loggedHours: 0,
+      tags: ['Design', 'UI/UX'],
+      projectName: 'Web Designing',
+      createdAt: '2024-06-01T10:00:00Z',
+      updatedAt: '2024-06-01T10:00:00Z',
+      comments: 3,
+      attachments: 2,
+      subtasks: [
+        { title: 'Create wireframes', completed: false },
+        { title: 'Design mockups', completed: false },
+        { title: 'Get feedback', completed: false }
+      ]
+    },
+    {
+      id: '2',
+      title: 'Develop API Integration',
+      description: 'Integrate REST API for customer data with authentication',
+      status: 'in-progress',
+      priority: 'urgent',
+      assignee: 'John Doe',
+      dueDate: '2024-06-10',
+      estimatedHours: 12,
+      loggedHours: 5,
+      tags: ['Backend', 'API'],
+      projectName: 'Design contract for Mr. Bruce',
+      createdAt: '2024-06-02T09:00:00Z',
+      updatedAt: '2024-06-05T14:30:00Z',
+      comments: 5,
+      attachments: 1,
+      subtasks: [
+        { title: 'Setup API endpoints', completed: true },
+        { title: 'Implement authentication', completed: true },
+        { title: 'Test integration', completed: false }
+      ]
+    },
+    {
+      id: '3',
+      title: 'User Testing',
+      description: 'Conduct user testing sessions with target audience',
+      status: 'review',
+      priority: 'medium',
+      assignee: 'Jane Smith',
+      dueDate: '2024-06-20',
+      estimatedHours: 6,
+      loggedHours: 3,
+      tags: ['Testing', 'QA'],
+      projectName: 'Web app designing',
+      createdAt: '2024-06-03T11:00:00Z',
+      updatedAt: '2024-06-06T16:20:00Z',
+      comments: 8,
+      attachments: 4,
+      subtasks: [
+        { title: 'Prepare test cases', completed: true },
+        { title: 'Conduct sessions', completed: true },
+        { title: 'Compile results', completed: false }
+      ]
+    },
+    {
+      id: '4',
+      title: 'Finalize Branding',
+      description: 'Complete logo and brand guidelines document',
+      status: 'done',
+      priority: 'low',
+      assignee: 'Patricia Boyle',
+      dueDate: '2024-06-05',
+      estimatedHours: 4,
+      loggedHours: 4,
+      tags: ['Design', 'Branding'],
+      projectName: 'Design project for MR.X',
+      createdAt: '2024-05-28T08:00:00Z',
+      updatedAt: '2024-06-05T18:00:00Z',
+      comments: 2,
+      attachments: 6,
+      subtasks: [
+        { title: 'Create logo variations', completed: true },
+        { title: 'Finalize brand colors', completed: true },
+        { title: 'Create guidelines', completed: true }
+      ]
+    },
+    {
+      id: '5',
+      title: 'Database Optimization',
+      description: 'Optimize queries and database structure for performance',
+      status: 'todo',
+      priority: 'medium',
+      assignee: 'John Doe',
+      dueDate: '2024-06-25',
+      estimatedHours: 10,
+      loggedHours: 0,
+      tags: ['Backend', 'Database'],
+      projectName: 'Design project for Bruce',
+      createdAt: '2024-06-04T13:00:00Z',
+      updatedAt: '2024-06-04T13:00:00Z',
+      comments: 1,
       attachments: 0,
-      comments: 0,
-    };
-    
-    try {
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
-        body: JSON.stringify(newTaskData)
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setTasks([...tasks, data.data || data]);
-      } else {
-        setTasks([...tasks, newTaskData]);
-      }
-    } catch (error) {
-      setTasks([...tasks, newTaskData]);
+      subtasks: [
+        { title: 'Analyze current queries', completed: false },
+        { title: 'Implement indexes', completed: false },
+        { title: 'Performance testing', completed: false }
+      ]
     }
-    
-    setShowNewTaskModal(false);
-    setNewTask({ title: '', description: '', projectId: '', assignedTo: '', priority: 'medium', dueDate: '' });
-    alert('Task created successfully!');
+  ];
+
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    const stored = loadTasksFromStorage();
+    return stored.length > 0 ? stored : defaultTasks;
+  });
+
+  const [showAddTaskPage, setShowAddTaskPage] = useState(false);
+  const [showEditTaskPage, setShowEditTaskPage] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterPriority, setFilterPriority] = useState<string>('all');
+  const [filterAssignee, setFilterAssignee] = useState<string>('all');
+
+  // Save tasks to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('taskBoardTasks', JSON.stringify(tasks));
+    } catch (error) {
+      console.error('Failed to save tasks to storage:', error);
+    }
+  }, [tasks]);
+
+  const columns = [
+    { id: 'todo', title: 'To Do', bgColor: 'bg-gray-50', borderColor: 'border-gray-200', headerColor: 'text-gray-700' },
+    { id: 'in-progress', title: 'In Progress', bgColor: 'bg-blue-50', borderColor: 'border-blue-200', headerColor: 'text-blue-700' },
+    { id: 'review', title: 'Review', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200', headerColor: 'text-yellow-700' },
+    { id: 'done', title: 'Done', bgColor: 'bg-green-50', borderColor: 'border-green-200', headerColor: 'text-green-700' }
+  ];
+
+  const getPriorityColor = (priority: string) => {
+    switch(priority) {
+      case 'urgent': return 'bg-red-100 text-red-700 border-red-200';
+      case 'high': return 'bg-orange-100 text-orange-700 border-orange-200';
+      case 'medium': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      case 'low': return 'bg-green-100 text-green-700 border-green-200';
+      default: return 'bg-gray-100 text-gray-600 border-gray-200';
+    }
   };
 
-  if (loading) {
-    return <div className="loading">Loading task board...</div>;
+  const getStatusIcon = (status: string) => {
+    switch(status) {
+      case 'done': return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'review': return <AlertCircle className="w-4 h-4 text-yellow-500" />;
+      case 'in-progress': return <Clock className="w-4 h-4 text-blue-500" />;
+      default: return <Circle className="w-4 h-4 text-gray-400" />;
+    }
+  };
+
+  const getTasksByStatus = (status: string) => {
+    let filtered = tasks.filter(task => task.status === status);
+    if (searchTerm) {
+      filtered = filtered.filter(task => 
+        task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.projectName.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    if (filterPriority !== 'all') {
+      filtered = filtered.filter(task => task.priority === filterPriority);
+    }
+    if (filterAssignee !== 'all') {
+      filtered = filtered.filter(task => task.assignee === filterAssignee);
+    }
+    return filtered;
+  };
+
+  const handleAddTask = (taskData: any) => {
+    const newTask: Task = {
+      id: String(Date.now()),
+      title: taskData.title,
+      description: taskData.description,
+      status: taskData.status,
+      priority: taskData.priority,
+      assignee: taskData.assignee,
+      dueDate: taskData.dueDate,
+      estimatedHours: taskData.estimatedHours,
+      loggedHours: 0,
+      tags: taskData.tags || [],
+      projectName: taskData.projectName || 'Unassigned',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      comments: 0,
+      attachments: 0,
+      subtasks: []
+    };
+    setTasks(prev => [...prev, newTask]);
+    setShowAddTaskPage(false);
+  };
+
+  const handleEditTask = (taskData: any) => {
+    const updatedTasks = tasks.map(task => 
+      task.id === taskData.id ? {
+        ...task,
+        title: taskData.title,
+        description: taskData.description,
+        status: taskData.status,
+        priority: taskData.priority,
+        assignee: taskData.assignee,
+        dueDate: taskData.dueDate,
+        estimatedHours: taskData.estimatedHours,
+        tags: taskData.tags,
+        updatedAt: new Date().toISOString()
+      } : task
+    );
+    setTasks(updatedTasks);
+    setShowEditTaskPage(false);
+    setEditingTask(null);
+  };
+
+  const openEditPage = (task: Task) => {
+    setEditingTask(task);
+    setShowEditTaskPage(true);
+  };
+
+  const moveTask = (taskId: string, newStatus: Task['status']) => {
+    setTasks(prev =>
+      prev.map(task =>
+        task.id === taskId ? { ...task, status: newStatus, updatedAt: new Date().toISOString() } : task
+      )
+    );
+  };
+
+  const deleteTask = (taskId: string) => {
+    if (window.confirm('Are you sure you want to delete this task?')) {
+      setTasks(prev => prev.filter(task => task.id !== taskId));
+    }
+  };
+
+  const getInitials = (name: string) => {
+    return name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+  };
+
+  const getAssigneeColor = (name: string) => {
+    const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500', 'bg-red-500'];
+    return colors[name.length % colors.length];
+  };
+
+  const getProgress = (task: Task) => {
+    if (task.estimatedHours === 0) return 0;
+    return Math.round((task.loggedHours / task.estimatedHours) * 100);
+  };
+
+  const getUniqueAssignees = () => {
+    const assignees = tasks.map(task => task.assignee);
+    return ['all', ...new Set(assignees)];
+  };
+
+  const handleDragStart = (task: Task) => setDraggedTask(task);
+  const handleDragOver = (e: React.DragEvent) => e.preventDefault();
+  const handleDrop = (e: React.DragEvent, status: string) => {
+    e.preventDefault();
+    if (draggedTask) {
+      moveTask(draggedTask.id, status as Task['status']);
+      setDraggedTask(null);
+    }
+  };
+
+  // If Edit Task page is shown
+  if (showEditTaskPage && editingTask) {
+    return (
+      <EditTaskPage
+        task={editingTask}
+        onBack={() => { setShowEditTaskPage(false); setEditingTask(null); }}
+        onSave={handleEditTask}
+      />
+    );
+  }
+
+  // If Add Task page is shown
+  if (showAddTaskPage) {
+    return <AddTaskPage onBack={() => setShowAddTaskPage(false)} onSave={handleAddTask} />;
   }
 
   return (
-    <div className="task-board">
-      <div className="board-header">
-        <h2>Task Board</h2>
-        <button className="btn-primary" onClick={() => setShowNewTaskModal(true)}>
-          + New Task
+    <div className="p-6 bg-gray-50 min-h-screen">
+      {/* Header with Edit and Add Task buttons - Placed above the content */}
+      <div className="flex flex-wrap justify-end items-center gap-3 mb-6">
+        {/* Edit button - opens separate edit page */}
+        <button
+          onClick={() => {
+            if (tasks.length > 0) {
+              openEditPage(tasks[0]);
+            } else {
+              alert('No tasks to edit. Please add a task first.');
+            }
+          }}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center text-sm shadow-sm"
+        >
+          <Edit className="w-4 h-4 mr-2" />
+          Edit
         </button>
+        {/* Add Task button - opens separate add page */}
+        <button
+          onClick={() => setShowAddTaskPage(true)}
+          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center text-sm shadow-sm"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Task
+        </button>
+        <div className="flex items-center gap-1 text-sm text-gray-500 bg-white px-3 py-2 rounded-lg shadow-sm border border-gray-200">
+          <Users className="w-4 h-4 mr-1" />
+          <span>{tasks.length} Total</span>
+        </div>
       </div>
 
-      <div className="board-columns">
-        {columns.map(column => (
-          <div
-            key={column.id}
-            className={`board-column ${dragOverColumn === column.id ? 'drag-over' : ''}`}
-            onDragOver={(e) => handleDragOver(e, column.id)}
-            onDragLeave={handleDragLeave}
-            onDrop={(e) => handleDrop(e, column.status)}
+      {/* Search and Filters */}
+      <div className="bg-white rounded-lg shadow-sm p-4 mb-6 border border-gray-200">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search tasks..."
+              className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="relative">
+            <select
+              className="appearance-none bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 pr-8 text-sm focus:ring-2 focus:ring-purple-500"
+              value={filterPriority}
+              onChange={(e) => setFilterPriority(e.target.value)}
+            >
+              <option value="all">All Priorities</option>
+              <option value="urgent">Urgent</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+            <ChevronDown className="w-4 h-4 absolute right-3 top-3 text-gray-500 pointer-events-none" />
+          </div>
+          <div className="relative">
+            <select
+              className="appearance-none bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 pr-8 text-sm focus:ring-2 focus:ring-purple-500"
+              value={filterAssignee}
+              onChange={(e) => setFilterAssignee(e.target.value)}
+            >
+              <option value="all">All Assignees</option>
+              {getUniqueAssignees().filter(a => a !== 'all').map(assignee => (
+                <option key={assignee} value={assignee}>{assignee}</option>
+              ))}
+            </select>
+            <ChevronDown className="w-4 h-4 absolute right-3 top-3 text-gray-500 pointer-events-none" />
+          </div>
+          <button
+            onClick={() => { setSearchTerm(''); setFilterPriority('all'); setFilterAssignee('all'); }}
+            className="px-3 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center transition whitespace-nowrap"
           >
-            <div className="column-header" style={{ borderTopColor: column.color }}>
-              <span className="column-icon">{column.icon}</span>
-              <h3>{column.title}</h3>
-              <span className="task-count">{tasks.filter(t => t.status === column.status).length}</span>
-            </div>
-            <div className="task-list">
-              {tasks
-                .filter(task => task.status === column.status)
-                .map(task => (
-                  <div
-                    key={task.id}
-                    className="task-card"
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, task.id)}
-                    onClick={() => { setSelectedTask(task); setShowTaskModal(true); }}
-                  >
-                    <div className="task-header">
-                      <span className={`task-priority ${getPriorityClass(task.priority)}`}>
-                        {getPriorityIcon(task.priority)} {task.priority}
-                      </span>
-                      <span className="task-project">{task.projectName}</span>
-                    </div>
-                    <h4 className="task-title">{task.title}</h4>
-                    <p className="task-description">{task.description.substring(0, 60)}...</p>
-                    <div className="task-footer">
-                      <div className="task-assignee">
-                        <span className="assignee-avatar">{task.assignedToName.charAt(0)}</span>
-                        <span>{task.assignedToName}</span>
-                      </div>
-                      <div className="task-meta">
-                        <span>📎 {task.attachments}</span>
-                        <span>💬 {task.comments}</span>
-                        <span>📅 {task.dueDate}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              {tasks.filter(t => t.status === column.status).length === 0 && (
-                <div className="empty-column">No tasks</div>
-              )}
-            </div>
-          </div>
-        ))}
+            <RefreshCw className="w-4 h-4 mr-1" /> Reset
+          </button>
+        </div>
       </div>
 
-      {/* Task Detail Modal */}
-      {showTaskModal && selectedTask && (
-        <div className="modal-overlay" onClick={() => setShowTaskModal(false)}>
-          <div className="modal modal-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{selectedTask.title}</h3>
-              <button className="close-btn" onClick={() => setShowTaskModal(false)}>×</button>
-            </div>
-            <div className="task-detail">
-              <div className="detail-row"><label>Project:</label><span>{selectedTask.projectName}</span></div>
-              <div className="detail-row"><label>Assigned To:</label><span>{selectedTask.assignedToName}</span></div>
-              <div className="detail-row"><label>Priority:</label><span className={`priority-badge ${selectedTask.priority}`}>{selectedTask.priority}</span></div>
-              <div className="detail-row"><label>Due Date:</label><span>{selectedTask.dueDate}</span></div>
-              <div className="detail-row"><label>Description:</label><p>{selectedTask.description}</p></div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn-secondary" onClick={() => setShowTaskModal(false)}>Close</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Board */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {columns.map(column => {
+          const columnTasks = getTasksByStatus(column.id);
+          return (
+            <div
+              key={column.id}
+              className={`${column.bgColor} rounded-[30px] p-4 min-h-[400px] border ${column.borderColor}`}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, column.id)}
+            >
+              {/* Column Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <h3 className={`font-semibold text-sm ${column.headerColor}`}>{column.title}</h3>
+                  <span className="text-xs text-gray-500 bg-white px-2 py-0.5 rounded-full border border-gray-200">
+                    {columnTasks.length}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setShowAddTaskPage(true)}
+                  className="p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-200 transition"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
 
-      {/* New Task Modal */}
-      {showNewTaskModal && (
-        <div className="modal-overlay" onClick={() => setShowNewTaskModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Create New Task</h3>
-              <button className="close-btn" onClick={() => setShowNewTaskModal(false)}>×</button>
+              {/* Task Cards */}
+              <div className="space-y-3">
+                {columnTasks.length === 0 ? (
+                  <div className="text-center py-8 text-gray-400 text-sm">
+                    <Circle className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                    <p>No tasks</p>
+                    <button onClick={() => setShowAddTaskPage(true)} className="mt-2 text-xs text-purple-600 hover:text-purple-700">
+                      + Add Task
+                    </button>
+                  </div>
+                ) : (
+                  columnTasks.map(task => (
+                    <div
+                      key={task.id}
+                      className="bg-white rounded-[30px] shadow-sm p-4 hover:shadow-md transition border border-gray-100 cursor-grab active:cursor-grabbing"
+                      draggable
+                      onDragStart={() => handleDragStart(task)}
+                    >
+                      {/* Task Header */}
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-start gap-2 flex-1 min-w-0">
+                          <div className="mt-0.5 flex-shrink-0">{getStatusIcon(task.status)}</div>
+                          <h4 className="text-sm font-medium text-gray-800 line-clamp-2">{task.title}</h4>
+                        </div>
+                        <div className="flex items-center gap-0.5 flex-shrink-0 ml-2">
+                          <button 
+                            onClick={() => openEditPage(task)}
+                            className="p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition" 
+                            title="Edit"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => deleteTask(task.id)} className="p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 transition" title="Delete">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button className="p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100 transition">
+                            <MoreVertical className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Description */}
+                      <p className="text-xs text-gray-500 mb-3 line-clamp-2">{task.description}</p>
+
+                      {/* Priority & Project Tags */}
+                      <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full border ${getPriorityColor(task.priority)} font-medium`}>
+                          {task.priority}
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full flex items-center border border-gray-200">
+                          <Tag className="w-2.5 h-2.5 mr-0.5" />
+                          <span className="truncate max-w-[60px]">{task.projectName}</span>
+                        </span>
+                      </div>
+
+                      {/* Assignee & Due Date */}
+                      <div className="flex items-center justify-between text-xs mb-3">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <div className={`w-5 h-5 rounded-full ${getAssigneeColor(task.assignee)} text-white flex items-center justify-center text-[8px] font-medium flex-shrink-0`}>
+                            {getInitials(task.assignee)}
+                          </div>
+                          <span className="text-gray-600 truncate max-w-[60px] text-xs">{task.assignee}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-gray-400 flex-shrink-0">
+                          <Calendar className="w-3 h-3" />
+                          <span className="text-[10px]">{task.dueDate}</span>
+                        </div>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3 h-3 text-gray-400" />
+                          <span className="text-[10px] text-gray-500">{task.loggedHours}h / {task.estimatedHours}h</span>
+                        </div>
+                        <div className="w-12 bg-gray-200 rounded-full h-1">
+                          <div className="bg-blue-500 h-1 rounded-full transition-all" style={{ width: `${getProgress(task)}%` }} />
+                        </div>
+                      </div>
+
+                      {/* Tags */}
+                      {task.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {task.tags.map((tag, index) => (
+                            <span key={index} className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[9px] rounded border border-gray-200">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Subtasks & Comments */}
+                      <div className="flex items-center justify-between text-[9px] text-gray-400 border-t border-gray-100 pt-2">
+                        <span>{task.subtasks.filter(s => s.completed).length}/{task.subtasks.length} subtasks</span>
+                        <span>{task.comments} comments</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Add Task Button */}
+              <button
+                onClick={() => setShowAddTaskPage(true)}
+                className="mt-4 w-full py-2 text-sm text-gray-500 hover:text-gray-700 border border-dashed border-gray-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition"
+              >
+                + Add Task
+              </button>
             </div>
-            <form onSubmit={handleCreateTask}>
-              <div className="form-group">
-                <label>Task Title *</label>
-                <input type="text" required value={newTask.title} onChange={(e) => setNewTask({...newTask, title: e.target.value})} />
-              </div>
-              <div className="form-group">
-                <label>Description *</label>
-                <textarea rows={3} required value={newTask.description} onChange={(e) => setNewTask({...newTask, description: e.target.value})} />
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Project *</label>
-                  <select required value={newTask.projectId} onChange={(e) => setNewTask({...newTask, projectId: e.target.value})}>
-                    <option value="">Select Project</option>
-                    {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Assign To *</label>
-                  <select required value={newTask.assignedTo} onChange={(e) => setNewTask({...newTask, assignedTo: e.target.value})}>
-                    <option value="">Select Member</option>
-                    {teamMembers.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Priority *</label>
-                  <select required value={newTask.priority} onChange={(e) => setNewTask({...newTask, priority: e.target.value as any})}>
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Due Date *</label>
-                  <input type="date" required value={newTask.dueDate} onChange={(e) => setNewTask({...newTask, dueDate: e.target.value})} />
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn-secondary" onClick={() => setShowNewTaskModal(false)}>Cancel</button>
-                <button type="submit" className="btn-primary">Create Task</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 };
