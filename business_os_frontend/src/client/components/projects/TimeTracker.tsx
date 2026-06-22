@@ -1,371 +1,1016 @@
-import React, { useState, useEffect } from 'react';
+// // src/client/components/projects/TimeTracker.tsx
+// import React, { useState, useEffect, useRef } from 'react';
+// import { 
+//   Play, 
+//   Pause, 
+//   Square, 
+//   Clock, 
+//   FileText, 
+//   User, 
+//   Calendar, 
+//   Trash2,
+//   Plus,
+//   Search,
+//   Filter,
+//   ChevronDown,
+//   CheckCircle,
+//   Circle,
+//   AlertCircle,
+//   MoreVertical,
+//   Edit,
+//   Save,
+//   X,
+//   ArrowLeft,
+//   LayoutDashboard,
+//   Timer,
+//   Briefcase,
+//   Tag,
+//   Users
+// } from 'lucide-react';
 
+// // Types
+// interface TimeEntry {
+//   id: string;
+//   date: string;
+//   project: string;
+//   task: string;
+//   time: string;
+//   timeInSeconds: number;
+//   user: string;
+//   status: 'Billable' | 'Non-Bill';
+//   notes?: string;
+// }
+
+// // Sample data
+// const initialEntries: TimeEntry[] = [
+//   {
+//     id: '1',
+//     date: '2024-06-06',
+//     project: 'Web De...',
+//     task: 'Designing',
+//     time: '02h : 00m : 00s',
+//     timeInSeconds: 7200,
+//     user: 'Patric...',
+//     status: 'Billable'
+//   },
+//   {
+//     id: '2',
+//     date: '2024-06-06',
+//     project: 'Design c...',
+//     task: 'Development',
+//     time: '01h : 30m : 00s',
+//     timeInSeconds: 5400,
+//     user: 'John D...',
+//     status: 'Billable'
+//   },
+//   {
+//     id: '3',
+//     date: '2024-06-05',
+//     project: 'Web ap...',
+//     task: 'Content',
+//     time: '01h : 00m : 00s',
+//     timeInSeconds: 3600,
+//     user: 'Jane S...',
+//     status: 'Non-Bill'
+//   }
+// ];
+
+// const TimeTracker: React.FC = () => {
+//   const [entries, setEntries] = useState<TimeEntry[]>(initialEntries);
+//   const [selectedProject, setSelectedProject] = useState('');
+//   const [selectedTask, setSelectedTask] = useState('');
+//   const [notes, setNotes] = useState('');
+//   const [isRunning, setIsRunning] = useState(false);
+//   const [seconds, setSeconds] = useState(0);
+//   const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
+//   const [searchTerm, setSearchTerm] = useState('');
+//   const [filterStatus, setFilterStatus] = useState<string>('all');
+//   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+//   // Timer logic
+//   useEffect(() => {
+//     if (isRunning) {
+//       timerRef.current = setInterval(() => {
+//         setSeconds(prev => prev + 1);
+//       }, 1000);
+//     } else if (timerRef.current) {
+//       clearInterval(timerRef.current);
+//       timerRef.current = null;
+//     }
+
+//     return () => {
+//       if (timerRef.current) {
+//         clearInterval(timerRef.current);
+//         timerRef.current = null;
+//       }
+//     };
+//   }, [isRunning]);
+
+//   // Format time display
+//   const formatTime = (totalSeconds: number) => {
+//     const hours = Math.floor(totalSeconds / 3600);
+//     const minutes = Math.floor((totalSeconds % 3600) / 60);
+//     const secs = totalSeconds % 60;
+//     return `${String(hours).padStart(2, '0')}h : ${String(minutes).padStart(2, '0')}m : ${String(secs).padStart(2, '0')}s`;
+//   };
+
+//   // Handle Start timer
+//   const handleStart = () => {
+//     if (!selectedProject) {
+//       alert('Please select a project first');
+//       return;
+//     }
+//     setIsRunning(true);
+//     setCurrentEntryId(Date.now().toString());
+//   };
+
+//   // Handle Stop timer
+//   const handleStop = () => {
+//     if (isRunning && seconds > 0) {
+//       setIsRunning(false);
+      
+//       const newEntry: TimeEntry = {
+//         id: Date.now().toString(),
+//         date: new Date().toISOString().split('T')[0],
+//         project: selectedProject || 'Unassigned',
+//         task: selectedTask || 'Unspecified',
+//         time: formatTime(seconds),
+//         timeInSeconds: seconds,
+//         user: 'Current User',
+//         status: 'Billable',
+//         notes: notes || undefined
+//       };
+      
+//       setEntries([newEntry, ...entries]);
+//       setSeconds(0);
+//       setNotes('');
+//       setSelectedProject('');
+//       setSelectedTask('');
+//     }
+//   };
+
+//   // Handle Reset timer
+//   const handleReset = () => {
+//     setIsRunning(false);
+//     setSeconds(0);
+//     setCurrentEntryId(null);
+//   };
+
+//   // Handle Delete entry
+//   const handleDeleteEntry = (id: string) => {
+//     if (window.confirm('Delete this time entry?')) {
+//       setEntries(entries.filter(entry => entry.id !== id));
+//     }
+//   };
+
+//   // Calculate today's total time
+//   const getTodayTotal = () => {
+//     const today = new Date().toISOString().split('T')[0];
+//     const todayEntries = entries.filter(entry => entry.date === today);
+//     const totalSeconds = todayEntries.reduce((sum, entry) => sum + entry.timeInSeconds, 0);
+//     return formatTime(totalSeconds);
+//   };
+
+//   // Calculate week's total time
+//   const getWeekTotal = () => {
+//     const now = new Date();
+//     const startOfWeek = new Date(now);
+//     startOfWeek.setDate(now.getDate() - now.getDay());
+//     const startOfWeekStr = startOfWeek.toISOString().split('T')[0];
+    
+//     const weekEntries = entries.filter(entry => entry.date >= startOfWeekStr);
+//     const totalSeconds = weekEntries.reduce((sum, entry) => sum + entry.timeInSeconds, 0);
+//     return formatTime(totalSeconds);
+//   };
+
+//   // Filter entries
+//   const getFilteredEntries = () => {
+//     let filtered = entries;
+//     if (searchTerm) {
+//       filtered = filtered.filter(entry =>
+//         entry.project.toLowerCase().includes(searchTerm.toLowerCase()) ||
+//         entry.task.toLowerCase().includes(searchTerm.toLowerCase()) ||
+//         entry.user.toLowerCase().includes(searchTerm.toLowerCase())
+//       );
+//     }
+//     if (filterStatus !== 'all') {
+//       filtered = filtered.filter(entry => entry.status === filterStatus);
+//     }
+//     return filtered;
+//   };
+
+//   // Projects list
+//   const projects = [
+//     { id: 'web-dev', name: 'Web Development' },
+//     { id: 'design', name: 'Design Project' },
+//     { id: 'testing', name: 'Testing' },
+//     { id: 'content', name: 'Content Creation' }
+//   ];
+
+//   // Tasks list
+//   const tasks = [
+//     { id: 'designing', name: 'Designing' },
+//     { id: 'development', name: 'Development' },
+//     { id: 'content', name: 'Content' },
+//     { id: 'testing', name: 'Testing' },
+//     { id: 'review', name: 'Review' }
+//   ];
+
+//   const filteredEntries = getFilteredEntries();
+
+//   return (
+//     <div className="p-6 bg-gray-50 min-h-screen">
+//       {/* ============================================================ */}
+//       {/* HEADER: Title + Description + Stats */}
+//       {/* ============================================================ */}
+//       <div className="flex flex-wrap justify-between items-start mb-6 gap-4">
+//         <div>
+//           <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+//             <Timer className="w-6 h-6 mr-2 text-blue-600" />
+//             Time Tracker
+//           </h1>
+//           <p className="text-sm text-gray-500 mt-1">Track and log time for your projects</p>
+//         </div>
+//         <div className="flex flex-wrap items-center gap-3">
+//           <div className="flex items-center gap-1 text-sm text-gray-500 bg-white px-3 py-2 rounded-lg shadow-sm border border-gray-200">
+//             <Clock className="w-4 h-4 mr-1" />
+//             <span>{entries.length} Entries</span>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* ============================================================ */}
+//       {/* TIMER SECTION: Timer Display + Project/Task Selectors */}
+//       {/* ============================================================ */}
+//       <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 mb-6 border border-blue-100 shadow-sm">
+//         <div className="flex flex-col lg:flex-row gap-6">
+          
+//           {/* LEFT: Timer Display */}
+//           <div className="lg:w-1/3 bg-white rounded-2xl p-6 shadow-md border border-blue-100">
+//             <div className="text-center">
+//               {/* Timer Numbers */}
+//               <div className="text-5xl font-bold text-gray-800 font-mono tracking-wider">
+//                 {formatTime(seconds)}
+//               </div>
+              
+//               {/* Status Indicator */}
+//               <div className="flex items-center justify-center gap-2 mt-4">
+//                 <div className={`w-3 h-3 rounded-full ${isRunning ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`} />
+//                 <span className="text-sm text-gray-500">{isRunning ? 'Running' : 'Stopped'}</span>
+//               </div>
+              
+//               {/* Timer Controls */}
+//               <div className="flex gap-3 mt-4">
+//                 {!isRunning ? (
+//                   <button
+//                     onClick={handleStart}
+//                     className="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-medium transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+//                   >
+//                     <Play className="w-5 h-5" />
+//                     Start Timer
+//                   </button>
+//                 ) : (
+//                   <button
+//                     onClick={handleStop}
+//                     className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-medium transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+//                   >
+//                     <Square className="w-5 h-5" />
+//                     Stop Timer
+//                   </button>
+//                 )}
+//                 <button
+//                   onClick={handleReset}
+//                   className="px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-medium transition-all"
+//                   disabled={seconds === 0}
+//                 >
+//                   Reset
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+
+//           {/* RIGHT: Project & Task Selectors */}
+//           <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+//             {/* Project Selector */}
+//             <div className="bg-white rounded-xl p-4 shadow-sm border border-blue-100">
+//               <label className="block text-sm font-medium text-gray-700 mb-2">
+//                 <Briefcase className="w-4 h-4 inline mr-1" />
+//                 Project <span className="text-red-500">*</span>
+//               </label>
+//               <select 
+//                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+//                 value={selectedProject}
+//                 onChange={(e) => setSelectedProject(e.target.value)}
+//                 disabled={isRunning}
+//               >
+//                 <option value="">Select Project</option>
+//                 {projects.map(project => (
+//                   <option key={project.id} value={project.name}>
+//                     {project.name}
+//                   </option>
+//                 ))}
+//               </select>
+//             </div>
+            
+//             {/* Task Selector */}
+//             <div className="bg-white rounded-xl p-4 shadow-sm border border-blue-100">
+//               <label className="block text-sm font-medium text-gray-700 mb-2">
+//                 <Tag className="w-4 h-4 inline mr-1" />
+//                 Task
+//               </label>
+//               <select 
+//                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+//                 value={selectedTask}
+//                 onChange={(e) => setSelectedTask(e.target.value)}
+//                 disabled={isRunning}
+//               >
+//                 <option value="">Select Task</option>
+//                 {tasks.map(task => (
+//                   <option key={task.id} value={task.name}>
+//                     {task.name}
+//                   </option>
+//                 ))}
+//               </select>
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* BOTTOM: Notes + Today/Week Summary */}
+//         <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+//           {/* Notes */}
+//           <div className="md:col-span-1">
+//             <label className="block text-sm font-medium text-gray-700 mb-2">
+//               <FileText className="w-4 h-4 inline mr-1" />
+//               Notes
+//             </label>
+//             <textarea
+//               className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+//               rows={2}
+//               placeholder="Add notes..."
+//               value={notes}
+//               onChange={(e) => setNotes(e.target.value)}
+//               disabled={isRunning}
+//             />
+//           </div>
+          
+//           {/* Today & Week Summary */}
+//           <div className="md:col-span-2 grid grid-cols-2 gap-3">
+//             <div className="bg-white rounded-xl p-4 shadow-sm border border-blue-100 flex items-center justify-between">
+//               <span className="text-sm text-gray-600">Today</span>
+//               <span className="text-lg font-bold text-blue-600">{getTodayTotal()}</span>
+//             </div>
+//             <div className="bg-white rounded-xl p-4 shadow-sm border border-blue-100 flex items-center justify-between">
+//               <span className="text-sm text-gray-600">This Week</span>
+//               <span className="text-lg font-bold text-indigo-600">{getWeekTotal()}</span>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* ============================================================ */}
+//       {/* RECENT ENTRIES TABLE */}
+//       {/* ============================================================ */}
+//       <div>
+//         {/* Table Header with Search & Filter */}
+//         <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
+//           <h2 className="text-lg font-semibold text-gray-800 flex items-center">
+//             <Clock className="w-5 h-5 mr-2 text-blue-600" />
+//             Recent Entries
+//             <span className="ml-2 text-sm font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+//               {filteredEntries.length}
+//             </span>
+//           </h2>
+//           <div className="flex flex-wrap items-center gap-2">
+//             {/* Search */}
+//             <div className="relative">
+//               <Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
+//               <input
+//                 type="text"
+//                 placeholder="Search entries..."
+//                 className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-40 md:w-56"
+//                 value={searchTerm}
+//                 onChange={(e) => setSearchTerm(e.target.value)}
+//               />
+//             </div>
+//             {/* Filter */}
+//             <select
+//               className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white"
+//               value={filterStatus}
+//               onChange={(e) => setFilterStatus(e.target.value)}
+//             >
+//               <option value="all">All Status</option>
+//               <option value="Billable">Billable</option>
+//               <option value="Non-Bill">Non-Billable</option>
+//             </select>
+//           </div>
+//         </div>
+        
+//         {/* Table */}
+//         <div className="overflow-x-auto bg-white rounded-2xl shadow-sm border border-gray-200">
+//           <table className="w-full">
+//             <thead>
+//               <tr className="bg-gray-50 border-b border-gray-200">
+//                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+//                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Project</th>
+//                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Task</th>
+//                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Time</th>
+//                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">User</th>
+//                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+//                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
+//               </tr>
+//             </thead>
+//             <tbody>
+//               {filteredEntries.length === 0 ? (
+//                 /* Empty State */
+//                 <tr>
+//                   <td colSpan={7} className="text-center py-12 text-gray-500">
+//                     <Clock className="w-12 h-12 mx-auto text-gray-300 mb-2" />
+//                     <p className="text-sm">No entries found</p>
+//                     <p className="text-xs text-gray-400">Start tracking your time to see entries here</p>
+//                   </td>
+//                 </tr>
+//               ) : (
+//                 filteredEntries.map((entry, index) => (
+//                   <tr key={entry.id} className={`border-b border-gray-100 hover:bg-blue-50/50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+//                     {/* Date */}
+//                     <td className="py-3 px-4 text-sm text-gray-700">
+//                       <div className="flex items-center gap-1">
+//                         <Calendar className="w-3.5 h-3.5 text-gray-400" />
+//                         {entry.date}
+//                       </div>
+//                     </td>
+//                     {/* Project */}
+//                     <td className="py-3 px-4 text-sm text-gray-700 font-medium">{entry.project}</td>
+//                     {/* Task */}
+//                     <td className="py-3 px-4 text-sm text-gray-700">
+//                       <span className="px-2 py-1 bg-gray-100 rounded-full text-xs">
+//                         {entry.task}
+//                       </span>
+//                     </td>
+//                     {/* Time */}
+//                     <td className="py-3 px-4 text-sm text-gray-700 font-mono font-medium">{entry.time}</td>
+//                     {/* User */}
+//                     <td className="py-3 px-4 text-sm text-gray-700">
+//                       <div className="flex items-center gap-1.5">
+//                         <div className="w-6 h-6 rounded-full bg-gradient-to-r from-purple-400 to-purple-600 text-white flex items-center justify-center text-[10px] font-medium">
+//                           {entry.user.charAt(0)}
+//                         </div>
+//                         {entry.user}
+//                       </div>
+//                     </td>
+//                     {/* Status */}
+//                     <td className="py-3 px-4">
+//                       <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+//                         entry.status === 'Billable' 
+//                           ? 'bg-green-100 text-green-700 border border-green-200' 
+//                           : 'bg-gray-100 text-gray-700 border border-gray-200'
+//                       }`}>
+//                         {entry.status}
+//                       </span>
+//                     </td>
+//                     {/* Action */}
+//                     <td className="py-3 px-4">
+//                       <button 
+//                         onClick={() => handleDeleteEntry(entry.id)}
+//                         className="text-gray-400 hover:text-red-500 transition-colors p-1.5 hover:bg-red-50 rounded-lg"
+//                         title="Delete entry"
+//                       >
+//                         <Trash2 className="w-4 h-4" />
+//                       </button>
+//                     </td>
+//                   </tr>
+//                 ))
+//               )}
+//             </tbody>
+//           </table>
+//         </div>
+//       </div>
+
+//       {/* ============================================================ */}
+//       {/* FOOTER STATS */}
+//       {/* ============================================================ */}
+//       <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+//         <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-200">
+//           <div className="text-xs text-gray-500">Total Entries</div>
+//           <div className="text-xl font-bold text-gray-800">{entries.length}</div>
+//         </div>
+//         <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-200">
+//           <div className="text-xs text-gray-500">Today</div>
+//           <div className="text-xl font-bold text-blue-600">{getTodayTotal()}</div>
+//         </div>
+//         <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-200">
+//           <div className="text-xs text-gray-500">This Week</div>
+//           <div className="text-xl font-bold text-indigo-600">{getWeekTotal()}</div>
+//         </div>
+//         <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-200">
+//           <div className="text-xs text-gray-500">Billable</div>
+//           <div className="text-xl font-bold text-green-600">
+//             {entries.filter(e => e.status === 'Billable').length}
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default TimeTracker;
+// src/client/components/projects/TimeTracker.tsx
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Play, 
+  Pause, 
+  Square, 
+  Clock, 
+  FileText, 
+  User, 
+  Calendar, 
+  Trash2,
+  Plus,
+  Search,
+  Filter,
+  ChevronDown,
+  CheckCircle,
+  Circle,
+  AlertCircle,
+  MoreVertical,
+  Edit,
+  Save,
+  X,
+  ArrowLeft,
+  LayoutDashboard,
+  Timer,
+  Briefcase,
+  Tag,
+  Users
+} from 'lucide-react';
+
+// ✅ Add props interface
+interface TimeTrackerProps {
+  preselectedProject?: string;
+}
+
+// Types
 interface TimeEntry {
   id: string;
-  taskId: string;
-  taskName: string;
-  projectId: string;
-  projectName: string;
-  userId: string;
-  userName: string;
   date: string;
-  startTime: string;
-  endTime: string;
-  hours: number;
-  description: string;
-  billable: boolean;
+  project: string;
+  task: string;
+  time: string;
+  timeInSeconds: number;
+  user: string;
+  status: 'Billable' | 'Non-Bill';
+  notes?: string;
 }
 
-interface TaskSummary {
-  taskId: string;
-  taskName: string;
-  totalHours: number;
-  billableHours: number;
-}
-
-const TimeTracker: React.FC = () => {
-  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
-  const [tasks, setTasks] = useState<{ id: string; name: string; projectId: string; projectName: string }[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
-  const [selectedUser, setSelectedUser] = useState('all');
-  const [isTracking, setIsTracking] = useState(false);
-  const [currentTask, setCurrentTask] = useState<string | null>(null);
-  const [startTime, setStartTime] = useState<string | null>(null);
-  const [users, setUsers] = useState<{ id: string; name: string }[]>([]);
-
-  const [newEntry, setNewEntry] = useState({
-    taskId: '',
-    description: '',
-    hours: 1,
-    billable: true,
-    date: new Date().toISOString().slice(0, 10),
-  });
-
-  useEffect(() => {
-    fetchTimeEntries();
-    fetchTasks();
-    fetchUsers();
-  }, [selectedDate, selectedUser]);
-
-  const fetchTimeEntries = async () => {
-    try {
-      const response = await fetch(`/api/time-entries?date=${selectedDate}&user=${selectedUser}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setTimeEntries(data.data || data);
-      } else {
-        setMockEntries();
-      }
-    } catch (error) {
-      setMockEntries();
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchTasks = async () => {
-    try {
-      const response = await fetch('/api/tasks/list', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setTasks(data.data || data);
-      } else {
-        setTasks([
-          { id: '1', name: 'Design Database Schema', projectId: '1', projectName: 'E-commerce Website' },
-          { id: '2', name: 'API Development', projectId: '1', projectName: 'E-commerce Website' },
-          { id: '3', name: 'Frontend UI Setup', projectId: '1', projectName: 'E-commerce Website' },
-        ]);
-      }
-    } catch (error) {
-      setTasks([
-        { id: '1', name: 'Design Database Schema', projectId: '1', projectName: 'E-commerce Website' },
-        { id: '2', name: 'API Development', projectId: '1', projectName: 'E-commerce Website' },
-      ]);
-    }
-  };
-
-  const fetchUsers = async () => {
-    try {
-      const response = await fetch('/api/team/members', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data.data || data);
-      } else {
-        setUsers([
-          { id: '1', name: 'John Doe' },
-          { id: '2', name: 'Jane Smith' },
-        ]);
-      }
-    } catch (error) {
-      setUsers([
-        { id: '1', name: 'John Doe' },
-        { id: '2', name: 'Jane Smith' },
-      ]);
-    }
-  };
-
-  const setMockEntries = () => {
-    setTimeEntries([
-      { id: '1', taskId: '1', taskName: 'Design Database Schema', projectId: '1', projectName: 'E-commerce Website', userId: '1', userName: 'John Doe', date: '2024-06-15', startTime: '09:00', endTime: '12:00', hours: 3, description: 'Database design work', billable: true },
-      { id: '2', taskId: '1', taskName: 'Design Database Schema', projectId: '1', projectName: 'E-commerce Website', userId: '1', userName: 'John Doe', date: '2024-06-15', startTime: '13:00', endTime: '17:00', hours: 4, description: 'Continued database design', billable: true },
-    ]);
-  };
-
-  const filteredEntries = timeEntries;
-  const totalHours = filteredEntries.reduce((sum, e) => sum + e.hours, 0);
-  const billableHours = filteredEntries.filter(e => e.billable).reduce((sum, e) => sum + e.hours, 0);
-  const nonBillableHours = totalHours - billableHours;
-
-  const taskSummary: TaskSummary[] = Object.values(
-    filteredEntries.reduce((acc, entry) => {
-      if (!acc[entry.taskId]) {
-        acc[entry.taskId] = {
-          taskId: entry.taskId,
-          taskName: entry.taskName,
-          totalHours: 0,
-          billableHours: 0,
-        };
-      }
-      acc[entry.taskId].totalHours += entry.hours;
-      if (entry.billable) acc[entry.taskId].billableHours += entry.hours;
-      return acc;
-    }, {} as Record<string, TaskSummary>)
-  );
-
-  const handleStartTracking = () => {
-    const taskId = prompt('Enter Task ID to start tracking:');
-    if (taskId) {
-      setIsTracking(true);
-      setCurrentTask(taskId);
-      setStartTime(new Date().toLocaleTimeString());
-      alert(`Started tracking task at ${startTime}`);
-    }
-  };
-
-  const handleStopTracking = () => {
-    if (currentTask && startTime) {
-      const endTime = new Date().toLocaleTimeString();
-      const hours = prompt('Enter total hours worked:', '1');
-      if (hours) {
-        const newTimeEntry: TimeEntry = {
-          id: Date.now().toString(),
-          taskId: currentTask,
-          taskName: tasks.find(t => t.id === currentTask)?.name || `Task ${currentTask}`,
-          projectId: tasks.find(t => t.id === currentTask)?.projectId || '1',
-          projectName: tasks.find(t => t.id === currentTask)?.projectName || 'Project',
-          userId: '1',
-          userName: 'John Doe',
-          date: new Date().toISOString().slice(0, 10),
-          startTime: startTime,
-          endTime: endTime,
-          hours: parseFloat(hours),
-          description: 'Worked on task',
-          billable: true,
-        };
-        setTimeEntries([...timeEntries, newTimeEntry]);
-        alert(`Stopped tracking. Added ${hours} hours.`);
-      }
-    }
-    setIsTracking(false);
-    setCurrentTask(null);
-    setStartTime(null);
-  };
-
-  const handleSubmitEntry = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const task = tasks.find(t => t.id === newEntry.taskId);
-    const entry: TimeEntry = {
-      id: Date.now().toString(),
-      taskId: newEntry.taskId,
-      taskName: task?.name || '',
-      projectId: task?.projectId || '',
-      projectName: task?.projectName || '',
-      userId: '1',
-      userName: 'John Doe',
-      date: newEntry.date,
-      startTime: '09:00',
-      endTime: `${9 + newEntry.hours}:00`,
-      hours: newEntry.hours,
-      description: newEntry.description,
-      billable: newEntry.billable,
-    };
-    
-    try {
-      const response = await fetch('/api/time-entries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
-        body: JSON.stringify(entry)
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setTimeEntries([...timeEntries, data.data || data]);
-      } else {
-        setTimeEntries([...timeEntries, entry]);
-      }
-    } catch (error) {
-      setTimeEntries([...timeEntries, entry]);
-    }
-    
-    setShowModal(false);
-    setNewEntry({ taskId: '', description: '', hours: 1, billable: true, date: new Date().toISOString().slice(0, 10) });
-    alert('Time entry added!');
-  };
-
-  if (loading) {
-    return <div className="loading">Loading time tracker...</div>;
+// Sample data
+const initialEntries: TimeEntry[] = [
+  {
+    id: '1',
+    date: '2024-06-06',
+    project: 'Web De...',
+    task: 'Designing',
+    time: '02h : 00m : 00s',
+    timeInSeconds: 7200,
+    user: 'Patric...',
+    status: 'Billable'
+  },
+  {
+    id: '2',
+    date: '2024-06-06',
+    project: 'Design c...',
+    task: 'Development',
+    time: '01h : 30m : 00s',
+    timeInSeconds: 5400,
+    user: 'John D...',
+    status: 'Billable'
+  },
+  {
+    id: '3',
+    date: '2024-06-05',
+    project: 'Web ap...',
+    task: 'Content',
+    time: '01h : 00m : 00s',
+    timeInSeconds: 3600,
+    user: 'Jane S...',
+    status: 'Non-Bill'
   }
+];
+
+// ✅ Accept props
+const TimeTracker: React.FC<TimeTrackerProps> = ({ preselectedProject = '' }) => {
+  const [entries, setEntries] = useState<TimeEntry[]>(initialEntries);
+  const [selectedProject, setSelectedProject] = useState('');
+  const [selectedTask, setSelectedTask] = useState('');
+  const [notes, setNotes] = useState('');
+  const [isRunning, setIsRunning] = useState(false);
+  const [seconds, setSeconds] = useState(0);
+  const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ✅ Set preselected project when prop changes
+  useEffect(() => {
+    if (preselectedProject) {
+      setSelectedProject(preselectedProject);
+    }
+  }, [preselectedProject]);
+
+  // Timer logic
+  useEffect(() => {
+    if (isRunning) {
+      timerRef.current = setInterval(() => {
+        setSeconds(prev => prev + 1);
+      }, 1000);
+    } else if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [isRunning]);
+
+  // Format time display
+  const formatTime = (totalSeconds: number) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+    return `${String(hours).padStart(2, '0')}h : ${String(minutes).padStart(2, '0')}m : ${String(secs).padStart(2, '0')}s`;
+  };
+
+  // Handle Start timer
+  const handleStart = () => {
+    if (!selectedProject) {
+      alert('Please select a project first');
+      return;
+    }
+    setIsRunning(true);
+    setCurrentEntryId(Date.now().toString());
+  };
+
+  // Handle Stop timer
+  const handleStop = () => {
+    if (isRunning && seconds > 0) {
+      setIsRunning(false);
+      
+      const newEntry: TimeEntry = {
+        id: Date.now().toString(),
+        date: new Date().toISOString().split('T')[0],
+        project: selectedProject || 'Unassigned',
+        task: selectedTask || 'Unspecified',
+        time: formatTime(seconds),
+        timeInSeconds: seconds,
+        user: 'Current User',
+        status: 'Billable',
+        notes: notes || undefined
+      };
+      
+      setEntries([newEntry, ...entries]);
+      setSeconds(0);
+      setNotes('');
+      setSelectedProject('');
+      setSelectedTask('');
+    }
+  };
+
+  // Handle Reset timer
+  const handleReset = () => {
+    setIsRunning(false);
+    setSeconds(0);
+    setCurrentEntryId(null);
+  };
+
+  // Handle Delete entry
+  const handleDeleteEntry = (id: string) => {
+    if (window.confirm('Delete this time entry?')) {
+      setEntries(entries.filter(entry => entry.id !== id));
+    }
+  };
+
+  // Calculate today's total time
+  const getTodayTotal = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const todayEntries = entries.filter(entry => entry.date === today);
+    const totalSeconds = todayEntries.reduce((sum, entry) => sum + entry.timeInSeconds, 0);
+    return formatTime(totalSeconds);
+  };
+
+  // Calculate week's total time
+  const getWeekTotal = () => {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    const startOfWeekStr = startOfWeek.toISOString().split('T')[0];
+    
+    const weekEntries = entries.filter(entry => entry.date >= startOfWeekStr);
+    const totalSeconds = weekEntries.reduce((sum, entry) => sum + entry.timeInSeconds, 0);
+    return formatTime(totalSeconds);
+  };
+
+  // Filter entries
+  const getFilteredEntries = () => {
+    let filtered = entries;
+    if (searchTerm) {
+      filtered = filtered.filter(entry =>
+        entry.project.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.task.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.user.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(entry => entry.status === filterStatus);
+    }
+    return filtered;
+  };
+
+  // Projects list
+  const projects = [
+    { id: 'web-dev', name: 'Web Development' },
+    { id: 'design', name: 'Design Project' },
+    { id: 'testing', name: 'Testing' },
+    { id: 'content', name: 'Content Creation' }
+  ];
+
+  // Tasks list
+  const tasks = [
+    { id: 'designing', name: 'Designing' },
+    { id: 'development', name: 'Development' },
+    { id: 'content', name: 'Content' },
+    { id: 'testing', name: 'Testing' },
+    { id: 'review', name: 'Review' }
+  ];
+
+  const filteredEntries = getFilteredEntries();
 
   return (
-    <div className="time-tracker">
-      <div className="tracker-header">
-        <h2>Time Tracker</h2>
-        <div className="tracker-actions">
-          <button className={`btn-track ${isTracking ? 'tracking' : ''}`} onClick={handleStartTracking} disabled={isTracking}>
-            {isTracking ? '⏺ Tracking...' : '▶ Start Tracking'}
-          </button>
-          {isTracking && (
-            <button className="btn-stop" onClick={handleStopTracking}>⏹ Stop Tracking</button>
-          )}
-          <button className="btn-primary" onClick={() => setShowModal(true)}>+ Add Time Entry</button>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      {/* Header */}
+      <div className="flex flex-wrap justify-between items-start mb-6 gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+            <Timer className="w-6 h-6 mr-2 text-blue-600" />
+            Time Tracker
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">Track and log time for your projects</p>
         </div>
-      </div>
-
-      <div className="stats-cards">
-        <div className="stat-card">
-          <div className="stat-label">Total Hours</div>
-          <div className="stat-value">{totalHours.toFixed(1)} hrs</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Billable</div>
-          <div className="stat-value">{billableHours.toFixed(1)} hrs</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Non-Billable</div>
-          <div className="stat-value">{nonBillableHours.toFixed(1)} hrs</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Entries</div>
-          <div className="stat-value">{filteredEntries.length}</div>
-        </div>
-      </div>
-
-      <div className="filters">
-        <div className="filter-group">
-          <label>Date:</label>
-          <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
-        </div>
-        <div className="filter-group">
-          <label>Employee:</label>
-          <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)}>
-            <option value="all">All Employees</option>
-            {users.map(user => <option key={user.id} value={user.id}>{user.name}</option>)}
-          </select>
-        </div>
-      </div>
-
-      <div className="task-summary">
-        <h3>Task Summary</h3>
-        <table className="summary-table">
-          <thead>
-            <tr>
-              <th>Task</th>
-              <th>Total Hours</th>
-              <th>Billable Hours</th>
-              <th>Non-Billable</th>
-            </tr>
-          </thead>
-          <tbody>
-            {taskSummary.map(task => (
-              <tr key={task.taskId}>
-                <td>{task.taskName}</td>
-                <td>{task.totalHours.toFixed(1)} hrs</td>
-                <td>{task.billableHours.toFixed(1)} hrs</td>
-                <td>{(task.totalHours - task.billableHours).toFixed(1)} hrs</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="time-entries">
-        <h3>Time Entries</h3>
-        <table className="entries-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Task</th>
-              <th>Project</th>
-              <th>Hours</th>
-              <th>Billable</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredEntries.map(entry => (
-              <tr key={entry.id}>
-                <td>{entry.date}</td>
-                <td>{entry.taskName}</td>
-                <td>{entry.projectName}</td>
-                <td>{entry.hours} hrs</td>
-                <td>{entry.billable ? '✅ Yes' : '❌ No'}</td>
-                <td>{entry.description}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Add Time Entry</h3>
-              <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
-            </div>
-            <form onSubmit={handleSubmitEntry}>
-              <div className="form-group">
-                <label>Task *</label>
-                <select required value={newEntry.taskId} onChange={(e) => setNewEntry({...newEntry, taskId: e.target.value})}>
-                  <option value="">Select Task</option>
-                  {tasks.map(task => <option key={task.id} value={task.id}>{task.name}</option>)}
-                </select>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Date</label>
-                  <input type="date" value={newEntry.date} onChange={(e) => setNewEntry({...newEntry, date: e.target.value})} />
-                </div>
-                <div className="form-group">
-                  <label>Hours</label>
-                  <input type="number" step="0.5" value={newEntry.hours} onChange={(e) => setNewEntry({...newEntry, hours: parseFloat(e.target.value)})} />
-                </div>
-              </div>
-              <div className="form-group">
-                <label>Description</label>
-                <textarea rows={2} value={newEntry.description} onChange={(e) => setNewEntry({...newEntry, description: e.target.value})} />
-              </div>
-              <div className="form-group">
-                <label className="checkbox-label">
-                  <input type="checkbox" checked={newEntry.billable} onChange={(e) => setNewEntry({...newEntry, billable: e.target.checked})} />
-                  Billable (chargeable to client)
-                </label>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="btn-primary">Add Entry</button>
-              </div>
-            </form>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1 text-sm text-gray-500 bg-white px-3 py-2 rounded-lg shadow-sm border border-gray-200">
+            <Clock className="w-4 h-4 mr-1" />
+            <span>{entries.length} Entries</span>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Timer Section */}
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 mb-6 border border-blue-100 shadow-sm">
+        <div className="flex flex-col lg:flex-row gap-6">
+          
+          {/* Timer Display */}
+          <div className="lg:w-1/3 bg-white rounded-2xl p-6 shadow-md border border-blue-100">
+            <div className="text-center">
+              <div className="text-5xl font-bold text-gray-800 font-mono tracking-wider">
+                {formatTime(seconds)}
+              </div>
+              
+              <div className="flex items-center justify-center gap-2 mt-4">
+                <div className={`w-3 h-3 rounded-full ${isRunning ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`} />
+                <span className="text-sm text-gray-500">{isRunning ? 'Running' : 'Stopped'}</span>
+              </div>
+              
+              <div className="flex gap-3 mt-4">
+                {!isRunning ? (
+                  <button
+                    onClick={handleStart}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-medium transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                  >
+                    <Play className="w-5 h-5" />
+                    Start Timer
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleStop}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-medium transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                  >
+                    <Square className="w-5 h-5" />
+                    Stop Timer
+                  </button>
+                )}
+                <button
+                  onClick={handleReset}
+                  className="px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-medium transition-all"
+                  disabled={seconds === 0}
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Project & Task Selectors */}
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-blue-100">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Briefcase className="w-4 h-4 inline mr-1" />
+                Project <span className="text-red-500">*</span>
+              </label>
+              <select 
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                value={selectedProject}
+                onChange={(e) => setSelectedProject(e.target.value)}
+                disabled={isRunning}
+              >
+                <option value="">Select Project</option>
+                {projects.map(project => (
+                  <option key={project.id} value={project.name}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-blue-100">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Tag className="w-4 h-4 inline mr-1" />
+                Task
+              </label>
+              <select 
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                value={selectedTask}
+                onChange={(e) => setSelectedTask(e.target.value)}
+                disabled={isRunning}
+              >
+                <option value="">Select Task</option>
+                {tasks.map(task => (
+                  <option key={task.id} value={task.name}>
+                    {task.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Notes and Summary */}
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <FileText className="w-4 h-4 inline mr-1" />
+              Notes
+            </label>
+            <textarea
+              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+              rows={2}
+              placeholder="Add notes..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              disabled={isRunning}
+            />
+          </div>
+          
+          <div className="md:col-span-2 grid grid-cols-2 gap-3">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-blue-100 flex items-center justify-between">
+              <span className="text-sm text-gray-600">Today</span>
+              <span className="text-lg font-bold text-blue-600">{getTodayTotal()}</span>
+            </div>
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-blue-100 flex items-center justify-between">
+              <span className="text-sm text-gray-600">This Week</span>
+              <span className="text-lg font-bold text-indigo-600">{getWeekTotal()}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Entries Table */}
+      <div>
+        <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
+          <h2 className="text-lg font-semibold text-gray-800 flex items-center">
+            <Clock className="w-5 h-5 mr-2 text-blue-600" />
+            Recent Entries
+            <span className="ml-2 text-sm font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+              {filteredEntries.length}
+            </span>
+          </h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search entries..."
+                className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-40 md:w-56"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              <option value="all">All Status</option>
+              <option value="Billable">Billable</option>
+              <option value="Non-Bill">Non-Billable</option>
+            </select>
+          </div>
+        </div>
+        
+        <div className="overflow-x-auto bg-white rounded-2xl shadow-sm border border-gray-200">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Project</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Task</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Time</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">User</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredEntries.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-12 text-gray-500">
+                    <Clock className="w-12 h-12 mx-auto text-gray-300 mb-2" />
+                    <p className="text-sm">No entries found</p>
+                    <p className="text-xs text-gray-400">Start tracking your time to see entries here</p>
+                  </td>
+                </tr>
+              ) : (
+                filteredEntries.map((entry, index) => (
+                  <tr key={entry.id} className={`border-b border-gray-100 hover:bg-blue-50/50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                    <td className="py-3 px-4 text-sm text-gray-700">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                        {entry.date}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-700 font-medium">{entry.project}</td>
+                    <td className="py-3 px-4 text-sm text-gray-700">
+                      <span className="px-2 py-1 bg-gray-100 rounded-full text-xs">
+                        {entry.task}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-700 font-mono font-medium">{entry.time}</td>
+                    <td className="py-3 px-4 text-sm text-gray-700">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-r from-purple-400 to-purple-600 text-white flex items-center justify-center text-[10px] font-medium">
+                          {entry.user.charAt(0)}
+                        </div>
+                        {entry.user}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                        entry.status === 'Billable' 
+                          ? 'bg-green-100 text-green-700 border border-green-200' 
+                          : 'bg-gray-100 text-gray-700 border border-gray-200'
+                      }`}>
+                        {entry.status}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <button 
+                        onClick={() => handleDeleteEntry(entry.id)}
+                        className="text-gray-400 hover:text-red-500 transition-colors p-1.5 hover:bg-red-50 rounded-lg"
+                        title="Delete entry"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Footer Stats */}
+      <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-200">
+          <div className="text-xs text-gray-500">Total Entries</div>
+          <div className="text-xl font-bold text-gray-800">{entries.length}</div>
+        </div>
+        <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-200">
+          <div className="text-xs text-gray-500">Today</div>
+          <div className="text-xl font-bold text-blue-600">{getTodayTotal()}</div>
+        </div>
+        <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-200">
+          <div className="text-xs text-gray-500">This Week</div>
+          <div className="text-xl font-bold text-indigo-600">{getWeekTotal()}</div>
+        </div>
+        <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-200">
+          <div className="text-xs text-gray-500">Billable</div>
+          <div className="text-xl font-bold text-green-600">
+            {entries.filter(e => e.status === 'Billable').length}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
