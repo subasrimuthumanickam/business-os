@@ -1,6 +1,15 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import "./CreateInvoice.css";
+
+interface Invoice {
+  id: number;
+  invoice_number: string;
+  invoice_date: string;
+  due_date: string;
+  items?: InvoiceItem[];
+  status: string;
+  total: number;
+}
 
 interface InvoiceItem {
   item_name: string;
@@ -11,18 +20,18 @@ interface InvoiceItem {
 
 interface CreateInvoiceProps {
   customer: any;
+  invoice?: Invoice;
   onClose: () => void;
 }
 
-// Customer search result type
 interface CustomerOption {
   id: number;
   display_name: string;
   email: string;
 }
 
-// const CreateInvoice: React.FC = () => {
-const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, onClose }) => {
+const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, invoice, onClose }) => {
+
   const getTodayDate = () => new Date().toISOString().split("T")[0];
   const getDueDate = () => {
     const date = new Date();
@@ -34,7 +43,6 @@ const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, onClose }) => {
   const [invoiceDate, setInvoiceDate] = useState(getTodayDate());
   const [dueDate, setDueDate] = useState(getDueDate());
 
-  // ✅ Customer search state
   const [customerSearch, setCustomerSearch] = useState("");
   const [customerId, setCustomerId] = useState<number | null>(null);
   const [customerOptions, setCustomerOptions] = useState<CustomerOption[]>([]);
@@ -45,28 +53,33 @@ const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, onClose }) => {
     { item_name: "", quantity: 1, rate: 0, amount: 0 },
   ]);
 
+  // Combined Initialization Effect
   useEffect(() => {
-    generateInvoiceNumber();
-
-    // Close dropdown on outside click
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-        setShowDropdown(false);
+    if (invoice) {
+      setInvoiceNumber(invoice.invoice_number);
+      setInvoiceDate(invoice.invoice_date.split("T")[0]);
+      setDueDate(invoice.due_date.split("T")[0]);
+      if (invoice.items && invoice.items.length > 0) {
+        setItems(invoice.items);
       }
-    };
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, []);
+    } else {
+      generateInvoiceNumber();
+    }
+
+    if (customer) {
+      setCustomerSearch(customer.name);
+      setCustomerId(Number(customer.id));
+    }
+  }, [customer, invoice]);
 
   const generateInvoiceNumber = () => {
     const random = Math.floor(10000 + Math.random() * 90000);
     setInvoiceNumber(`INV-${random}`);
   };
 
-  // ✅ Search customers from DB as user types
   const handleCustomerSearch = async (value: string) => {
     setCustomerSearch(value);
-    setCustomerId(null); // reset selected id when typing
+    setCustomerId(null);
 
     if (value.trim().length < 1) {
       setCustomerOptions([]);
@@ -75,9 +88,7 @@ const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, onClose }) => {
     }
 
     try {
-      const res = await fetch(
-  `http://localhost:5000/api/customers/search?q=${encodeURIComponent(value)}`
-);
+      const res = await fetch(`http://localhost:5000/api/customers/search?q=${encodeURIComponent(value)}`);
       const data = await res.json();
       if (data.success) {
         setCustomerOptions(data.data);
@@ -88,57 +99,40 @@ const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, onClose }) => {
     }
   };
 
-  // ✅ When user selects a customer from dropdown
   const handleSelectCustomer = (customer: CustomerOption) => {
     setCustomerSearch(customer.display_name);
     setCustomerId(customer.id);
     setCustomerOptions([]);
     setShowDropdown(false);
   };
-   useEffect(() => {
-    // Auto-fill customer details from props
-    if (customer) {
-      setCustomerSearch(customer.name);
-      setCustomerId(Number(customer.id));
-    }
-  }, [customer]);
 
-  const handleItemChange = (
-    index: number,
-    field: keyof InvoiceItem,
-    value: string | number
-  ) => {
+  const handleItemChange = (index: number, field: keyof InvoiceItem, value: string | number) => {
     const updatedItems = [...items];
     updatedItems[index] = {
       ...updatedItems[index],
       [field]: field === "item_name" ? value : Number(value),
     };
-    updatedItems[index].amount =
-      updatedItems[index].quantity * updatedItems[index].rate;
+    updatedItems[index].amount = updatedItems[index].quantity * updatedItems[index].rate;
     setItems(updatedItems);
   };
 
-  const addItem = () => {
-    setItems([...items, { item_name: "", quantity: 1, rate: 0, amount: 0 }]);
-  };
-
-  const removeItem = (index: number) => {
-    setItems(items.filter((_, i) => i !== index));
-  };
+  const addItem = () => setItems([...items, { item_name: "", quantity: 1, rate: 0, amount: 0 }]);
+  const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
 
   const subtotal = items.reduce((total, item) => total + item.amount, 0);
   const tax = subtotal * 0.18;
   const grandTotal = subtotal + tax;
 
+  
+
   const handleSave = async () => {
-    // ✅ Validate customer selected
     if (!customerId) {
-      alert("Please select a valid customer from the dropdown.");
+      alert("Please select a valid customer.");
       return;
     }
 
     const payload = {
-      customer_id: customerId, // ✅ Real DB customer_id
+      customer_id: customerId,
       invoice_number: invoiceNumber,
       invoice_date: invoiceDate,
       due_date: dueDate,
@@ -149,25 +143,23 @@ const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, onClose }) => {
       items,
     };
 
-    console.log("Payload => ", payload);
+
+    const isEditing = !!invoice;
+    const url = isEditing ? `http://localhost:5000/api/invoices/${invoice?.id}` : "http://localhost:5000/api/invoices/create";
+    const method = isEditing ? "PUT" : "POST";
 
     try {
-      const response = await fetch("http://localhost:5000/api/invoices/create", {
-        method: "POST",
+      const response = await fetch(url, {
+        method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
-
       if (response.ok) {
-        alert("Invoice Created Successfully!");
-        generateInvoiceNumber();
-        setCustomerSearch("");
-        setCustomerId(null);
-        setItems([{ item_name: "", quantity: 1, rate: 0, amount: 0 }]);
+        alert(isEditing ? "Invoice Updated!" : "Invoice Created!");
+        onClose();
       } else {
-        alert(data.message || "Failed to Save Invoice");
+        alert("Failed to save.");
       }
     } catch (error) {
       console.error(error);

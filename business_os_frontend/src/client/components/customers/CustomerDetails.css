@@ -130,6 +130,9 @@
 .customer-sidebar {
   width: 280px;
   flex-shrink: 0;
+  position: sticky;
+  top: 20px;
+  height: fit-content;
 }
 
 .profile-card,
@@ -269,7 +272,7 @@
   font-weight: 600;
 }
 .table-card td {
-  white-space: nowrap; 
+  white-space: nowrap;
 }
 
 /* Empty States */
@@ -282,14 +285,52 @@
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
 }
 
-.customer-sidebar {
-  width: 280px;
-  flex-shrink: 0;
+/* ---- Row Action Menu ----
+   Rendered through a React Portal straight onto document.body and
+   positioned with `position: fixed` + real screen coordinates, so it can
+   NEVER be clipped by .table-card's overflow-x (which silently forces
+   overflow-y to auto too — a real CSS quirk). No relative-positioned
+   wrapper needed here anymore since nothing is anchored via the DOM tree. */
 
-  position: sticky;
-  top: 20px;
+.cd-action-btn {
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 2px 8px;
+  margin: 0;
+  line-height: 1;
+  border-radius: 6px;
+  color: #374151;
+}
 
-  height: fit-content;
+.cd-action-btn:hover {
+  background: #f3f4f6;
+}
+
+.cd-action-menu {
+  width: 190px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.cd-action-menu div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #111827;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cd-action-menu div:hover {
+  background: #f3f4f6;
 }
 
 .new-transaction-btn {
@@ -350,6 +391,8 @@
   font-weight: 500;
 }
 
+
+
 /* Responsive */
 @media (max-width: 1200px) {
   .summary-grid {
@@ -364,6 +407,7 @@
 
   .customer-sidebar {
     width: 100%;
+    position: static;
   }
 
   .summary-grid {

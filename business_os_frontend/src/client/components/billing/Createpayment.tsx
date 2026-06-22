@@ -14,15 +14,28 @@ interface PayableInvoice {
   status?: string;
 }
 
+interface PaymentData {
+  id: number;
+  payment_number: string;
+  payment_date: string;
+  amount: number;
+  payment_method: string;
+  reference_number?: string;
+  notes?: string;
+}
+
 interface CreatePaymentProps {
   customer: any;
   invoice?: PayableInvoice | null;
+  payment?: PaymentData | null;
   onClose: () => void;
 }
 
+
+
 const PAYMENT_MODES = ["Cash", "Bank Transfer", "UPI", "Cheque", "Card", "Other"];
 
-const CreatePayment: React.FC<CreatePaymentProps> = ({ customer, invoice, onClose }) => {
+const CreatePayment: React.FC<CreatePaymentProps> = ({ customer, invoice, payment, onClose }) => {
   const getTodayDate = () => new Date().toISOString().split("T")[0];
 
   const [paymentNumber, setPaymentNumber] = useState("");
@@ -58,6 +71,32 @@ const CreatePayment: React.FC<CreatePaymentProps> = ({ customer, invoice, onClos
       setCustomerId(Number(customer.id));
     }
   }, [customer]);
+
+  useEffect(() => {
+  if (payment) {
+    setPaymentNumber(payment.payment_number || "");
+
+    setPaymentDate(
+      payment.payment_date
+        ? payment.payment_date.split("T")[0]
+        : getTodayDate()
+    );
+
+    setAmount(payment.amount || 0);
+
+    setPaymentMode(
+      payment.payment_method || PAYMENT_MODES[0]
+    );
+
+    setReferenceNumber(
+      payment.reference_number || ""
+    );
+
+    setNotes(
+      payment.notes || ""
+    );
+  }
+}, [payment]);
 
   const generatePaymentNumber = () => {
     const random = Math.floor(10000 + Math.random() * 90000);

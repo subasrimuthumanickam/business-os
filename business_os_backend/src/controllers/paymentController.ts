@@ -2,10 +2,11 @@
 import type { Request, Response } from 'express';
 import PDFDocument from 'pdfkit';
 import db from '../config/db.js';
+import { getPaymentById } from '../services/paymentModel.js';
 
 export const createPayment = async (req: Request, res: Response) => {
     const { 
-        customer_id, 
+        customer_id,
         invoice_id, 
         payment_number, 
         payment_date, 
@@ -156,5 +157,78 @@ export const getPaymentReceipt = async (req: Request, res: Response) => {
         if (!res.headersSent) {
             res.status(500).json({ success: false, message: "Failed to generate receipt" });
         }
+    }
+};
+
+export const getPayment = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+
+    const { id } = req.params;
+
+    const rows: any = await db.execute(
+      `
+      SELECT
+        p.*,
+        c.display_name AS customer_name,
+        c.email AS customer_email
+      FROM payments p
+      LEFT JOIN customers c
+      ON p.customer_id = c.id
+      WHERE p.id = ?
+      `,
+      [id]
+    );
+
+    const payment =
+      Array.isArray(rows) && rows.length > 0
+        ? rows[0]
+        : null;
+
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment not found"
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: payment
+    });
+
+  } catch (error) {
+    console.log("Get Payment Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error"
+    });
+  }
+};
+
+export const deletePayment = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    console.log("Attempting to delete payment ID:", id); // Check this in terminal
+
+    try {
+        // Log the query to see if it's correct
+        const sql = "DELETE FROM payments WHERE id = ?";
+        console.log("Executing SQL:", sql, "with ID:", id);
+
+        const [result]: any = await db.execute(sql, [id]);
+        
+        console.log("Database result:", result); // See if affectedRows is 0 or if it failed
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: "Payment not found" });
+        }
+
+        res.json({ success: true, message: "Payment deleted successfully" });
+    } catch (error) {
+        console.error("CRITICAL BACKEND ERROR:", error); // This is where the 500 detail lives
+        res.status(500).json({ success: false, message: "Internal Server Error" });
     }
 };

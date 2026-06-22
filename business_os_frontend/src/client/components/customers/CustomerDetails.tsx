@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import "./CustomerDetails.css";
 import {
   ResponsiveContainer,
@@ -13,6 +14,9 @@ import CreatePayment from "../billing/Createpayment";
 import CreateEstimate from "../billing/Createestimate";
 import CreateSalesOrder from "../billing/Createsalesorder";
 import CreateCreditNote from "../billing/Createcreditnote";
+import InvoiceView from "../billing/InvoiceView";
+import { downloadInvoicePDF } from "../../utils/invoicePdf";
+import ReceiptView from "../billing/ReceiptView";
 
 // =============================================
 // Types
@@ -31,7 +35,16 @@ interface CustomerProps {
     customer_type?: string;
     location?: string;
   };
-  onEdit?: () => void; // CustomerList-ல் edit trigger பண்ண
+  onEdit?: () => void; 
+}
+
+interface InvoiceItem {
+  id?: number;
+  invoice_id?: number;
+  item_name: string;
+  quantity: number;
+  rate: number;
+  amount: number;
 }
 
 interface Invoice {
@@ -43,15 +56,17 @@ interface Invoice {
   total: number;
   subtotal: number;
   tax: number;
+  items?: InvoiceItem[];
 }
-
+  
 interface Payment {
   id: number;
-  payment_number?: string;
+  payment_number: string;
   amount: number;
   payment_date: string;
   payment_method: string;
   reference_number?: string;
+  notes?: string;
 }
 
 interface OverviewStats {
@@ -81,6 +96,8 @@ const TAB_LABELS: Record<string, string> = {
   statement: "Statement",
 };
 
+const ACTION_MENU_WIDTH = 190;
+
 // =============================================
 // Component
 // =============================================
@@ -99,6 +116,11 @@ const CustomerDetails: React.FC<CustomerProps> = ({ customer, onEdit }) => {
   // the user clicks an invoice number directly instead of "New Transaction"
   const [payingInvoice, setPayingInvoice] = useState<PayableInvoice | null>(null);
 
+  // Row action menu (View/Edit/Delete/Send/Download) — id of the invoice
+  // whose menu is open, plus the screen position to render it at via portal.
+  const [openMenu, setOpenMenu] = useState<number | null>(null);
+  const [menuCoords, setMenuCoords] = useState<{ top: number; left: number } | null>(null);
+
   // ---- Data States ----
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -111,9 +133,21 @@ const CustomerDetails: React.FC<CustomerProps> = ({ customer, onEdit }) => {
   const [chartData, setChartData] = useState<{ month: string; amount: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // ---- Dropdown State ----
+  // ---- Dropdown State (New Transaction) ----
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+
+  const [viewInvoice, setViewInvoice] = useState<Invoice | null>(null);
+  
+  const [autoDownload, setAutoDownload] = useState(false);
+ 
+  //Download Receipt 
+  const [viewReceipt, setViewReceipt] =useState<Payment | null>(null);
+   
+  //Receipt edit and delete
+  const [editingPayment, setEditingPayment] =useState<Payment | null>(null);
 
   // =============================================
   // Fetch Data
@@ -122,7 +156,7 @@ const CustomerDetails: React.FC<CustomerProps> = ({ customer, onEdit }) => {
   useEffect(() => {
     fetchAllData();
 
-    // Close dropdown outside click
+    // Close "New Transaction" dropdown on outside click
     const handleOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
@@ -131,6 +165,34 @@ const CustomerDetails: React.FC<CustomerProps> = ({ customer, onEdit }) => {
     document.addEventListener("mousedown", handleOutside);
     return () => document.removeEventListener("mousedown", handleOutside);
   }, [customer.id]);
+
+  // Close the row action menu on outside click, scroll, or resize — since it's
+  // portaled to document.body, a plain "click outside this div" check won't
+  // catch it, so we check the click target against the menu/button classes instead.
+  useEffect(() => {
+    if (openMenu === null) return;
+
+    const closeMenu = () => {
+      setOpenMenu(null);
+      setMenuCoords(null);
+    };
+
+    const handleDocClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest(".cd-action-menu") || target.closest(".cd-action-btn")) return;
+      closeMenu();
+    };
+
+    document.addEventListener("mousedown", handleDocClick);
+    window.addEventListener("scroll", closeMenu, true);
+    window.addEventListener("resize", closeMenu);
+
+    return () => {
+      document.removeEventListener("mousedown", handleDocClick);
+      window.removeEventListener("scroll", closeMenu, true);
+      window.removeEventListener("resize", closeMenu);
+    };
+  }, [openMenu]);
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -179,7 +241,85 @@ const CustomerDetails: React.FC<CustomerProps> = ({ customer, onEdit }) => {
     }
   };
 
-  // ---- Compute overview stats from invoices ----
+  // ---- Row action menu handlers ----
+  const handleToggleMenu = (e: React.MouseEvent<HTMLButtonElement>, invId: number) => {
+    e.stopPropagation();
+
+    if (openMenu === invId) {
+      setOpenMenu(null);
+      setMenuCoords(null);
+      return;
+    }
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    setMenuCoords({
+      top: rect.bottom + 6,
+      left: Math.max(8, rect.right - ACTION_MENU_WIDTH),
+    });
+    setOpenMenu(invId);
+  };
+
+  const handleViewInvoice = async (invoiceId: number) => {
+  try {
+    const res = await fetch(`${API}/invoices/${invoiceId}`);
+    const data = await res.json();
+
+    if (data.success) {
+      setViewInvoice(data.data);
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+
+
+const handleEditInvoice = async (invoice: Invoice) => {
+  setOpenMenu(null);
+
+  try {
+    const res = await fetch(`${API}/invoices/${invoice.id}`);
+    const data = await res.json();
+
+    console.log("Invoice Edit Data =>", data.data);
+
+    if (data.success) {
+      setEditingInvoice(data.data);
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+const handleDeleteInvoice = async (id: number, invNumber: string) => {
+
+  const confirmed = window.confirm(
+    `Are you sure you want to delete Invoice ${invNumber}?`
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}/invoices/${id}`, {
+      method: "DELETE",
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      alert("Invoice deleted successfully!");
+      await fetchInvoices();
+    } else {
+      alert("Failed to delete invoice");
+    }
+
+  } catch (err) {
+    console.error(err);
+    alert("Error deleting invoice");
+  }
+};
   const computeStats = (invList: Invoice[]) => {
     const totalIncome = invList.reduce((sum, inv) => sum + (inv.total || 0), 0);
     const receivables = invList
@@ -282,6 +422,7 @@ const CustomerDetails: React.FC<CustomerProps> = ({ customer, onEdit }) => {
   };
 
   const handleSendInvoice = async (invoiceId: number, invNumber: string) => {
+    setOpenMenu(null);
     try {
       const res = await fetch(`${API}/invoices/send-email`, {
         method: "POST",
@@ -314,13 +455,22 @@ const CustomerDetails: React.FC<CustomerProps> = ({ customer, onEdit }) => {
     }
   };
 
-  const handleDownloadInvoice = (invoiceId: number, invNumber: string) => {
-    downloadPdf(
-      `${API}/invoices/${invoiceId}/pdf`,
-      `${invNumber}.pdf`,
-      "Failed to download invoice"
-    );
-  };
+ const handleDownloadInvoice = async (invoiceId: number) => {
+
+  setOpenMenu(null);
+
+  try {
+    const res = await fetch(`${API}/invoices/${invoiceId}`);
+    const data = await res.json();
+
+    if (data.success) {
+      setAutoDownload(true);
+      setViewInvoice(data.data);
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   const handleDownloadReceipt = (paymentId: number, paymentNumber?: string) => {
     downloadPdf(
@@ -336,35 +486,219 @@ const CustomerDetails: React.FC<CustomerProps> = ({ customer, onEdit }) => {
     return date.toISOString().split("T")[0]; // Returns YYYY-MM-DD
   };
 
+  const handleOpenInvoice = async (invoiceId: number) => {
+  try {
+    const res = await fetch(`${API}/invoices/${invoiceId}`);
+    const data = await res.json();
+
+    if (data.success) {
+      setViewInvoice(data.data);
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
+//receipt 
+
+const handleOpenReceipt = async (
+  paymentId: number
+) => {
+
+  try {
+
+    const res = await fetch(
+      `${API}/payments/${paymentId}`
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+      setViewReceipt(data.data);
+    }
+
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+if (viewReceipt) {
+  return (
+    <ReceiptView
+      payment={viewReceipt}
+      customer={customer}
+      onClose={() => setViewReceipt(null)}
+    />
+  );
+}
+
+ const handleEditPayment = async (
+  paymentId: number
+) => {
+
+  try {
+
+    const res = await fetch(
+      `${API}/payments/${paymentId}`
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+      setEditingPayment({
+        ...data.data,
+        amount: Number(data.data.amount) || 0
+      });
+
+      setShowPaymentForm(true);
+    }
+
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+// const handleDeletePayment = async (
+//   paymentId: number
+// ) => {
+
+//   const confirmed = window.confirm(
+//     "Are you sure you want to delete this payment?"
+//   );
+
+//   if (!confirmed) return;
+
+//   try {
+
+//     const res = await fetch(
+//       `${API}/payments/${paymentId}`,
+//       {
+//         method: "DELETE"
+//       }
+//     );
+
+//     const data = await res.json();
+
+//     if (data.success) {
+
+//       alert("Payment deleted successfully");
+
+//       fetchPayments();
+//       fetchInvoices();
+//     }
+
+//   } catch (err) {
+
+//     console.log(err);
+
+//     alert("Failed to delete payment");
+//   }
+// };
+const handleDeletePayment = async (paymentId: number) => {
+  const confirmed = window.confirm("Are you sure you want to delete this payment?");
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch(`${API}/payments/${paymentId}`, {
+      method: "DELETE"
+    });
+
+    // Check if the response is ok (status 200-299)
+    if (!res.ok) {
+      // If 404 or 500, throw an error to be caught by the catch block
+      throw new Error(`Server responded with ${res.status}`);
+    }
+
+    const data = await res.json();
+
+    if (data.success) {
+      alert("Payment deleted successfully");
+      fetchPayments();
+      fetchInvoices();
+    } else {
+      alert("Failed to delete payment: " + (data.message || "Unknown error"));
+    }
+  } catch (err) {
+    console.error("Delete Error:", err);
+    alert("An error occurred while deleting the payment. Check the console for details.");
+  }
+};
   // =============================================
   // Inline Transaction Forms — swap in place of the
   // customer page, exactly like the existing Invoice flow.
   // No route, no navigation, no blank page.
   // =============================================
 
-  if (showInvoiceForm) {
+  if (editingInvoice) {
     return (
       <CreateInvoice
         customer={customer}
+        invoice={editingInvoice}
         onClose={() => {
-          setShowInvoiceForm(false);
+          setEditingInvoice(null);
           fetchAllData();
         }}
       />
     );
   }
 
+  if (viewInvoice) {
+  return (
+    <InvoiceView
+      invoice={viewInvoice}
+      customer={customer}
+      autoDownload={autoDownload}
+      onClose={() => {
+        setViewInvoice(null);
+        setAutoDownload(false);
+      }}
+      onPay={() => {
+        setPayingInvoice({
+          id: viewInvoice.id,
+          invoice_number: viewInvoice.invoice_number,
+          total: viewInvoice.total,
+          status: viewInvoice.status,
+        });
+
+        setViewInvoice(null);
+        setShowPaymentForm(true);
+      }}
+    />
+  );
+}
+
+  if (showInvoiceForm) {
+  return (
+    <CreateInvoice
+      customer={customer}
+      onClose={() => {
+        setShowInvoiceForm(false);
+        fetchAllData();
+      }}
+    />
+  );
+}
+
   if (showPaymentForm) {
     return (
       <CreatePayment
-        customer={customer}
-        invoice={payingInvoice}
-        onClose={() => {
-          setShowPaymentForm(false);
-          setPayingInvoice(null);
-          fetchAllData();
-        }}
-      />
+  customer={customer}
+  invoice={payingInvoice}
+  payment={
+    editingPayment
+      ? {
+          ...editingPayment,
+          payment_number:
+            editingPayment.payment_number || ""
+        }
+      : null
+  }
+  onClose={() => {
+    setShowPaymentForm(false);
+    setPayingInvoice(null);
+    setEditingPayment(null);
+    fetchAllData();
+  }}
+/>
     );
   }
 
@@ -395,6 +729,9 @@ const CustomerDetails: React.FC<CustomerProps> = ({ customer, onEdit }) => {
     );
   }
 
+  // Invoice whose row-action menu is currently open, if any
+  const activeMenuInvoice = openMenu !== null ? invoices.find((i) => i.id === openMenu) : undefined;
+
   // =============================================
   // Render
   // =============================================
@@ -424,11 +761,11 @@ const CustomerDetails: React.FC<CustomerProps> = ({ customer, onEdit }) => {
 
             {dropdownOpen && (
               <ul className="txn-dropdown-menu">
-                <li onClick={() => handleTransaction("invoice")}>📄 Invoice</li>
-                <li onClick={() => handleTransaction("payment")}>💳 Customer Payment</li>
-                <li onClick={() => handleTransaction("estimate")}>📋 Estimate</li>
-                <li onClick={() => handleTransaction("sales-order")}>🛒 Sales Order</li>
-                <li onClick={() => handleTransaction("credit-note")}>📝 Credit Note</li>
+                <li onClick={() => handleTransaction("invoice")}> Invoice</li>
+                <li onClick={() => handleTransaction("payment")}>Customer Payment</li>
+                <li onClick={() => handleTransaction("estimate")}>Estimate</li>
+                <li onClick={() => handleTransaction("sales-order")}>Sales Order</li>
+                <li onClick={() => handleTransaction("credit-note")}>Credit Note</li>
               </ul>
             )}
           </div>
@@ -450,52 +787,53 @@ const CustomerDetails: React.FC<CustomerProps> = ({ customer, onEdit }) => {
 
       <div className="customer-content">
 
-        {/* ---- Sidebar ---- */}
-          {activeTab === "overview" && (
-        <div className="customer-sidebar">
-          <div className="profile-card">
-            <div className="avatar">
-              {customer.name?.charAt(0).toUpperCase()}
-            </div>
-            <h3>{customer.name}</h3>
-            <p>{customer.email}</p>
-          </div>
-
-          <div className="info-section">
-            <h4>Address</h4>
-            <div className="info-row">
-              <span>Billing</span>
-              <p>{customer.billing_address || "Not Added"}</p>
-            </div>
-            <div className="info-row">
-              <span>Shipping</span>
-              <p>{customer.shipping_address || "Not Added"}</p>
-            </div>
-          </div>
-
-          <div className="info-section">
-            <h4>Other Details</h4>
-            <div className="info-row">
-              <span>Type</span>
-              <p>{customer.customer_type || "Business"}</p>
-            </div>
-            <div className="info-row">
-              <span>Currency</span>
-              <p>{customer.currency || "INR"}</p>
-            </div>
-            <div className="info-row">
-              <span>Phone</span>
-              <p>{customer.phone_work || "-"}</p>
-            </div>
-            {customer.location && (
-              <div className="info-row">
-                <span>Location</span>
-                <p>{customer.location}</p>
+        {/* ---- Sidebar (Overview tab only) ---- */}
+        {activeTab === "overview" && (
+          <div className="customer-sidebar">
+            <div className="profile-card">
+              <div className="avatar">
+                {customer.name?.charAt(0).toUpperCase()}
               </div>
-            )}
+              <h3>{customer.name}</h3>
+              <p>{customer.email}</p>
+            </div>
+
+            <div className="info-section">
+              <h4>Address</h4>
+              <div className="info-row">
+                <span>Billing</span>
+                <p>{customer.billing_address || "Not Added"}</p>
+              </div>
+              <div className="info-row">
+                <span>Shipping</span>
+                <p>{customer.shipping_address || "Not Added"}</p>
+              </div>
+            </div>
+
+            <div className="info-section">
+              <h4>Other Details</h4>
+              <div className="info-row">
+                <span>Type</span>
+                <p>{customer.customer_type || "Business"}</p>
+              </div>
+              <div className="info-row">
+                <span>Currency</span>
+                <p>{customer.currency || "INR"}</p>
+              </div>
+              <div className="info-row">
+                <span>Phone</span>
+                <p>{customer.phone_work || "-"}</p>
+              </div>
+              {customer.location && (
+                <div className="info-row">
+                  <span>Location</span>
+                  <p>{customer.location}</p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-            )}
+        )}
+
         {/* ---- Main Content ---- */}
         <div className="customer-main">
 
@@ -605,7 +943,7 @@ const CustomerDetails: React.FC<CustomerProps> = ({ customer, onEdit }) => {
                       <th>Due Date</th>
                       <th>Status</th>
                       <th>Amount</th>
-                      <th>Action</th>
+                      <th style={{ width: "80px", textAlign: "center" }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -613,13 +951,13 @@ const CustomerDetails: React.FC<CustomerProps> = ({ customer, onEdit }) => {
                       const isPaid = inv.status?.toLowerCase() === "paid";
                       return (
                         <tr key={inv.id}>
-                          <td>
+                          {/* <td>
                             {isPaid ? (
                               <strong>{inv.invoice_number}</strong>
                             ) : (
                               <strong
-                                onClick={() => handlePayInvoice(inv)}
-                                title="Click to record a payment for this invoice"
+                                onClick={() => handleOpenInvoice(inv.id)}
+                                title="Click to view invoice"
                                 style={{
                                   color: "#2563eb",
                                   cursor: "pointer",
@@ -629,21 +967,30 @@ const CustomerDetails: React.FC<CustomerProps> = ({ customer, onEdit }) => {
                                 {inv.invoice_number}
                               </strong>
                             )}
-                          </td>
+                          </td> */}
+                          <td>
+  <strong
+    onClick={() => handleOpenInvoice(inv.id)}
+    title="Click to view invoice"
+    style={{
+      color: "#2563eb",
+      cursor: "pointer",
+      textDecoration: "underline",
+    }}
+  >
+    {inv.invoice_number}
+  </strong>
+</td>
                           <td>{formatDate(inv.invoice_date)}</td>
                           <td>{formatDate(inv.due_date)}</td>
                           <td><span className={getStatusClass(inv.status)} style={getStatusStyle(inv.status)}>{inv.status}</span></td>
                           <td>{formatCurrency(inv.total, customer.currency)}</td>
-                          <td>
-                            <button className="btn-send-mail" onClick={() => handleSendInvoice(inv.id, inv.invoice_number)}>
-                              Send Invoice
-                            </button>
+                          <td style={{ width: "80px", textAlign: "center" }}>
                             <button
-                              className="btn-send-mail"
-                              style={{ marginLeft: 8 }}
-                              onClick={() => handleDownloadInvoice(inv.id, inv.invoice_number)}
+                              className="cd-action-btn"
+                              onClick={(e) => handleToggleMenu(e, inv.id)}
                             >
-                              Download Invoice
+                              ⋯
                             </button>
                           </td>
                         </tr>
@@ -673,14 +1020,36 @@ const CustomerDetails: React.FC<CustomerProps> = ({ customer, onEdit }) => {
                           <td>{pay.payment_method}</td>
                           <td>{pay.reference_number || "-"}</td>
                           <td>{formatCurrency(pay.amount, customer.currency)}</td>
-                          <td>
-                            <button
-                              className="btn-send-mail"
-                              onClick={() => handleDownloadReceipt(pay.id, pay.payment_number)}
-                            >
-                              Download Receipt
+                          {/* <td>
+                           <button className="btn-send-mail"
+                           onClick={() =>
+                            handleOpenReceipt(pay.id)}>View Receipt
                             </button>
-                          </td>
+                          </td> */}
+                          <td>
+  <div style={{ display: "flex", gap: "8px" }}>
+    <button
+      className="btn-send-mail"
+      onClick={() => handleOpenReceipt(pay.id)}
+    >
+      View
+    </button>
+
+    <button
+      className="btn-edit"
+      onClick={() => handleEditPayment(pay.id)}
+    >
+      Edit
+    </button>
+
+    <button
+      className="btn-delete"
+      onClick={() => handleDeletePayment(pay.id)}
+    >
+      Delete
+    </button>
+  </div>
+</td>
                         </tr>
                       ))}
                     </tbody>
@@ -706,6 +1075,24 @@ const CustomerDetails: React.FC<CustomerProps> = ({ customer, onEdit }) => {
 
         </div>
       </div>
+
+      {/* ---- Row Action Menu (portaled — immune to any table overflow clipping) ---- */}
+      {activeMenuInvoice && menuCoords && createPortal(
+        <div
+          className="cd-action-menu"
+          style={{ position: "fixed", top: menuCoords.top, left: menuCoords.left }}
+        >
+          <div onClick={() => handleEditInvoice(activeMenuInvoice)}>Edit</div>
+          <div onClick={() => handleDeleteInvoice(activeMenuInvoice.id, activeMenuInvoice.invoice_number)}>Delete</div>
+          <div onClick={() => handleSendInvoice(activeMenuInvoice.id, activeMenuInvoice.invoice_number)}>
+            Send Invoice
+          </div>
+          <div onClick={() => handleDownloadInvoice(activeMenuInvoice.id)}>
+            Download Invoice
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };
