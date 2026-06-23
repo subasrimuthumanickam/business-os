@@ -1,12 +1,21 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { CreateProductDTO } from '../../types/Inventory.types';
+import { InventoryService } from '../../services/inventory.service';
 
 interface NewProductModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (product: CreateProductDTO) => void;
 }
+
+interface CategoryOption {
+  id: number;
+  name: string;
+}
+
+const UNIT_OPTIONS = ['pcs', 'kg', 'g', 'ltr', 'ml', 'box', 'pack', 'unit'];
 
 export const NewProductModal: React.FC<NewProductModalProps> = ({
   isOpen,
@@ -15,46 +24,65 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<CreateProductDTO>({
     name: '',
-    digital: 'No',
     sku: '',
-    onHand: 0,
-    available: 0,
-    onHold: 0,
-    status: 'Draft',
-    category: '',
+    category_id: null,
+    price: 0,
+    stock_quantity: 0,
+    unit: 'pcs',
+    description: '',
+    status: 'active',
   });
 
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (isOpen) {
+      const service = InventoryService.getInstance();
+      service
+        .getCategories()
+        .then(setCategories)
+        .catch((err) => console.error('Failed to load categories:', err));
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!formData.name.trim()) {
       newErrors.name = 'Product name is required';
     }
-    
+
     if (!formData.sku.trim()) {
       newErrors.sku = 'SKU is required';
-    } else if (!/^\d{12}$/.test(formData.sku)) {
-      newErrors.sku = 'SKU must be exactly 12 digits';
     }
-    
-    if (formData.onHand < 0) {
-      newErrors.onHand = 'On hand cannot be negative';
+
+    if (formData.price === undefined || formData.price < 0) {
+      newErrors.price = 'Price cannot be negative';
     }
-    
-    if (formData.available < 0) {
-      newErrors.available = 'Available cannot be negative';
-    }
-    
-    if (formData.onHold < 0) {
-      newErrors.onHold = 'On hold cannot be negative';
+
+    if (formData.stock_quantity === undefined || formData.stock_quantity < 0) {
+      newErrors.stock_quantity = 'Stock quantity cannot be negative';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      sku: '',
+      category_id: null,
+      price: 0,
+      stock_quantity: 0,
+      unit: 'pcs',
+      description: '',
+      status: 'active',
+    });
+    setErrors({});
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -62,17 +90,7 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
     if (validateForm()) {
       onSave(formData);
       onClose();
-      // Reset form
-      setFormData({
-        name: '',
-        digital: 'No',
-        sku: '',
-        onHand: 0,
-        available: 0,
-        onHold: 0,
-        status: 'Draft',
-        category: '',
-      });
+      resetForm();
     }
   };
 
@@ -81,11 +99,10 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
     onClose();
   };
 
-  // Generate a random 12-digit SKU
+  // Generate a simple random SKU (e.g. SKU-839201)
   const generateSKU = () => {
-    const sku = Math.floor(100000000000 + Math.random() * 900000000000).toString();
+    const sku = `SKU-${Math.floor(100000 + Math.random() * 900000)}`;
     setFormData({ ...formData, sku });
-    // Clear error if any
     if (errors.sku) {
       setErrors({ ...errors, sku: '' });
     }
@@ -97,17 +114,16 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
         {/* Header */}
         <div className="flex justify-between items-center mb-6 sticky top-0 bg-white py-2 border-b">
           <h2 className="text-xl font-semibold text-gray-800">New Product</h2>
-          <button 
-            onClick={handleClose} 
+          <button
+            onClick={handleClose}
             className="text-gray-500 hover:text-gray-700 transition-colors"
             aria-label="Close modal"
           >
             <X size={24} />
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit}>
-          {/* Two Column Layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Left Column */}
             <div className="space-y-4">
@@ -126,9 +142,7 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
                   placeholder="Enter product name"
                   required
                 />
-                {errors.name && (
-                  <p className="text-red-500 text-xs mt-1">{errors.name}</p>
-                )}
+                {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
               </div>
 
               {/* SKU */}
@@ -140,12 +154,11 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
                   <input
                     type="text"
                     value={formData.sku}
-                    onChange={(e) => setFormData({ ...formData, sku: e.target.value.replace(/\D/g, '') })}
+                    onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
                     className={`flex-1 px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
                       errors.sku ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder="Enter 12-digit SKU"
-                    maxLength={12}
+                    placeholder="Enter SKU"
                     required
                   />
                   <button
@@ -156,136 +169,115 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
                     Generate
                   </button>
                 </div>
-                {errors.sku && (
-                  <p className="text-red-500 text-xs mt-1">{errors.sku}</p>
-                )}
-                <p className="text-gray-400 text-xs mt-1">Enter exactly 12 digits (e.g., 123456789012)</p>
+                {errors.sku && <p className="text-red-500 text-xs mt-1">{errors.sku}</p>}
               </div>
 
               {/* Category */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Category
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
                 <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  value={formData.category_id ?? ''}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      category_id: e.target.value ? Number(e.target.value) : null,
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 >
                   <option value="">Select category</option>
-                  <option value="Electronics">Electronics</option>
-                  <option value="Fashion">Fashion</option>
-                  <option value="Home">Home</option>
-                  <option value="Books">Books</option>
-                  <option value="Toys">Toys</option>
-                  <option value="Beauty">Beauty</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
                 </select>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  rows={3}
+                  placeholder="Optional product description"
+                />
               </div>
             </div>
 
             {/* Right Column */}
             <div className="space-y-4">
-              {/* Digital Product */}
+              {/* Price */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Digital Product
+                  Price (₹) <span className="text-red-500">*</span>
                 </label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      value="No"
-                      checked={formData.digital === 'No'}
-                      onChange={(e) => setFormData({ ...formData, digital: e.target.value as 'Yes' | 'No' })}
-                      className="text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">No</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      value="Yes"
-                      checked={formData.digital === 'Yes'}
-                      onChange={(e) => setFormData({ ...formData, digital: e.target.value as 'Yes' | 'No' })}
-                      className="text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">Yes</span>
-                  </label>
-                </div>
+                <input
+                  type="number"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
+                    errors.price ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  min="0"
+                  step="0.01"
+                />
+                {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price}</p>}
               </div>
 
-              {/* Stock Quantities - 3 columns */}
+              {/* Stock Quantity + Unit */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Stock Quantities
+                  Opening Stock <span className="text-red-500">*</span>
                 </label>
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">On Hand</label>
-                    <input
-                      type="number"
-                      value={formData.onHand}
-                      onChange={(e) => setFormData({ ...formData, onHand: Number(e.target.value) })}
-                      className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
-                        errors.onHand ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      min="0"
-                    />
-                    {errors.onHand && (
-                      <p className="text-red-500 text-xs mt-1">{errors.onHand}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Available</label>
-                    <input
-                      type="number"
-                      value={formData.available}
-                      onChange={(e) => setFormData({ ...formData, available: Number(e.target.value) })}
-                      className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
-                        errors.available ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      min="0"
-                    />
-                    {errors.available && (
-                      <p className="text-red-500 text-xs mt-1">{errors.available}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">On Hold</label>
-                    <input
-                      type="number"
-                      value={formData.onHold}
-                      onChange={(e) => setFormData({ ...formData, onHold: Number(e.target.value) })}
-                      className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
-                        errors.onHold ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      min="0"
-                    />
-                    {errors.onHold && (
-                      <p className="text-red-500 text-xs mt-1">{errors.onHold}</p>
-                    )}
-                  </div>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={formData.stock_quantity}
+                    onChange={(e) =>
+                      setFormData({ ...formData, stock_quantity: Number(e.target.value) })
+                    }
+                    className={`flex-1 px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
+                      errors.stock_quantity ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    min="0"
+                  />
+                  <select
+                    value={formData.unit}
+                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                    className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  >
+                    {UNIT_OPTIONS.map((u) => (
+                      <option key={u} value={u}>
+                        {u}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+                {errors.stock_quantity && (
+                  <p className="text-red-500 text-xs mt-1">{errors.stock_quantity}</p>
+                )}
               </div>
 
               {/* Status */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Status
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select
                   value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as 'Active' | 'Draft' | 'Inactive' })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 >
-                  <option value="Active">Active</option>
-                  <option value="Draft">Draft</option>
-                  <option value="Inactive">Inactive</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
                 </select>
               </div>
             </div>
           </div>
-          
+
           {/* Footer Buttons */}
           <div className="mt-6 flex justify-end gap-3 sticky bottom-0 bg-white py-3 border-t">
             <button
