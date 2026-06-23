@@ -1,3 +1,5 @@
+// // src/types/Inventory.types.ts
+
 // ============================================
 // Product Related Types
 // ============================================
@@ -12,9 +14,9 @@ export interface Product {
   onHold: number;
   status: 'Active' | 'Draft' | 'Inactive';
   category?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-  deletedAt?: Date | null;
+  createdAt?: string;  // ✅ Changed from Date to string
+  updatedAt?: string;  // ✅ Changed from Date to string
+  deletedAt?: string | null;  // ✅ Changed from Date to string
   isDeleted?: boolean;
   price?: number;
   cost?: number;
@@ -94,8 +96,8 @@ export interface FilterOptions {
     max?: number;
   };
   dateRange?: {
-    start?: Date;
-    end?: Date;
+    start?: string;  // ✅ Changed from Date to string
+    end?: string;    // ✅ Changed from Date to string
   };
 }
 
@@ -135,7 +137,7 @@ export interface StockMovement {
   newQuantity: number;
   reason?: string;
   note?: string;
-  createdAt: Date;
+  createdAt: string;  // ✅ Changed from Date to string
   createdBy: string;
 }
 
@@ -147,7 +149,7 @@ export interface StockAlert {
   reorderPoint: number;
   alertType: 'LOW_STOCK' | 'OUT_OF_STOCK' | 'OVER_STOCK';
   severity: 'LOW' | 'MEDIUM' | 'HIGH';
-  createdAt: Date;
+  createdAt: string;  // ✅ Changed from Date to string
 }
 
 // ============================================
@@ -157,12 +159,20 @@ export interface StockAlert {
 export interface Category {
   id: string;
   name: string;
+  productCount: number;
+  status: 'Active' | 'Inactive';
+  createdAt: string;  // ✅ Already string
+}
+
+export interface CategoryType {
+  id: string;
+  name: string;
   description?: string;
   parentId?: string;
-  children?: Category[];
+  children?: CategoryType[];
   productCount?: number;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;  // ✅ Changed from Date to string
+  updatedAt: string;  // ✅ Changed from Date to string
 }
 
 export interface Collection {
@@ -171,8 +181,8 @@ export interface Collection {
   description?: string;
   products: string[]; // Product IDs
   isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;  // ✅ Changed from Date to string
+  updatedAt: string;  // ✅ Changed from Date to string
 }
 
 // ============================================
@@ -186,8 +196,8 @@ export interface OptionType {
   values: OptionValue[];
   productId?: string;
   isGlobal: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;  // ✅ Changed from Date to string
+  updatedAt: string;  // ✅ Changed from Date to string
 }
 
 export interface OptionValue {
@@ -212,8 +222,8 @@ export interface ProductVariant {
   onHold: number;
   images?: string[];
   isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;  // ✅ Changed from Date to string
+  updatedAt: string;  // ✅ Changed from Date to string
 }
 
 // ============================================
@@ -250,7 +260,7 @@ export interface ApiResponse<T> {
   data: T;
   message?: string;
   errors?: string[];
-  timestamp: Date;
+  timestamp: string;  // ✅ Changed from Date to string
 }
 
 export interface InventoryStats {
@@ -398,4 +408,40 @@ export interface ProductValidationRules {
     min?: number;
     max?: number;
   };
+}
+
+// ============================================
+// Type Converter Helpers
+// ============================================
+
+/**
+ * Convert Date to ISO string for API responses
+ */
+export function toISOString(date: Date | string | undefined): string | undefined {
+  if (!date) return undefined;
+  if (typeof date === 'string') return date;
+  return date.toISOString();
+}
+
+/**
+ * Convert ISO string to Date for frontend usage
+ */
+export function toDate(dateStr: string | Date | undefined): Date | undefined {
+  if (!dateStr) return undefined;
+  if (typeof dateStr === 'string') return new Date(dateStr);
+  return dateStr;
+}
+
+/**
+ * Format date string for display
+ */
+export function formatDate(dateStr: string | Date | undefined): string {
+  if (!dateStr) return 'N/A';
+  const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+  if (isNaN(date.getTime())) return 'Invalid Date';
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
 }
