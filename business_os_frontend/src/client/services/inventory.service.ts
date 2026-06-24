@@ -96,7 +96,7 @@ function normalizeProduct(raw: any): Product {
     unit: raw.unit || 'pcs',
     description: raw.description ?? undefined,
     status: raw.status === 'inactive' ? 'inactive' : 'active',
-    createdAt: raw.created_at ? new Date(raw.created_at) : undefined,
-    updatedAt: raw.updated_at ? new Date(raw.updated_at) : undefined,
+    createdAt: raw.created_at ? new Date(raw.created_at).toISOString() : undefined,
+    updatedAt: raw.updated_at ? new Date(raw.updated_at).toISOString() : undefined,
   };
 }

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { CreateProductDTO } from '../../types/Inventory.types';
+import { InventoryService } from '../../services/inventory.service';
 
 interface NewProductModalProps {
   isOpen: boolean;
@@ -293,7 +294,12 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select
                   value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as 'Active' | 'Draft' | 'Inactive' })}
+                  onChange={(e) =>
+  setFormData({
+    ...formData,
+    status: e.target.value as 'active' | 'inactive'
+  })
+}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 >
                   <option value="active">Active</option>

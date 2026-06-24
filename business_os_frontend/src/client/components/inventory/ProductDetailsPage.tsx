@@ -148,8 +148,8 @@ export const ProductDetailsPage: React.FC = () => {
                 <div>
                   <label className="text-xs font-medium text-gray-500 uppercase">Status</label>
                   <span className={`mt-1 inline-block px-2 py-1 text-xs rounded-full font-medium ${
-                    product.status === 'Active' ? 'bg-green-100 text-green-800' :
-                    product.status === 'Draft' ? 'bg-yellow-100 text-yellow-800' :
+                    product.status === 'active' ? 'bg-green-100 text-green-800' :
+                    product.status === 'inactive' ? 'bg-yellow-100 text-yellow-800' :
                     'bg-gray-100 text-gray-600'
                   }`}>
                     {product.status}
