@@ -8,6 +8,7 @@ const formatCompany = (companyName: string, id: number) => ({
     subdomain: companyName.trim().toLowerCase().replace(/\s+/g, '-')
 });
 
+
 export const authController = {
     registerCompany: async (req: Request, res: Response): Promise<void> => {
         try {
@@ -34,7 +35,29 @@ export const authController = {
             res.status(400).json({ success: false, error: error.message });
         }
     },
+// Add this inside your authController object
+getProfile: async (req: Request, res: Response): Promise<void> => {
+    try {
+        // Assuming your auth middleware attaches the 'user' object to the request
+        const userId = (req as any).user?.id; 
 
+        if (!userId) {
+            res.status(401).json({ success: false, message: 'Unauthorized' });
+            return;
+        }
+
+        // Fetch full data from your service
+        // You may need to create this method in your authService
+        const userProfile = await authService.getUserProfile(userId);
+
+        res.status(200).json({
+            success: true,
+            data: userProfile
+        });
+    } catch (error: any) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+},
     login: async (req: Request, res: Response): Promise<void> => {
         try {
             const { email, password } = req.body;
@@ -83,4 +106,7 @@ export const authController = {
     disable2FA: async (req: Request, res: Response): Promise<void> => {
         res.status(501).json({ success: false, error: '2FA disable is not implemented yet.' });
     }
+
+    
 };
+

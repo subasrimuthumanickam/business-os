@@ -67,6 +67,18 @@ export const authService = {
         };
     },
 
+    // Fetches profile data using the existing UserModel
+    async getUserProfile(userId: number) {
+        // We use findById from your UserModel, which handles the DB query internally
+        const user = await UserModel.findById(userId);
+        
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        return user;
+    },
+
     generateToken(payload: { userId: number; tenantId: number; roleId: number }) {
         return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
     },

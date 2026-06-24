@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
-import InvoiceList from '../components/billing/InvoiceList';
-import PaymentList from '../components/billing/PaymentList';
-import ExpenseList from '../components/billing/ExpenseList';
-import InvoiceForm from '../components/billing/InvoiceForm';
-import CreateInvoice from '../components/billing/CreateInvoice';
+import React, { useState } from "react";
+import InvoiceList from "../components/billing/InvoiceList";
+import PaymentList from "../components/billing/PaymentList";
+import ExpenseList from "../components/billing/ExpenseList";
+import CreateInvoice from "../components/billing/CreateInvoice";
 
-type BillingTab = 'invoices' | 'payments' | 'expenses' | 'create-invoice';
+type BillingTab =
+  | "invoices"
+  | "payments"
+  | "expenses"
+  | "create-invoice";
 
 interface BillingStats {
   totalRevenue: number;
@@ -15,139 +18,197 @@ interface BillingStats {
 }
 
 const BillingView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<BillingTab>('invoices');
-  const [stats, setStats] = useState<BillingStats>({
-    totalRevenue: 0,
-    paidInvoices: 0,
-    pendingAmount: 0,
-    totalInvoices: 0
+  const [activeTab, setActiveTab] =
+    useState<BillingTab>("invoices");
+
+  const [stats] = useState<BillingStats>({
+    totalRevenue: 45890,
+    paidInvoices: 45,
+    pendingAmount: 12800,
+    totalInvoices: 62,
   });
 
-  const tabs: { id: BillingTab; label: string; icon: string }[] = [
-    { id: 'invoices', label: 'Invoices', icon: '📄' },
-    { id: 'payments', label: 'Payments', icon: '💳' },
-    { id: 'expenses', label: 'Expenses', icon: '📊' },
-    { id: 'create-invoice', label: 'Create Invoice', icon: '➕' },
+  const tabs = [
+    { id: "invoices", label: "Invoices" },
+    { id: "payments", label: "Payments" },
+    { id: "expenses", label: "Expenses" },
   ];
 
-  const handleInvoiceUpdate = (invoices: any[]) => {
-    const totalRevenue = invoices.reduce((sum: number, inv: any) => sum + inv.amount, 0);
-    const paidInvoices = invoices.filter((inv: any) => inv.status === 'paid').length;
-    const pendingAmount = invoices
-      .filter((inv: any) => inv.status === 'pending' || inv.status === 'overdue')
-      .reduce((sum: number, inv: any) => sum + inv.amount, 0);
-    
-    setStats({
-      totalRevenue,
-      paidInvoices,
-      pendingAmount,
-      totalInvoices: invoices.length
-    });
-  };
-
-  const handleInvoiceSubmit = (data: any) => {
-    console.log('Invoice submitted:', data);
-    setActiveTab('invoices');
-    // Here you would typically make an API call to save the invoice
-  };
-
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="min-h-screen bg-gray-100 p-6">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Billing Management</h1>
-        <p className="text-gray-500 text-sm mt-1">
-          Manage invoices, payments, and expenses efficiently
-        </p>
-      </div>
+      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Revenue</p>
-              <p className="text-2xl font-bold text-gray-800">${stats.totalRevenue.toFixed(2)}</p>
-            </div>
-            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-              <span className="text-green-600 text-lg">💰</span>
-            </div>
+          <div>
+            <h1 className="text-3xl font-semibold text-gray-800">
+              Billing
+            </h1>
+            <p className="text-gray-500 mt-1">
+              Manage invoices, payments and expenses.
+            </p>
           </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Paid Invoices</p>
-              <p className="text-2xl font-bold text-gray-800">{stats.paidInvoices}</p>
-            </div>
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-              <span className="text-blue-600 text-lg">✅</span>
-            </div>
+
+          <div className="flex gap-3">
+            <button className="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50">
+              Export
+            </button>
+
+            <button
+              onClick={() => setActiveTab("create-invoice")}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg"
+            >
+              + New Invoice
+            </button>
           </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Pending Amount</p>
-              <p className="text-2xl font-bold text-yellow-600">${stats.pendingAmount.toFixed(2)}</p>
-            </div>
-            <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-              <span className="text-yellow-600 text-lg">⏳</span>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Invoices</p>
-              <p className="text-2xl font-bold text-gray-800">{stats.totalInvoices}</p>
-            </div>
-            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-              <span className="text-purple-600 text-lg">📋</span>
-            </div>
-          </div>
+
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="border-b border-gray-200 overflow-x-auto">
-          <nav className="flex -mb-px">
-            {tabs.map((tab: { id: BillingTab; label: string; icon: string }) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <span className="mr-2">{tab.icon}</span>
-                {tab.label}
-              </button>
-            ))}
-          </nav>
+      <div className="grid grid-cols-12 gap-6">
+
+        {/* LEFT SIDEBAR */}
+        <div className="col-span-12 lg:col-span-3">
+
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+
+            <div className="p-5 border-b">
+              <h2 className="font-semibold text-lg">
+                Overview
+              </h2>
+            </div>
+
+            <div className="divide-y">
+
+              <div className="p-5">
+                <p className="text-sm text-gray-500">
+                  Total Revenue
+                </p>
+                <h3 className="text-3xl font-bold mt-1">
+                  ${stats.totalRevenue.toLocaleString()}
+                </h3>
+              </div>
+
+              <div className="p-5">
+                <p className="text-sm text-gray-500">
+                  Pending Amount
+                </p>
+                <h3 className="text-3xl font-bold text-orange-600 mt-1">
+                  ${stats.pendingAmount.toLocaleString()}
+                </h3>
+              </div>
+
+              <div className="p-5">
+                <p className="text-sm text-gray-500">
+                  Paid Invoices
+                </p>
+                <h3 className="text-3xl font-bold text-green-600 mt-1">
+                  {stats.paidInvoices}
+                </h3>
+              </div>
+
+              <div className="p-5">
+                <p className="text-sm text-gray-500">
+                  Total Invoices
+                </p>
+                <h3 className="text-3xl font-bold mt-1">
+                  {stats.totalInvoices}
+                </h3>
+              </div>
+
+            </div>
+
+          </div>
         </div>
-        <div className="p-6">
-          {activeTab === 'invoices' && (
-            <InvoiceList onInvoiceUpdate={handleInvoiceUpdate} />
-          )}
-          {activeTab === 'payments' && <PaymentList />}
-          {activeTab === 'expenses' && <ExpenseList />}
-          {/* {activeTab === 'create-invoice' && (
-            <InvoiceForm 
-              onSubmit={handleInvoiceSubmit}
-              onCancel={() => setActiveTab('invoices')}
-            />
-          )} */}
-          {activeTab === 'create-invoice' && (
-            <CreateInvoice
-              customer={{} as any}
-              onClose={() => setActiveTab('invoices')}
-            />
-          )}
+
+        {/* MAIN CONTENT */}
+        <div className="col-span-12 lg:col-span-9">
+
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+
+            {/* Tabs */}
+            <div className="border-b px-6">
+              <div className="flex gap-8">
+
+                {tabs.map((tab: any) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`py-4 text-sm font-medium border-b-2 transition-all
+                    ${
+                      activeTab === tab.id
+                        ? "border-blue-600 text-blue-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+
+              </div>
+            </div>
+
+            {/* Filters */}
+            {activeTab !== "create-invoice" && (
+              <div className="p-6 border-b">
+
+                <div className="flex flex-col lg:flex-row gap-4 justify-between">
+
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    className="border border-gray-300 rounded-lg px-4 py-2 w-full lg:w-80 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+
+                  <div className="flex gap-3">
+
+                    <select className="border border-gray-300 rounded-lg px-4 py-2">
+                      <option>All Status</option>
+                      <option>Paid</option>
+                      <option>Pending</option>
+                      <option>Overdue</option>
+                    </select>
+
+                    <select className="border border-gray-300 rounded-lg px-4 py-2">
+                      <option>Last 30 Days</option>
+                      <option>This Month</option>
+                      <option>This Year</option>
+                    </select>
+
+                  </div>
+
+                </div>
+
+              </div>
+            )}
+
+            {/* CONTENT */}
+            <div className="p-6">
+
+              {activeTab === "invoices" && (
+                <InvoiceList onInvoiceUpdate={() => {}} />
+              )}
+
+              {activeTab === "payments" && (
+                <PaymentList />
+              )}
+
+              {activeTab === "expenses" && (
+                <ExpenseList />
+              )}
+
+              {activeTab === "create-invoice" && (
+                <CreateInvoice
+                  customer={{} as any}
+                  onClose={() => setActiveTab("invoices")}
+                />
+              )}
+
+            </div>
+
+          </div>
         </div>
+
       </div>
     </div>
   );
