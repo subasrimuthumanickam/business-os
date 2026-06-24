@@ -6,11 +6,6 @@
 //   id: string;               // Kept as string in frontend; converted from number when needed for API calls
 //   name: string;
 //   sku: string;
-<<<<<<< HEAD
- 
-=======
-
->>>>>>> 078ac494953cbdabdccf22a3433e8d10ad93a0d9
 //   onHand: number;
 //   available: number;
 //   onHold: number;
@@ -19,11 +14,7 @@
 //   createdAt?: string;  // ✅ Changed from Date to string
 //   updatedAt?: string;  // ✅ Changed from Date to string
 //   deletedAt?: string | null;  // ✅ Changed from Date to string
-<<<<<<< HEAD
  
-=======
-
->>>>>>> 078ac494953cbdabdccf22a3433e8d10ad93a0d9
 //   category_id?: number | null;
 //   category_name?: string;   // Joined from categories table by backend
 //   price: number;
@@ -57,16 +48,11 @@
 //   reorderPoint?: number;
 //   reorderQuantity?: number;
 // }
-<<<<<<< HEAD
  
-=======
-
->>>>>>> 078ac494953cbdabdccf22a3433e8d10ad93a0d9
 export interface Product {
   id: string;
   name: string;
   sku: string;
-<<<<<<< HEAD
  
   category_id?: number | null;
   category_name?: string;
@@ -82,34 +68,13 @@ export interface Product {
   updatedAt?: string;
   deletedAt?: string | null;
  
-=======
-
-  category_id?: number | null;
-  category_name?: string;
-
-  price: number;
-  stock_quantity: number;
-  unit: string;
-
-  description?: string;
-  status: 'active' | 'inactive';
-
-  createdAt?: string;
-  updatedAt?: string;
-  deletedAt?: string | null;
-
->>>>>>> 078ac494953cbdabdccf22a3433e8d10ad93a0d9
   // Legacy fields
   digital?: 'Yes' | 'No';
   onHand?: number;
   available?: number;
   onHold?: number;
   category?: string;
-<<<<<<< HEAD
  
-=======
-
->>>>>>> 078ac494953cbdabdccf22a3433e8d10ad93a0d9
   isDeleted?: boolean;
   cost?: number;
   weight?: number;
@@ -129,11 +94,7 @@ export interface Product {
 // ============================================
 // DTO (Data Transfer Object) Types
 // ============================================
-<<<<<<< HEAD
  
-=======
-
->>>>>>> 078ac494953cbdabdccf22a3433e8d10ad93a0d9
 // export interface CreateProductDTO {
 //   name: string;
 //   sku: string;
@@ -144,17 +105,12 @@ export interface Product {
 //   description?: string;
 //   status?: 'active' | 'inactive';
 // }
-<<<<<<< HEAD
  
-=======
-
->>>>>>> 078ac494953cbdabdccf22a3433e8d10ad93a0d9
 export interface CreateProductDTO {
   name: string;
   sku: string;
   category_id?: number | null;
   category?: string;
-<<<<<<< HEAD
  
   price: number;
  
@@ -172,25 +128,6 @@ export interface CreateProductDTO {
  
   available?: number;
  
-=======
-
-  price: number;
-
-  stock_quantity: number;
-
-  unit: string;
-
-  description?: string;
-
-  status?: 'active' | 'inactive';
-
-  digital?: 'Yes' | 'No';
-
-  onHand?: number;
-
-  available?: number;
-
->>>>>>> 078ac494953cbdabdccf22a3433e8d10ad93a0d9
   onHold?: number;
 }
  
