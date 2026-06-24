@@ -3,6 +3,7 @@ import InvoiceList from '../components/billing/InvoiceList';
 import PaymentList from '../components/billing/PaymentList';
 import ExpenseList from '../components/billing/ExpenseList';
 import InvoiceForm from '../components/billing/InvoiceForm';
+import CreateInvoice from '../components/billing/CreateInvoice';
 
 type BillingTab = 'invoices' | 'payments' | 'expenses' | 'create-invoice';
 
@@ -134,10 +135,16 @@ const BillingView: React.FC = () => {
           )}
           {activeTab === 'payments' && <PaymentList />}
           {activeTab === 'expenses' && <ExpenseList />}
-          {activeTab === 'create-invoice' && (
+          {/* {activeTab === 'create-invoice' && (
             <InvoiceForm 
               onSubmit={handleInvoiceSubmit}
               onCancel={() => setActiveTab('invoices')}
+            />
+          )} */}
+          {activeTab === 'create-invoice' && (
+            <CreateInvoice
+              customer={{} as any}
+              onClose={() => setActiveTab('invoices')}
             />
           )}
         </div>

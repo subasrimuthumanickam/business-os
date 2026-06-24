@@ -1,62 +1,3 @@
-// import { Product, CreateProductDTO, UpdateProductDTO } from '../types/Inventory.types';
-// import { apiService } from './api.service';
-
-// export class InventoryService {
-//   private static instance: InventoryService;
-
-//   private constructor() {}
-
-//   static getInstance(): InventoryService {
-//     if (!InventoryService.instance) {
-//       InventoryService.instance = new InventoryService();
-//     }
-//     return InventoryService.instance;
-//   }
-
-//   async getProducts(): Promise<Product[]> {
-//     return apiService.get<Product[]>('/inventory');
-//   }
-
-//   async getProductById(id: string): Promise<Product> {
-//     return apiService.get<Product>(`/inventory/${id}`);
-//   }
-
-//   async createProduct(product: CreateProductDTO): Promise<Product> {
-//     return apiService.post<Product>('/inventory', product);
-//   }
-
-//   async updateProduct(id: string, updates: UpdateProductDTO): Promise<Product> {
-//     return apiService.put<Product>(`/inventory/${id}`, updates);
-//   }
-
-//   async deleteProduct(id: string): Promise<void> {
-//     return apiService.delete(`/inventory/${id}`);
-//   }
-
-//   async addStock(id: string, quantity: number): Promise<Product> {
-//     return apiService.post<Product>(`/inventory/${id}/stock`, { quantity });
-//   }
-
-//   async removeStock(id: string, quantity: number): Promise<Product> {
-//     return apiService.post<Product>(`/inventory/${id}/stock/remove`, { quantity });
-//   }
-
-//   async bulkDeleteProduct(ids: string[]): Promise<void> {
-//     return apiService.post<void>('/inventory/bulk-delete', { ids });
-//   }
-
-//   async searchProducts(query: string): Promise<Product[]> {
-//     return apiService.get<Product[]>(`/inventory/search?q=${query}`);
-//   }
-
-//   async getCategories(): Promise<string[]> {
-//     return apiService.get<string[]>('/inventory/categories');
-//   }
-
-//   async getCollections(): Promise<string[]> {
-//     return apiService.get<string[]>('/inventory/collections');
-//   }
-// }
 import { Product, CreateProductDTO, UpdateProductDTO } from '../types/Inventory.types';
 import { apiService } from './api.service';
 
@@ -73,66 +14,89 @@ export class InventoryService {
   }
 
   async getProducts(): Promise<Product[]> {
-    return apiService.get<Product[]>('/inventory');
+    const products = await apiService.get<any[]>('/products');
+    return products.map(normalizeProduct);
   }
 
   async getProductById(id: string): Promise<Product> {
-    return apiService.get<Product>(`/inventory/${id}`);
+    const product = await apiService.get<any>(`/products/${id}`);
+    return normalizeProduct(product);
   }
 
   async createProduct(product: CreateProductDTO): Promise<Product> {
-    return apiService.post<Product>('/inventory', product);
+    const result = await apiService.post<{ id: number }>('/products', product);
+    return this.getProductById(String(result.id));
   }
 
   async updateProduct(id: string, updates: UpdateProductDTO): Promise<Product> {
-    return apiService.put<Product>(`/inventory/${id}`, updates);
+    await apiService.put(`/products/${id}`, updates);
+    return this.getProductById(id);
   }
 
   async deleteProduct(id: string): Promise<void> {
-    return apiService.delete(`/inventory/${id}`);
+    return apiService.delete(`/products/${id}`);
   }
 
-  async addStock(id: string, quantity: number): Promise<Product> {
-    return apiService.post<Product>(`/inventory/${id}/stock`, { quantity });
+  async addStock(id: string, quantity: number, reason?: string): Promise<Product> {
+    await apiService.post('/stock-movements/add', { product_id: Number(id), quantity, reason });
+    return this.getProductById(id);
   }
 
-  async removeStock(id: string, quantity: number): Promise<Product> {
-    return apiService.post<Product>(`/inventory/${id}/stock/remove`, { quantity });
+  async removeStock(id: string, quantity: number, reason?: string): Promise<Product> {
+    await apiService.post('/stock-movements/remove', { product_id: Number(id), quantity, reason });
+    return this.getProductById(id);
   }
 
   async bulkDeleteProduct(ids: string[]): Promise<void> {
-    return apiService.post<void>('/inventory/bulk-delete', { ids });
+    // No bulk-delete endpoint on the backend yet; delete one by one.
+    await Promise.all(ids.map((id) => this.deleteProduct(id)));
   }
 
   async searchProducts(query: string): Promise<Product[]> {
-    return apiService.get<Product[]>(`/inventory/search?q=${query}`);
+    const products = await apiService.get<any[]>(`/products?search=${encodeURIComponent(query)}`);
+    return products.map(normalizeProduct);
   }
 
-  async getCategories(): Promise<string[]> {
-    return apiService.get<string[]>('/inventory/categories');
+  async getCategories(): Promise<{ id: number; name: string }[]> {
+    return apiService.get<{ id: number; name: string }[]>('/categories');
   }
 
   async getCollections(): Promise<string[]> {
-    return apiService.get<string[]>('/inventory/collections');
+    // Collections aren't backed by the database yet; return an empty list.
+    return [];
   }
 
-  // ✅ ADD THIS - Get products by category
-  async getProductsByCategory(category: string): Promise<Product[]> {
-    return apiService.get<Product[]>(`/inventory?category=${category}`);
+  async getProductsByCategory(categoryId: string): Promise<Product[]> {
+    const products = await apiService.get<any[]>(`/products?category_id=${categoryId}`);
+    return products.map(normalizeProduct);
   }
 
-  // ✅ ADD THIS - Get products by status
   async getProductsByStatus(status: string): Promise<Product[]> {
-    return apiService.get<Product[]>(`/inventory?status=${status}`);
+    const products = await apiService.get<any[]>(`/products?status=${status}`);
+    return products.map(normalizeProduct);
   }
 
-  // ✅ ADD THIS - Get products by digital type
-  async getProductsByDigitalType(digital: 'Yes' | 'No'): Promise<Product[]> {
-    return apiService.get<Product[]>(`/inventory?digital=${digital}`);
-  }
-
-  // ✅ ADD THIS - Get low stock products
   async getLowStockProducts(threshold: number = 10): Promise<Product[]> {
-    return apiService.get<Product[]>(`/inventory?lowStock=true&threshold=${threshold}`);
+    const products = await this.getProducts();
+    return products.filter((p) => p.stock_quantity <= threshold);
   }
+}
+
+// Converts raw backend row (id: number, stock_quantity as string from MySQL DECIMAL, etc.)
+// into the frontend Product shape (id: string, numeric fields normalized).
+function normalizeProduct(raw: any): Product {
+  return {
+    id: String(raw.id),
+    name: raw.name,
+    sku: raw.sku,
+    category_id: raw.category_id ?? null,
+    category_name: raw.category_name ?? undefined,
+    price: Number(raw.price) || 0,
+    stock_quantity: Number(raw.stock_quantity) || 0,
+    unit: raw.unit || 'pcs',
+    description: raw.description ?? undefined,
+    status: raw.status === 'inactive' ? 'inactive' : 'active',
+    createdAt: raw.created_at ? new Date(raw.created_at) : undefined,
+    updatedAt: raw.updated_at ? new Date(raw.updated_at) : undefined,
+  };
 }

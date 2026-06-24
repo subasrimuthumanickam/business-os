@@ -10,6 +10,13 @@ import AuthRoutes from './routes/authRoutes.js';
 import invoiceRoutes from './routes/invoice.routes.js';
 import reportRoutes from './routes/report.routes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import categoryRoutes from './routes/category.routes.js';
+import productRoutes from './routes/product.routes.js';
+import stockMovementRoutes from './routes/stockMovement.routes.js';
+import estimateRoutes from "./routes/estimate.routes.js";
+import projectRoutes from './routes/project.routes.js';
+import taxRateRoutes from './routes/taxRate.routes.js';
+import priceListRoutes from './routes/priceList.routes.js';
 
 const app = express();
 const PORT = 5000;
@@ -25,6 +32,13 @@ app.use('/api/auth', AuthRoutes); // Assuming auth routes are also in customer.r
 app.use('/api/invoices', invoiceRoutes); // Register invoice routes
 app.use('/api/reports', reportRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/stock-movements', stockMovementRoutes);
+app.use("/api/estimates", estimateRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/tax-rates', taxRateRoutes);
+app.use('/api/price-lists', priceListRoutes);
 
 // Interfaces for incoming requests
 interface RegisterBody {

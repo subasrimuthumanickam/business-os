@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 
 // // import React, { useState, useEffect } from 'react';
@@ -3707,6 +3708,8 @@
 // };
 
 // export default InventoryPage;
+=======
+>>>>>>> 9d3a758017a499f301efdcdccacad43ddaadcaef
 import React, { useState, useEffect } from 'react';
 import { 
   X, Package, Tag, Layers, Plus, Trash2, Sliders, Settings, Edit, Eye,
