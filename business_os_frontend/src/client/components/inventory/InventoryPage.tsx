@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { InventoryHeader } from './InventoryHeader';
 import { InventoryFilters } from './InventoryFilters';
-import  InventoryTable  from './InventoryTable';
+import InventoryTable from './InventoryTable';
 import { InventoryPagination } from './InventoryPagination';
 import { NewProductModal } from './NewProductModal';
 import { AddStockModal } from './AddStockModal';
@@ -15,7 +15,8 @@ import { DeleteProductModal } from './DeleteProductModal';
 import { EditProductModal } from './EditProductModal';
 import { ViewProductModal } from './ViewProductModal';
 import { InventoryController } from '../../controllers/inventory.controller';
-import { Product, FilterOptions, CreateProductDTO, Category } from '../../types/Inventory.types';
+import ProductDetailsPage from './ProductDetailsPage';
+import { Product, FilterOptions, Category } from '../../types/Inventory.types';
 import { useNavigate } from 'react-router-dom';
 
 interface InventoryPageProps {
@@ -59,19 +60,15 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   // Quick action states
   const [showProductSettingsModal, setShowProductSettingsModal] = useState(false);
-
-  // New Product Page State
   const [showNewProductPage, setShowNewProductPage] = useState(false);
-  
-  // Option Types Page State
   const [showOptionTypesPage, setShowOptionTypesPage] = useState(false);
-  
-  // Collections Page State
   const [showCollectionsPage, setShowCollectionsPage] = useState(false);
-  
+
   // New Product Form State
   const [newProductForm, setNewProductForm] = useState({
     name: '',
@@ -135,18 +132,72 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
   const [showCategoryAddForm, setShowCategoryAddForm] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
 
-  // ✅ FIXED: Type-safe category status toggle helper
+  // Product Settings
+  const productSettings = [
+    { id: 1, name: 'Default Tax Rate', value: '18%' },
+    { id: 2, name: 'Default Currency', value: 'USD' },
+    { id: 3, name: 'Stock Alert Threshold', value: '10 units' },
+    { id: 4, name: 'Auto-approve Products', value: 'Enabled' },
+    { id: 5, name: 'Enable Reviews', value: 'Yes' },
+  ];
+
+  // ============================================
+  // TOGGLE HELPERS
+  // ============================================
   const toggleCategoryStatus = (status: 'Active' | 'Inactive'): 'Active' | 'Inactive' => {
     return status === 'Active' ? 'Inactive' : 'Active';
   };
 
-  // Generate SKU
+  // ============================================
+  // SKU GENERATOR
+  // ============================================
   const generateSKU = () => {
     const sku = Math.floor(100000000000 + Math.random() * 900000000000).toString();
     setNewProductForm({ ...newProductForm, sku });
   };
 
-  // New Product Handlers
+  // ============================================
+  // PRODUCT HANDLERS
+  // ============================================
+  const handleProductClick = (product: Product) => {
+    setSelectedProductId(product.id);
+    setSelectedProduct(product);
+    setIsDetailsOpen(true);
+  };
+
+  const handleBackToList = () => {
+    setIsDetailsOpen(false);
+    setSelectedProduct(null);
+    setSelectedProductId(null);
+  };
+
+  const handleNewProduct = () => {
+    setShowNewProductPage(true);
+    resetNewProductForm();
+  };
+
+  const handleNewProductCancel = () => {
+    setShowNewProductPage(false);
+    resetNewProductForm();
+  };
+
+  const resetNewProductForm = () => {
+    setNewProductForm({
+      name: '',
+      sku: '',
+      category: '',
+      digital: 'No',
+      onHand: 0,
+      available: 0,
+      onHold: 0,
+      status: 'Draft',
+      price: 0,
+      cost: 0,
+      description: ''
+    });
+    setNewProductErrors({});
+  };
+
   const handleNewProductSubmit = () => {
     const errors: Record<string, string> = {};
     if (!newProductForm.name.trim()) errors.name = 'Product name is required';
@@ -168,7 +219,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
         digital: newProductForm.digital,
         sku: newProductForm.sku,
         stock_quantity: newProductForm.onHold,
-        unit:'pcs',
+        unit: 'pcs',
         onHand: newProductForm.onHand,
         available: newProductForm.available || newProductForm.onHand,
         onHold: newProductForm.onHold,
@@ -188,40 +239,8 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
   };
 
   // ============================================
-  // PRODUCT CLICK HANDLER - Navigate to Product Details Page
-  // ============================================
-  // const handleProductClick = (product: Product) => {
-  //   navigate(`/inventory/product/${product.id}`, { 
-  //     state: { product } // Pass the entire product object
-  //   });
-  // };
-
-  const resetNewProductForm = () => {
-    setNewProductForm({
-      name: '',
-      sku: '',
-      category: '',
-      digital: 'No',
-      onHand: 0,
-      available: 0,
-      onHold: 0,
-      status: 'Draft',
-      price: 0,
-      cost: 0,
-      description: ''
-    });
-    setNewProductErrors({});
-  };
-
-  const handleNewProductCancel = () => {
-    setShowNewProductPage(false);
-    resetNewProductForm();
-  };
-
-  // ============================================
   // COLLECTION HANDLERS
   // ============================================
-
   const handleCollections = () => {
     setShowCollectionsPage(true);
   };
@@ -330,7 +349,6 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
   // ============================================
   // CATEGORY HANDLERS
   // ============================================
-
   const handleAddCategory = () => {
     if (!newCategoryName.trim()) return;
     const newCategory: Category = {
@@ -385,7 +403,6 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
   // ============================================
   // OPTION TYPES HANDLERS
   // ============================================
-
   const handleAddOption = () => {
     const errors: Record<string, string> = {};
     if (!optionFormData.name.trim()) errors.name = 'Name is required';
@@ -477,9 +494,8 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
   };
 
   // ============================================
-  // INVENTORY CRUD OPERATIONS
+  // CRUD OPERATIONS
   // ============================================
-
   useEffect(() => {
     loadProducts();
   }, []);
@@ -508,7 +524,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
     setProducts(controller.getProducts());
   };
 
-  const selectedProduct = selectedProductId 
+  const foundProduct = selectedProductId 
     ? products.find((p: Product) => p.id === selectedProductId) 
     : undefined;
 
@@ -605,12 +621,6 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
   // ============================================
   // QUICK ACTION HANDLERS
   // ============================================
-
-  const handleNewProduct = () => {
-    setShowNewProductPage(true);
-    resetNewProductForm();
-  };
-
   const handleOptionTypes = () => {
     setShowOptionTypesPage(true);
   };
@@ -631,289 +641,432 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
     setShowNewProductPage(false);
   };
 
-  const productSettings = [
-    { id: 1, name: 'Default Tax Rate', value: '18%' },
-    { id: 2, name: 'Default Currency', value: 'USD' },
-    { id: 3, name: 'Stock Alert Threshold', value: '10 units' },
-    { id: 4, name: 'Auto-approve Products', value: 'Enabled' },
-    { id: 5, name: 'Enable Reviews', value: 'Yes' },
-  ];
-
   // ============================================
-  // RENDER NEW PRODUCT PAGE
+  // RENDER CATEGORIES CONTENT
   // ============================================
-  if (showNewProductPage) {
+  const renderCategoriesContent = () => {
     return (
-      <div className="inventory-page">
-        <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-          <div className="px-4 sm:px-6 py-3 sm:py-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleNewProductCancel}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <ArrowLeft size={20} className="text-gray-600" />
-                </button>
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-gray-800">New Product</h1>
-                  <p className="text-xs sm:text-sm text-gray-500">Fill in the details to create a new product</p>
-                </div>
-              </div>
-            </div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="p-3 sm:p-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="relative flex-1 max-w-full sm:max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              type="text"
+              placeholder="Search categories..."
+              value={categorySearchTerm}
+              onChange={(e) => setCategorySearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+            />
           </div>
+          <button
+            onClick={() => setShowCategoryAddForm(!showCategoryAddForm)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2 whitespace-nowrap"
+          >
+            <Plus size={16} />
+            Add Category
+          </button>
         </div>
 
-        <div className="p-4 sm:p-6 max-w-4xl mx-auto">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Product Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={newProductForm.name}
-                  onChange={(e) => setNewProductForm({ ...newProductForm, name: e.target.value })}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
-                    newProductErrors.name ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Enter product name"
-                />
-                {newProductErrors.name && <p className="text-red-500 text-xs mt-1">{newProductErrors.name}</p>}
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  SKU <span className="text-red-500">*</span>
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newProductForm.sku}
-                    onChange={(e) => setNewProductForm({ ...newProductForm, sku: e.target.value.replace(/\D/g, '') })}
-                    className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
-                      newProductErrors.sku ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="Enter 12-digit SKU"
-                    maxLength={12}
-                  />
-                  <button
-                    type="button"
-                    onClick={generateSKU}
-                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
-                  >
-                    Generate
-                  </button>
-                </div>
-                {newProductErrors.sku && <p className="text-red-500 text-xs mt-1">{newProductErrors.sku}</p>}
-                <p className="text-xs text-gray-400 mt-1">Enter exactly 12 digits (e.g., 123456789012)</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Category <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={newProductForm.category}
-                  onChange={(e) => setNewProductForm({ ...newProductForm, category: e.target.value })}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
-                    newProductErrors.category ? 'border-red-500' : 'border-gray-300'
-                  }`}
+        {showCategoryAddForm && (
+          <div className="p-3 sm:p-4 bg-blue-50 border-b border-blue-100">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="text"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="Enter category name..."
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleAddCategory}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                 >
-                  <option value="">Select category</option>
-                  <option value="Electronics">Electronics</option>
-                  <option value="Clothing">Clothing</option>
-                  <option value="Books">Books</option>
-                  <option value="Home & Garden">Home & Garden</option>
-                  <option value="Toys">Toys</option>
-                  <option value="Beauty">Beauty</option>
-                  <option value="Sports">Sports</option>
-                </select>
-                {newProductErrors.category && <p className="text-red-500 text-xs mt-1">{newProductErrors.category}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Digital Product</label>
-                <div className="flex gap-4 pt-1.5">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      value="No"
-                      checked={newProductForm.digital === 'No'}
-                      onChange={(e) => setNewProductForm({ ...newProductForm, digital: e.target.value as 'Yes' | 'No' })}
-                      className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">No</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      value="Yes"
-                      checked={newProductForm.digital === 'Yes'}
-                      onChange={(e) => setNewProductForm({ ...newProductForm, digital: e.target.value as 'Yes' | 'No' })}
-                      className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">Yes</span>
-                  </label>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                  <input
-                    type="number"
-                    value={newProductForm.price}
-                    onChange={(e) => setNewProductForm({ ...newProductForm, price: parseFloat(e.target.value) || 0 })}
-                    className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cost</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                  <input
-                    type="number"
-                    value={newProductForm.cost}
-                    onChange={(e) => setNewProductForm({ ...newProductForm, cost: parseFloat(e.target.value) || 0 })}
-                    className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Stock Quantities</label>
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">On Hand</label>
-                    <input
-                      type="number"
-                      value={newProductForm.onHand}
-                      onChange={(e) => setNewProductForm({ ...newProductForm, onHand: parseInt(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                      min="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Available</label>
-                    <input
-                      type="number"
-                      value={newProductForm.available}
-                      onChange={(e) => setNewProductForm({ ...newProductForm, available: parseInt(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                      min="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">On Hold</label>
-                    <input
-                      type="number"
-                      value={newProductForm.onHold}
-                      onChange={(e) => setNewProductForm({ ...newProductForm, onHold: parseInt(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                      min="0"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select
-                  value={newProductForm.status}
-                  onChange={(e) => setNewProductForm({ ...newProductForm, status: e.target.value as 'Active' | 'Draft' | 'Inactive' })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                  Save
+                </button>
+                <button
+                  onClick={() => {
+                    setShowCategoryAddForm(false);
+                    setNewCategoryName('');
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm font-medium"
                 >
-                  <option value="Active">Active</option>
-                  <option value="Draft">Draft</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
+                  Cancel
+                </button>
               </div>
-
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea
-                  value={newProductForm.description}
-                  onChange={(e) => setNewProductForm({ ...newProductForm, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm resize-y"
-                  rows={3}
-                  placeholder="Enter product description (max 2000 characters)"
-                  maxLength={2000}
-                />
-                <p className="text-xs text-gray-400 mt-1">{newProductForm.description.length}/2000 characters</p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-3 mt-6 pt-4 border-t border-gray-200">
-              <button
-                onClick={handleNewProductSubmit}
-                disabled={newProductLoading}
-                className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
-              >
-                {newProductLoading ? 'Creating...' : 'Create Product'}
-              </button>
-              <button
-                onClick={handleNewProductCancel}
-                className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm font-medium"
-              >
-                Cancel
-              </button>
             </div>
           </div>
+        )}
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th className="hidden sm:table-cell px-3 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">Products</th>
+                <th className="hidden md:table-cell px-3 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-3 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {filteredCategories.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-gray-500">No categories found</td>
+                </tr>
+              ) : (
+                filteredCategories.map((category) => (
+                  <tr key={category.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-3 sm:px-4 py-2 sm:py-3">
+                      {editingCategoryId === category.id ? (
+                        <input
+                          type="text"
+                          value={editCategoryForm.name || ''}
+                          onChange={(e) => setEditCategoryForm({ ...editCategoryForm, name: e.target.value })}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                          autoFocus
+                        />
+                      ) : (
+                        <span className="text-sm font-medium text-gray-800">{category.name}</span>
+                      )}
+                    </td>
+                    <td className="hidden sm:table-cell px-3 sm:px-4 py-2 sm:py-3 text-sm text-gray-600">{category.productCount}</td>
+                    <td className="hidden md:table-cell px-3 sm:px-4 py-2 sm:py-3 text-sm text-gray-500">{category.createdAt}</td>
+                    <td className="px-3 sm:px-4 py-2 sm:py-3">
+                      {editingCategoryId === category.id ? (
+                        <select
+                          value={editCategoryForm.status || 'Active'}
+                          onChange={(e) => setEditCategoryForm({ ...editCategoryForm, status: e.target.value as 'Active' | 'Inactive' })}
+                          className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        >
+                          <option value="Active">Active</option>
+                          <option value="Inactive">Inactive</option>
+                        </select>
+                      ) : (
+                        <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                          category.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {category.status}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 sm:px-4 py-2 sm:py-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        {editingCategoryId === category.id ? (
+                          <>
+                            <button
+                              onClick={handleSaveCategoryEdit}
+                              className="p-1.5 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                              title="Save"
+                            >
+                              <Save size={14} />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingCategoryId(null);
+                                setEditCategoryForm({});
+                              }}
+                              className="p-1.5 bg-gray-200 text-gray-600 rounded hover:bg-gray-300 transition-colors"
+                              title="Cancel"
+                            >
+                              <X size={14} />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleEditCategory(category.id)}
+                              className="p-1.5 hover:bg-blue-100 rounded-md text-blue-600 hover:text-blue-800 transition-colors"
+                              title="Edit"
+                            >
+                              <Edit size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleCategoryStatusToggle(category.id)}
+                              className="p-1.5 hover:bg-yellow-100 rounded-md text-yellow-600 hover:text-yellow-800 transition-colors"
+                              title="Toggle Status"
+                            >
+                              <Sliders size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCategory(category.id)}
+                              className="p-1.5 hover:bg-red-100 rounded-md text-red-500 hover:text-red-700 transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     );
-  }
+  };
 
   // ============================================
-  // RENDER COLLECTIONS PAGE
+  // RENDER MAIN CONTENT
   // ============================================
-  if (showCollectionsPage) {
-    return (
-      <div className="inventory-page">
-        <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-          <div className="px-4 sm:px-6 py-3 sm:py-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleBackFromCollections}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <ArrowLeft size={20} className="text-gray-600" />
-                </button>
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Collections</h1>
-                  <p className="text-xs sm:text-sm text-gray-500">Manage product collections</p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setNewCollectionName('');
-                  setNewCollectionDescription('');
-                  setEditingCollectionId(null);
-                  document.getElementById('collection-form')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm"
-              >
-                <Plus size={18} />
-                New Collection
-              </button>
+  const renderContent = () => {
+    // Check if details page should be shown
+    if (isDetailsOpen && selectedProduct) {
+      return (
+        <ProductDetailsPage 
+          product={selectedProduct}
+          onBack={handleBackToList}
+          onEdit={() => {
+            setIsDetailsOpen(false);
+            setIsEditModalOpen(true);
+          }}
+          onDelete={() => {
+            setIsDetailsOpen(false);
+            setIsDeleteModalOpen(true);
+          }}
+        />
+      );
+    }
+
+    // Check if new product page should be shown
+    if (showNewProductPage) {
+      return (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 max-w-4xl mx-auto">
+          <div className="flex items-center gap-3 mb-4">
+            <button
+              onClick={handleNewProductCancel}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ArrowLeft size={20} className="text-gray-600" />
+            </button>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-800">New Product</h1>
+              <p className="text-xs sm:text-sm text-gray-500">Fill in the details to create a new product</p>
             </div>
           </div>
-        </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Product Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={newProductForm.name}
+                onChange={(e) => setNewProductForm({ ...newProductForm, name: e.target.value })}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
+                  newProductErrors.name ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="Enter product name"
+              />
+              {newProductErrors.name && <p className="text-red-500 text-xs mt-1">{newProductErrors.name}</p>}
+            </div>
 
-        <div className="p-3 sm:p-6 max-w-full">
-          <div id="collection-form" className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-6">
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                SKU <span className="text-red-500">*</span>
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newProductForm.sku}
+                  onChange={(e) => setNewProductForm({ ...newProductForm, sku: e.target.value.replace(/\D/g, '') })}
+                  className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
+                    newProductErrors.sku ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter 12-digit SKU"
+                  maxLength={12}
+                />
+                <button
+                  type="button"
+                  onClick={generateSKU}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
+                >
+                  Generate
+                </button>
+              </div>
+              {newProductErrors.sku && <p className="text-red-500 text-xs mt-1">{newProductErrors.sku}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Category <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={newProductForm.category}
+                onChange={(e) => setNewProductForm({ ...newProductForm, category: e.target.value })}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
+                  newProductErrors.category ? 'border-red-500' : 'border-gray-300'
+                }`}
+              >
+                <option value="">Select category</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Clothing">Clothing</option>
+                <option value="Books">Books</option>
+                <option value="Home & Garden">Home & Garden</option>
+                <option value="Toys">Toys</option>
+              </select>
+              {newProductErrors.category && <p className="text-red-500 text-xs mt-1">{newProductErrors.category}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Digital Product</label>
+              <div className="flex gap-4 pt-1.5">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    value="No"
+                    checked={newProductForm.digital === 'No'}
+                    onChange={(e) => setNewProductForm({ ...newProductForm, digital: e.target.value as 'Yes' | 'No' })}
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">No</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    value="Yes"
+                    checked={newProductForm.digital === 'Yes'}
+                    onChange={(e) => setNewProductForm({ ...newProductForm, digital: e.target.value as 'Yes' | 'No' })}
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Yes</span>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                <input
+                  type="number"
+                  value={newProductForm.price}
+                  onChange={(e) => setNewProductForm({ ...newProductForm, price: parseFloat(e.target.value) || 0 })}
+                  className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Cost</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                <input
+                  type="number"
+                  value={newProductForm.cost}
+                  onChange={(e) => setNewProductForm({ ...newProductForm, cost: parseFloat(e.target.value) || 0 })}
+                  className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Stock Quantities</label>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">On Hand</label>
+                  <input
+                    type="number"
+                    value={newProductForm.onHand}
+                    onChange={(e) => setNewProductForm({ ...newProductForm, onHand: parseInt(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Available</label>
+                  <input
+                    type="number"
+                    value={newProductForm.available}
+                    onChange={(e) => setNewProductForm({ ...newProductForm, available: parseInt(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">On Hold</label>
+                  <input
+                    type="number"
+                    value={newProductForm.onHold}
+                    onChange={(e) => setNewProductForm({ ...newProductForm, onHold: parseInt(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                    min="0"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select
+                value={newProductForm.status}
+                onChange={(e) => setNewProductForm({ ...newProductForm, status: e.target.value as 'Active' | 'Draft' | 'Inactive' })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+              >
+                <option value="Active">Active</option>
+                <option value="Draft">Draft</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea
+                value={newProductForm.description}
+                onChange={(e) => setNewProductForm({ ...newProductForm, description: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm resize-y"
+                rows={3}
+                placeholder="Enter product description"
+                maxLength={2000}
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3 mt-6 pt-4 border-t border-gray-200">
+            <button
+              onClick={handleNewProductSubmit}
+              disabled={newProductLoading}
+              className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
+            >
+              {newProductLoading ? 'Creating...' : 'Create Product'}
+            </button>
+            <button
+              onClick={handleNewProductCancel}
+              className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm font-medium"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Check if collections page should be shown
+    if (showCollectionsPage) {
+      return (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <button
+              onClick={handleBackFromCollections}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ArrowLeft size={20} className="text-gray-600" />
+            </button>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Collections</h1>
+              <p className="text-xs sm:text-sm text-gray-500">Manage product collections</p>
+            </div>
+          </div>
+
+          <div id="collection-form" className="bg-gray-50 rounded-xl border border-gray-200 p-4 sm:p-6 mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
               {editingCollectionId ? 'Edit Collection' : 'Create New Collection'}
             </h2>
@@ -981,20 +1134,15 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4 sm:mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-              <input
-                type="text"
-                placeholder="Search collections..."
-                value={collectionSearchTerm}
-                onChange={(e) => setCollectionSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
-                {filteredCollections.length} found
-              </span>
-            </div>
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              type="text"
+              placeholder="Search collections..."
+              value={collectionSearchTerm}
+              onChange={(e) => setCollectionSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm"
+            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
@@ -1013,8 +1161,8 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
                   <div className="p-4 sm:p-5 flex-1">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 sm:w-11 sm:h-11 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center text-gray-600 border border-gray-200 flex-shrink-0 shadow-sm">
-                          <Layers size={18} className="sm:w-5 sm:h-5" />
+                        <div className={`w-10 h-10 bg-gradient-to-br ${collection.gradient} rounded-lg flex items-center justify-center text-white flex-shrink-0 shadow-sm`}>
+                          <Layers size={18} />
                         </div>
                         <div className="min-w-0">
                           <h3 className="font-semibold text-gray-800 text-sm sm:text-base truncate">{collection.name}</h3>
@@ -1029,14 +1177,14 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
                           className="p-1.5 hover:bg-indigo-50 rounded-md text-gray-400 hover:text-indigo-600 transition-colors"
                           title="Edit"
                         >
-                          <Edit size={14} className="sm:w-4 sm:h-4" />
+                          <Edit size={14} />
                         </button>
                         <button
                           onClick={() => handleDeleteCollection(collection.id)}
                           className="p-1.5 hover:bg-red-50 rounded-md text-gray-400 hover:text-red-600 transition-colors"
                           title="Delete"
                         >
-                          <Trash2 size={14} className="sm:w-4 sm:h-4" />
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     </div>
@@ -1048,11 +1196,11 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
                   
                   <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0 flex gap-2">
                     <button className="flex-1 px-3 py-1.5 text-xs sm:text-sm bg-gray-50 text-gray-700 rounded-lg hover:bg-indigo-50 hover:text-indigo-700 transition-colors border border-gray-200 hover:border-indigo-200 flex items-center justify-center gap-1.5 font-medium">
-                      <Eye size={14} className="sm:w-4 sm:h-4" />
+                      <Eye size={14} />
                       View Products
                     </button>
                     <button className="px-3 py-1.5 text-xs sm:text-sm bg-gray-50 text-red-600 rounded-lg hover:bg-red-50 hover:text-red-700 transition-colors border border-gray-200 hover:border-red-200 flex items-center justify-center gap-1.5 font-medium">
-                      <Trash2 size={14} className="sm:w-4 sm:h-4" />
+                      <Trash2 size={14} />
                       Delete
                     </button>
                   </div>
@@ -1061,48 +1209,27 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
             )}
           </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  // ============================================
-  // RENDER OPTION TYPES PAGE
-  // ============================================
-  if (showOptionTypesPage) {
-    return (
-      <div className="inventory-page">
-        <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-          <div className="px-4 sm:px-6 py-3 sm:py-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleBackToInventory}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <ArrowLeft size={20} className="text-gray-600" />
-                </button>
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Option Types</h1>
-                  <p className="text-xs sm:text-sm text-gray-500">Manage product variations</p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  resetOptionForm();
-                  setEditingOptionId(null);
-                  document.getElementById('option-form')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm"
-              >
-                <Plus size={18} />
-                New Option Type
-              </button>
+    // Check if option types page should be shown
+    if (showOptionTypesPage) {
+      return (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <button
+              onClick={handleBackToInventory}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ArrowLeft size={20} className="text-gray-600" />
+            </button>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Option Types</h1>
+              <p className="text-xs sm:text-sm text-gray-500">Manage product variations</p>
             </div>
           </div>
-        </div>
 
-        <div className="p-4 sm:p-6 max-w-full">
-          <div id="option-form" className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-6">
+          <div id="option-form" className="bg-gray-50 rounded-xl border border-gray-200 p-4 sm:p-6 mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
               {editingOptionId ? 'Edit Option Type' : 'Create New Option Type'}
             </h2>
@@ -1129,7 +1256,6 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
                   disabled={!!editingOptionId}
                 />
                 {optionErrors.name && <p className="text-red-500 text-xs mt-1">{optionErrors.name}</p>}
-                <p className="text-xs text-gray-400 mt-1">Unique identifier (lowercase, no spaces)</p>
               </div>
 
               <div>
@@ -1175,7 +1301,6 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
                   placeholder="e.g., Red, Blue, Green"
                 />
                 {optionErrors.values && <p className="text-red-500 text-xs mt-1">{optionErrors.values}</p>}
-                <p className="text-xs text-gray-400 mt-1">Comma separated values</p>
               </div>
 
               <div>
@@ -1193,7 +1318,6 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm"
                   min="0"
-                  placeholder="0"
                 />
               </div>
 
@@ -1334,328 +1458,126 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
             </div>
           </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  // ============================================
-  // RENDER CATEGORIES TAB CONTENT
-  // ============================================
-  const renderCategoriesContent = () => {
+    // Default - Main Inventory View (Single Card)
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-3 sm:p-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="relative flex-1 max-w-full sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-            <input
-              type="text"
-              placeholder="Search categories..."
-              value={categorySearchTerm}
-              onChange={(e) => setCategorySearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-            />
+        {/* Header inside card */}
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-semibold text-gray-800">Products</h2>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => alert('Manage Stock')}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors"
+              >
+                <Package size={15} /> Manage Stock
+              </button>
+              <button
+                onClick={handleNewProduct}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors"
+              >
+                <Plus size={15} /> New Product
+              </button>
+              <div className="h-5 w-px bg-gray-300"></div>
+              <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors">
+                Export
+              </button>
+              <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors">
+                Import
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => setShowCategoryAddForm(!showCategoryAddForm)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2 whitespace-nowrap"
+        </div>
+
+        {/* Filters inside card */}
+        <div className="px-4 sm:px-6 py-3 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="relative flex-1 max-w-full sm:max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input
+                type="text"
+                placeholder="Search product name or SKU"
+                className="w-full pl-9 pr-4 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <select className="bg-gray-100 px-3 py-1.5 rounded-md outline-none text-sm font-medium text-gray-700 border-0 cursor-pointer">
+                <option>All Categories</option>
+              </select>
+              <select className="bg-gray-100 px-3 py-1.5 rounded-md outline-none text-sm font-medium text-gray-700 border-0 cursor-pointer">
+                <option>All Status</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs inside card */}
+        <div className="flex flex-wrap items-center gap-1 px-4 sm:px-6 py-2 border-b border-gray-200 bg-gray-50/50">
+          <button className="text-sm font-medium px-3 py-1.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+            Inventory
+          </button>
+          <button 
+            onClick={handleOptionTypes}
+            className="text-sm font-medium px-3 py-1.5 rounded-md text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
           >
-            <Plus size={16} />
-            Add Category
+            Option Types
+          </button>
+          <button 
+            onClick={handleCollections}
+            className="text-sm font-medium px-3 py-1.5 rounded-md text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+          >
+            Collections
+          </button>
+          <button 
+            onClick={handleProductSettings}
+            className="text-sm font-medium px-3 py-1.5 rounded-md text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+          >
+            Product Settings
           </button>
         </div>
 
-        {showCategoryAddForm && (
-          <div className="p-3 sm:p-4 bg-blue-50 border-b border-blue-100">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="text"
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                placeholder="Enter category name..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                autoFocus
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={handleAddCategory}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                >
-                  Save
-                </button>
-                <button
-                  onClick={() => {
-                    setShowCategoryAddForm(false);
-                    setNewCategoryName('');
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm font-medium"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Table inside card */}
+        <InventoryTable 
+          products={products}
+          onEdit={handleEdit}
+          onView={handleView}
+          onDelete={handleDelete}
+          onAddStock={handleAddStock}
+          onProductClick={handleProductClick}
+          onRemoveStock={handleRemoveStock}
+          onManageStock={handleManageStock}
+          selectedIds={selectedIds}
+          onSelectProduct={handleSelectProduct}
+          onSelectAll={handleSelectAll}
+        />
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                <th className="hidden sm:table-cell px-3 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">Products</th>
-                <th className="hidden md:table-cell px-3 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-3 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredCategories.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-gray-500">No categories found</td>
-                </tr>
-              ) : (
-                filteredCategories.map((category) => (
-                  <tr key={category.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-3 sm:px-4 py-2 sm:py-3">
-                      {editingCategoryId === category.id ? (
-                        <input
-                          type="text"
-                          value={editCategoryForm.name || ''}
-                          onChange={(e) => setEditCategoryForm({ ...editCategoryForm, name: e.target.value })}
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                          autoFocus
-                        />
-                      ) : (
-                        <span className="text-sm font-medium text-gray-800">{category.name}</span>
-                      )}
-                    </td>
-                    <td className="hidden sm:table-cell px-3 sm:px-4 py-2 sm:py-3 text-sm text-gray-600">{category.productCount}</td>
-                    <td className="hidden md:table-cell px-3 sm:px-4 py-2 sm:py-3 text-sm text-gray-500">{category.createdAt}</td>
-                    <td className="px-3 sm:px-4 py-2 sm:py-3">
-                      {editingCategoryId === category.id ? (
-                        <select
-                          value={editCategoryForm.status || 'Active'}
-                          onChange={(e) => setEditCategoryForm({ ...editCategoryForm, status: e.target.value as 'Active' | 'Inactive' })}
-                          className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        >
-                          <option value="Active">Active</option>
-                          <option value="Inactive">Inactive</option>
-                        </select>
-                      ) : (
-                        <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                          category.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          {category.status}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3 sm:px-4 py-2 sm:py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        {editingCategoryId === category.id ? (
-                          <>
-                            <button
-                              onClick={handleSaveCategoryEdit}
-                              className="p-1.5 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                              title="Save"
-                            >
-                              <Save size={14} />
-                            </button>
-                            <button
-                              onClick={() => {
-                                setEditingCategoryId(null);
-                                setEditCategoryForm({});
-                              }}
-                              className="p-1.5 bg-gray-200 text-gray-600 rounded hover:bg-gray-300 transition-colors"
-                              title="Cancel"
-                            >
-                              <X size={14} />
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => handleEditCategory(category.id)}
-                              className="p-1.5 hover:bg-blue-100 rounded-md text-blue-600 hover:text-blue-800 transition-colors"
-                              title="Edit"
-                            >
-                              <Edit size={14} className="sm:w-4 sm:h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleCategoryStatusToggle(category.id)}
-                              className="p-1.5 hover:bg-yellow-100 rounded-md text-yellow-600 hover:text-yellow-800 transition-colors"
-                              title="Toggle Status"
-                            >
-                              <Sliders size={14} className="sm:w-4 sm:h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteCategory(category.id)}
-                              className="p-1.5 hover:bg-red-100 rounded-md text-red-500 hover:text-red-700 transition-colors"
-                              title="Delete"
-                            >
-                              <Trash2 size={14} className="sm:w-4 sm:h-4" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        {/* Pagination inside card */}
+        <div className="px-4 sm:px-6 py-3 border-t border-gray-200">
+          <InventoryPagination
+            currentPage={controller.getPagination().currentPage}
+            rowsPerPage={controller.getPagination().rowsPerPage}
+            totalItems={controller.getPagination().totalItems}
+            onPageChange={handlePageChange}
+            onRowsPerPageChange={handleRowsPerPageChange}
+          />
         </div>
       </div>
     );
-  };
-
-  // ============================================
-  // RENDER MAIN INVENTORY CONTENT
-  // ============================================
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'categories':
-        return renderCategoriesContent();
-      case 'collections':
-        return (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800">Collections</h2>
-                <p className="text-sm text-gray-500">Manage your product collections</p>
-              </div>
-              <button
-                onClick={handleCollections}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium flex items-center gap-2"
-              >
-                <Layers size={16} />
-                Manage Collections
-              </button>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {collections.slice(0, 3).map((collection) => (
-                <div key={collection.id} className="group p-4 bg-gray-50 rounded-xl border border-gray-200 hover:shadow-md hover:border-indigo-300 transition-all duration-200">
-                  <div className="flex items-start gap-3">
-                    <div className={`w-10 h-10 bg-gradient-to-br ${collection.gradient} rounded-lg flex items-center justify-center text-white flex-shrink-0`}>
-                      <Layers size={18} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-gray-800 truncate">{collection.name}</h3>
-                      <p className="text-xs text-gray-400">{collection.productCount} products</p>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex gap-2">
-                    <button className="flex-1 px-3 py-1.5 text-xs bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
-                      <Eye size={12} className="inline mr-1" />
-                      View Products
-                    </button>
-                    <button className="px-3 py-1.5 text-xs bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors">
-                      <Trash2 size={12} className="inline mr-1" />
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      case 'stock':
-        return (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Stock Management</h2>
-            <p className="text-gray-500">Stock management features coming soon...</p>
-          </div>
-        );
-      case 'settings':
-        return (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Inventory Settings</h2>
-            <div className="space-y-4">
-              {productSettings.map((setting) => (
-                <div key={setting.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 gap-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">{setting.name}</p>
-                    <p className="text-xs text-gray-400">Configure this setting</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                      {setting.value}
-                    </span>
-                    <button className="px-3 py-1 text-xs bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                      Change
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      default:
-        return (
-          <>
-            <InventoryFilters 
-              onFilterChange={handleFilterChange}
-              onOptionTypes={handleOptionTypes}
-              onCollections={handleCollections}
-              onProductSettings={handleProductSettings}
-              onInventoryClick={handleInventoryClick}
-            />
-
-            {selectedIds.length > 0 && (
-              <div className="bg-blue-50 px-4 py-2 mb-4 rounded-lg flex items-center justify-between border border-blue-100">
-                <span className="text-sm text-blue-700">
-                  {selectedIds.length} product{selectedIds.length > 1 ? 's' : ''} selected
-                </span>
-                <button
-                  onClick={handleBulkDelete}
-                  className="text-sm text-red-600 hover:text-red-800 font-medium"
-                >
-                  Delete Selected
-                </button>
-              </div>
-            )}
-
-            <InventoryTable 
-              products={products}
-              onEdit={handleEdit}
-              onView={handleView}
-              onDelete={handleDelete}
-              onAddStock={handleAddStock}
-              // onProductClick={handleProductClick}
-              onRemoveStock={handleRemoveStock}
-              onManageStock={handleManageStock}
-              selectedIds={selectedIds}
-              onSelectProduct={handleSelectProduct}
-              onSelectAll={handleSelectAll}
-            />
-
-            <InventoryPagination
-              currentPage={controller.getPagination().currentPage}
-              rowsPerPage={controller.getPagination().rowsPerPage}
-              totalItems={controller.getPagination().totalItems}
-              onPageChange={handlePageChange}
-              onRowsPerPageChange={handleRowsPerPageChange}
-            />
-          </>
-        );
-    }
   };
 
   // ============================================
   // MAIN RENDER
   // ============================================
   return (
-    <div className="inventory-page">
-      <InventoryHeader 
-        onNewProduct={handleNewProduct}
-        onManageStock={() => alert('Manage Stock')}
-        currentSection={activeTab}
-        onExport={() => alert('Export')}
-        onImport={() => alert('Import')}
-      />
-      
+    <div className="inventory-page p-4 sm:p-6">
       {renderContent()}
 
-      {/* Add Stock Modal */}
+      {/* Modals */}
       <AddStockModal
         isOpen={isAddStockModalOpen}
         onClose={() => setIsAddStockModalOpen(false)}
@@ -1663,7 +1585,6 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
         productName={selectedProduct?.name}
       />
 
-      {/* Remove Stock Modal */}
       <RemoveStockModal
         isOpen={isRemoveStockModalOpen}
         onClose={() => setIsRemoveStockModalOpen(false)}
@@ -1672,24 +1593,21 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
         currentStock={selectedProduct?.available || 0}
       />
 
-      {/* Edit Product Modal */}
       <EditProductModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         onSave={handleConfirmEdit}
-        product={selectedProduct}
+        product={foundProduct}
       />
 
-      {/* View Product Modal */}
       <ViewProductModal
         isOpen={isViewModalOpen}
         onClose={() => setIsViewModalOpen(false)}
-        product={selectedProduct}
+        product={foundProduct}
         onEdit={handleEdit}
         onAddStock={handleAddStock}
       />
 
-      {/* Delete Product Modal */}
       <DeleteProductModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
