@@ -4,16 +4,14 @@ export interface Employee {
   id: string;
   name: string;
   code: string;
-  email: string;
-  department: string;
   role: string;
+  email: string;
+  phone?: string;
+  department: string;
   joinDate: string;
-  status: 'active' | 'inactive' | 'on-leave';
-  avatar?: string;
-  skills: string[];
-  manager?: string;
-  phone?: string;  // ADD THIS
-  salary?: number; // ADD THIS
+  salary?: number;
+  status: 'active' | 'on-leave' | 'inactive';
+  skills?: string[];
 }
 
 export interface LeaveRequest {

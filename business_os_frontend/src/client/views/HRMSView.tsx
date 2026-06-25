@@ -104,134 +104,45 @@ const HRMSView: React.FC = () => {
     },
   ];
 
-  const stats = {
-    totalEmployees: 10,
-    departments: 6,
-    onLeave: 1,
-    averageRating: 4.2
-  };
-
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <svg className="w-8 h-8 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-          </svg>
-          HR Management System
-        </h1>
-        <p className="text-gray-500 text-sm mt-1 ml-10">
-          Complete employee lifecycle management
-        </p>
+    <div className="bg-gray-50 min-h-full">
+      {/* Header - No icon, reduced margins ONLY */}
+      <div className="px-3 pt-1.5 pb-1">
+        <h1 className="text-2xl font-bold text-gray-800">HR Management System</h1>
+        <p className="text-sm text-gray-500 mt-0.5">Complete employee lifecycle management</p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Employees</p>
-              <p className="text-2xl font-bold text-gray-800">{stats.totalEmployees}</p>
-              <p className="text-xs text-green-600 mt-1">↑ 12% from last month</p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
-            </div>
-          </div>
-        </div>
+      {/* Stats Cards Removed */}
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Departments</p>
-              <p className="text-2xl font-bold text-gray-800">{stats.departments}</p>
-              <p className="text-xs text-blue-600 mt-1">6 active departments</p>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">On Leave</p>
-              <p className="text-2xl font-bold text-yellow-600">{stats.onLeave}</p>
-              <p className="text-xs text-yellow-600 mt-1">1 employee on leave</p>
-            </div>
-            <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-yellow-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Average Rating</p>
-              <p className="text-2xl font-bold text-green-600">{stats.averageRating}</p>
-              <div className="flex items-center gap-0.5 mt-1">
-                {[1, 2, 3, 4, 5].map(star => (
-                  <svg key={star} className={`w-4 h-4 ${star <= Math.round(stats.averageRating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                ))}
-              </div>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
-            </div>
-          </div>
-        </div>
+      {/* Tabs - Reduced side margin only */}
+      <div className="bg-white border-y border-gray-200 overflow-x-auto">
+        <nav className="flex px-3">
+          {tabs.map((tab: { id: HRMSTab; label: string; icon: React.ReactNode }) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex items-center ${
+                activeTab === tab.id
+                  ? 'border-blue-600 text-blue-600 bg-blue-50'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </nav>
       </div>
 
-      {/* Tabs */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="border-b border-gray-200 overflow-x-auto">
-          <nav className="flex -mb-px">
-            {tabs.map((tab: { id: HRMSTab; label: string; icon: React.ReactNode }) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex items-center ${
-                  activeTab === tab.id
-                    ? 'border-blue-600 text-blue-600 bg-blue-50'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-        <div className="p-6">
-          {activeTab === 'employees' && <EmployeeList />}
-          {activeTab === 'attendance' && <AttendanceTracker />}
-          {activeTab === 'leave' && <LeaveRequest />}
-          {activeTab === 'org-chart' && <OrganizationChart />}
-          {activeTab === 'skills' && <SkillMatrix />}
-          {activeTab === 'performance' && <PerformanceTracker />}
-          {activeTab === 'analytics' && <AnalyticsDashboard />}
-        </div>
+      {/* Content - Reduced padding only */}
+      <div className="p-3">
+        {activeTab === 'employees' && <EmployeeList />}
+        {activeTab === 'attendance' && <AttendanceTracker />}
+        {activeTab === 'leave' && <LeaveRequest />}
+        {activeTab === 'org-chart' && <OrganizationChart />}
+        {activeTab === 'skills' && <SkillMatrix />}
+        {activeTab === 'performance' && <PerformanceTracker />}
+        {activeTab === 'analytics' && <AnalyticsDashboard />}
       </div>
     </div>
   );
