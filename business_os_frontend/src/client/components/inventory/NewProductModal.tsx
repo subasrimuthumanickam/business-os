@@ -2,39 +2,54 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { CreateProductDTO } from '../../types/Inventory.types';
 import { InventoryService } from '../../services/inventory.service';
- 
+
 interface NewProductModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (product: CreateProductDTO) => void;
 }
- 
+
 interface CategoryOption {
   id: number;
   name: string;
 }
- 
+
 const UNIT_OPTIONS = ['pcs', 'kg', 'g', 'ltr', 'ml', 'box', 'pack', 'unit'];
- 
+
 export const NewProductModal: React.FC<NewProductModalProps> = ({
   isOpen,
   onClose,
   onSave,
 }) => {
+  // const [formData, setFormData] = useState<CreateProductDTO>({
+  //   type: 'goods',
+  //   name: '',
+  //   sku: '',
+  //   category_id: null,
+  //   price: 0,
+  //   stock_quantity: 0,
+  //   unit: 'pcs',
+  //   description: '',
+  //   status: 'active',
+  // });
+
   const [formData, setFormData] = useState<CreateProductDTO>({
-    name: '',
-    sku: '',
-    category_id: null,
-    price: 0,
-    stock_quantity: 0,
-    unit: 'pcs',
-    description: '',
-    status: 'active',
-  });
- 
+  type: 'goods', // Default
+  name: '',
+  sku: '',
+  category_id: null,
+  price: 0,
+  stock_quantity: 0,
+  unit: 'pcs',
+  description: '',
+  status: 'active',
+  tax_preference: 'taxable', // Default
+  digital: 'No'
+});
+
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
- 
+
   useEffect(() => {
     if (isOpen) {
       const service = InventoryService.getInstance();
@@ -44,34 +59,35 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
         .catch((err) => console.error('Failed to load categories:', err));
     }
   }, [isOpen]);
- 
+
   if (!isOpen) return null;
- 
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
- 
+
     if (!formData.name.trim()) {
       newErrors.name = 'Product name is required';
     }
- 
+
     if (!formData.sku.trim()) {
       newErrors.sku = 'SKU is required';
     }
- 
+
     if (formData.price === undefined || formData.price < 0) {
       newErrors.price = 'Price cannot be negative';
     }
- 
+
     if (formData.stock_quantity === undefined || formData.stock_quantity < 0) {
       newErrors.stock_quantity = 'Stock quantity cannot be negative';
     }
- 
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
- 
+
   const resetForm = () => {
     setFormData({
+      type: 'goods',
       name: '',
       sku: '',
       category_id: null,
@@ -80,10 +96,12 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
       unit: 'pcs',
       description: '',
       status: 'active',
+      tax_preference: 'taxable',
+      digital: 'No',
     });
     setErrors({});
   };
- 
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
@@ -92,12 +110,12 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
       resetForm();
     }
   };
- 
+
   const handleClose = () => {
     setErrors({});
     onClose();
   };
- 
+
   // Generate a simple random SKU (e.g. SKU-839201)
   const generateSKU = () => {
     const sku = `SKU-${Math.floor(100000 + Math.random() * 900000)}`;
@@ -106,22 +124,22 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
       setErrors({ ...errors, sku: '' });
     }
   };
- 
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6 sticky top-0 bg-white py-2 border-b">
           <h2 className="text-xl font-semibold text-gray-800">New Product</h2>
-          <button
-            onClick={handleClose}
+          <button 
+            onClick={handleClose} 
             className="text-gray-500 hover:text-gray-700 transition-colors"
             aria-label="Close modal"
           >
             <X size={24} />
           </button>
         </div>
- 
+
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Left Column */}
@@ -143,7 +161,7 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
                 />
                 {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
               </div>
- 
+
               {/* SKU */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -170,7 +188,7 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
                 </div>
                 {errors.sku && <p className="text-red-500 text-xs mt-1">{errors.sku}</p>}
               </div>
- 
+
               {/* Category */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
@@ -187,7 +205,7 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
                   ))}
                 </select>
               </div>
- 
+
               {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
@@ -200,7 +218,46 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
                 />
               </div>
             </div>
- 
+
+            <div className="mb-6 pb-4 border-b">
+    <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+    <div className="flex gap-6">
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input 
+          type="radio" 
+          name="type" 
+          value="goods" 
+          checked={formData.type === 'goods'} 
+          onChange={(e) => setFormData({...formData, type: e.target.value as 'goods' | 'service'})} 
+        />
+        Goods
+      </label>
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input 
+          type="radio" 
+          name="type" 
+          value="service" 
+          checked={formData.type === 'service'} 
+          onChange={(e) => setFormData({...formData, type: e.target.value as 'goods' | 'service'})} 
+        />
+        Service
+      </label>
+    </div>
+  </div>
+
+
+  <div className="mb-6">
+    <label className="block text-sm font-medium text-gray-700 mb-2">Tax Preference</label>
+    <div className="flex gap-6">
+      <label className="flex items-center gap-2">
+        <input type="radio" value="taxable" checked={formData.tax_preference === 'taxable'} onChange={(e) => setFormData({...formData, tax_preference: 'taxable'})} /> Taxable
+      </label>
+      <label className="flex items-center gap-2">
+        <input type="radio" value="non-taxable" checked={formData.tax_preference === 'non-taxable'} onChange={(e) => setFormData({...formData, tax_preference: 'non-taxable'})} /> Non-Taxable
+      </label>
+    </div>
+  </div>
+
             {/* Right Column */}
             <div className="space-y-4">
               {/* Price */}
@@ -231,7 +288,7 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
                   </label>
                 </div>
               </div>
- 
+
               {/* Stock Quantities - 3 columns */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -288,7 +345,7 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
                   <p className="text-red-500 text-xs mt-1">{errors.stock_quantity}</p>
                 )}
               </div>
- 
+
               {/* Status */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
@@ -308,7 +365,7 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
               </div>
             </div>
           </div>
- 
+
           {/* Footer Buttons */}
           <div className="mt-6 flex justify-end gap-3 sticky bottom-0 bg-white py-3 border-t">
             <button
@@ -330,6 +387,5 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
     </div>
   );
 };
- 
+
 export default NewProductModal;
- 
