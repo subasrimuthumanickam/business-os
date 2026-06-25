@@ -101,3 +101,4 @@ function normalizeProduct(raw: any): Product {
   };
 }
  
+ 

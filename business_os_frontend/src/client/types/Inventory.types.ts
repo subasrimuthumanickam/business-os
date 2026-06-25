@@ -67,6 +67,12 @@ export interface Product {
   createdAt?: string;
   updatedAt?: string;
   deletedAt?: string | null;
+
+   // Add these
+  type?: 'goods' | 'service';
+  tax_preference?: string;
+  sales_account?: string;
+  purchase_account?: string;
  
   // Legacy fields
   digital?: 'Yes' | 'No';
@@ -509,3 +515,4 @@ export function formatDate(dateStr: string | Date | undefined): string {
     day: 'numeric',
   });
 }
+ 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   X, Package, Tag, Layers, Plus, Trash2, Sliders, Settings, Edit, Eye,
   BarChart3, TrendingUp, Clock, Users, DollarSign, AlertCircle, CheckCircle,
   ArrowUp, ArrowDown, Search, Filter, MoreVertical, Save, ArrowLeft
@@ -18,11 +18,11 @@ import { InventoryController } from '../../controllers/inventory.controller';
 import ProductDetailsPage from './ProductDetailsPage';
 import { Product, FilterOptions, Category } from '../../types/Inventory.types';
 import { useNavigate } from 'react-router-dom';
-
+ 
 interface InventoryPageProps {
   section?: string;
 }
-
+ 
 // Option Types Interface
 interface OptionType {
   id: string;
@@ -33,7 +33,7 @@ interface OptionType {
   status: 'Active' | 'Draft' | 'Inactive';
   createdAt: string;
 }
-
+ 
 // Collection Interface
 interface Collection {
   id: string;
@@ -45,14 +45,14 @@ interface Collection {
   createdAt: string;
   description?: string;
 }
-
+ 
 export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'products' }) => {
   const navigate = useNavigate();
   const [controller] = useState(() => new InventoryController());
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<string>(section || 'products');
-  
+ 
   // Modal states
   const [isAddStockModalOpen, setIsAddStockModalOpen] = useState(false);
   const [isRemoveStockModalOpen, setIsRemoveStockModalOpen] = useState(false);
@@ -62,13 +62,13 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-
+ 
   // Quick action states
   const [showProductSettingsModal, setShowProductSettingsModal] = useState(false);
   const [showNewProductPage, setShowNewProductPage] = useState(false);
   const [showOptionTypesPage, setShowOptionTypesPage] = useState(false);
   const [showCollectionsPage, setShowCollectionsPage] = useState(false);
-
+ 
   // New Product Form State
   const [newProductForm, setNewProductForm] = useState({
     name: '',
@@ -85,14 +85,14 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
   });
   const [newProductErrors, setNewProductErrors] = useState<Record<string, string>>({});
   const [newProductLoading, setNewProductLoading] = useState(false);
-
+ 
   // Option Types State
   const [optionTypes, setOptionTypes] = useState<OptionType[]>([
     { id: '1', name: 'color', displayName: 'Color', values: ['Red', 'Blue', 'Green', 'Black', 'White'], onHold: 740, status: 'Active', createdAt: '2024-01-15' },
     { id: '2', name: 'size', displayName: 'Size', values: ['S', 'M', 'L', 'XL', 'XXL'], onHold: 12345, status: 'Active', createdAt: '2024-01-20' },
     { id: '3', name: 'material', displayName: 'Material', values: ['Cotton', 'Polyester', 'Wool', 'Silk'], onHold: 583, status: 'Draft', createdAt: '2024-02-01' },
   ]);
-
+ 
   const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
   const [editOptionForm, setEditOptionForm] = useState<Partial<OptionType>>({});
   const [optionFormData, setOptionFormData] = useState({
@@ -103,7 +103,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
     status: 'Active' as 'Active' | 'Draft' | 'Inactive'
   });
   const [optionErrors, setOptionErrors] = useState<Record<string, string>>({});
-
+ 
   // Collections State
   const [collections, setCollections] = useState<Collection[]>([
     { id: '1', name: 'Summer Collection', productCount: 0, color: 'orange', gradient: 'from-orange-400 to-orange-500', borderColor: 'border-orange-200', createdAt: '2024-06-01', description: 'Summer season products' },
@@ -117,7 +117,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
   const [editingCollectionId, setEditingCollectionId] = useState<string | null>(null);
   const [editCollectionForm, setEditCollectionForm] = useState<Partial<Collection>>({});
   const [collectionLoading, setCollectionLoading] = useState(false);
-
+ 
   // Categories State
   const [categories, setCategories] = useState<Category[]>([
     { id: '1', name: 'Electronics', productCount: 45, status: 'Active', createdAt: '2024-01-15' },
@@ -131,7 +131,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
   const [editCategoryForm, setEditCategoryForm] = useState<Partial<Category>>({});
   const [showCategoryAddForm, setShowCategoryAddForm] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
-
+ 
   // Product Settings
   const productSettings = [
     { id: 1, name: 'Default Tax Rate', value: '18%' },
@@ -140,14 +140,14 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
     { id: 4, name: 'Auto-approve Products', value: 'Enabled' },
     { id: 5, name: 'Enable Reviews', value: 'Yes' },
   ];
-
+ 
   // ============================================
   // TOGGLE HELPERS
   // ============================================
   const toggleCategoryStatus = (status: 'Active' | 'Inactive'): 'Active' | 'Inactive' => {
     return status === 'Active' ? 'Inactive' : 'Active';
   };
-
+ 
   // ============================================
   // SKU GENERATOR
   // ============================================
@@ -155,7 +155,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
     const sku = Math.floor(100000000000 + Math.random() * 900000000000).toString();
     setNewProductForm({ ...newProductForm, sku });
   };
-
+ 
   // ============================================
   // PRODUCT HANDLERS
   // ============================================
@@ -164,23 +164,23 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
     setSelectedProduct(product);
     setIsDetailsOpen(true);
   };
-
+ 
   const handleBackToList = () => {
     setIsDetailsOpen(false);
     setSelectedProduct(null);
     setSelectedProductId(null);
   };
-
+ 
   const handleNewProduct = () => {
     setShowNewProductPage(true);
     resetNewProductForm();
   };
-
+ 
   const handleNewProductCancel = () => {
     setShowNewProductPage(false);
     resetNewProductForm();
   };
-
+ 
   const resetNewProductForm = () => {
     setNewProductForm({
       name: '',
@@ -197,21 +197,21 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
     });
     setNewProductErrors({});
   };
-
+ 
   const handleNewProductSubmit = () => {
     const errors: Record<string, string> = {};
     if (!newProductForm.name.trim()) errors.name = 'Product name is required';
     if (!newProductForm.sku.trim()) errors.sku = 'SKU is required';
     if (newProductForm.sku.length !== 12) errors.sku = 'SKU must be exactly 12 digits';
     if (!newProductForm.category) errors.category = 'Category is required';
-
+ 
     if (Object.keys(errors).length > 0) {
       setNewProductErrors(errors);
       return;
     }
-
+ 
     setNewProductLoading(true);
-    
+   
     setTimeout(() => {
       const newProduct: Product = {
         id: Date.now().toString(),
@@ -230,26 +230,26 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
         cost: newProductForm.cost,
         description: newProductForm.description
       };
-      
+     
       setProducts([newProduct, ...products]);
       setNewProductLoading(false);
       setShowNewProductPage(false);
       resetNewProductForm();
     }, 500);
   };
-
+ 
   // ============================================
   // COLLECTION HANDLERS
   // ============================================
   const handleCollections = () => {
     setShowCollectionsPage(true);
   };
-
+ 
   const handleBackFromCollections = () => {
     setShowCollectionsPage(false);
     resetCollectionForm();
   };
-
+ 
   const resetCollectionForm = () => {
     setNewCollectionName('');
     setNewCollectionDescription('');
@@ -257,15 +257,15 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
     setEditCollectionForm({});
     setCollectionSearchTerm('');
   };
-
+ 
   const handleAddCollection = () => {
     if (!newCollectionName.trim()) {
       alert('Collection name is required');
       return;
     }
-    
+   
     setCollectionLoading(true);
-    
+   
     const colors = ['orange', 'blue', 'purple', 'emerald', 'red', 'pink', 'indigo', 'teal'];
     const colorMap: Record<string, { gradient: string; borderColor: string }> = {
       orange: { gradient: 'from-orange-400 to-orange-500', borderColor: 'border-orange-200' },
@@ -277,9 +277,9 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
       indigo: { gradient: 'from-indigo-400 to-indigo-500', borderColor: 'border-indigo-200' },
       teal: { gradient: 'from-teal-400 to-teal-500', borderColor: 'border-teal-200' },
     };
-    
+   
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
-    
+   
     setTimeout(() => {
       const newCollection: Collection = {
         id: Date.now().toString(),
@@ -291,37 +291,37 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
         createdAt: new Date().toISOString().split('T')[0],
         description: newCollectionDescription.trim() || undefined
       };
-      
+     
       setCollections([newCollection, ...collections]);
       setNewCollectionName('');
       setNewCollectionDescription('');
       setCollectionLoading(false);
     }, 300);
   };
-
+ 
   const handleEditCollection = (id: string) => {
     const collection = collections.find(c => c.id === id);
     if (collection) {
       setEditingCollectionId(id);
-      setEditCollectionForm({ 
+      setEditCollectionForm({
         name: collection.name,
         description: collection.description || ''
       });
     }
   };
-
+ 
   const handleSaveCollectionEdit = () => {
     if (!editingCollectionId || !editCollectionForm.name?.trim()) return;
-    
+   
     setCollectionLoading(true);
     setTimeout(() => {
       const updated = collections.map(c =>
-        c.id === editingCollectionId 
-          ? { 
-              ...c, 
+        c.id === editingCollectionId
+          ? {
+              ...c,
               name: editCollectionForm.name || c.name,
               description: editCollectionForm.description || c.description
-            } 
+            }
           : c
       );
       setCollections(updated);
@@ -330,7 +330,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
       setCollectionLoading(false);
     }, 300);
   };
-
+ 
   const handleDeleteCollection = (id: string) => {
     if (window.confirm('Are you sure you want to delete this collection?')) {
       setCollectionLoading(true);
@@ -340,12 +340,12 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
       }, 300);
     }
   };
-
+ 
   const filteredCollections = collections.filter(c =>
     c.name.toLowerCase().includes(collectionSearchTerm.toLowerCase()) ||
     (c.description && c.description.toLowerCase().includes(collectionSearchTerm.toLowerCase()))
   );
-
+ 
   // ============================================
   // CATEGORY HANDLERS
   // ============================================
@@ -362,7 +362,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
     setNewCategoryName('');
     setShowCategoryAddForm(false);
   };
-
+ 
   const handleEditCategory = (id: string) => {
     const category = categories.find(c => c.id === id);
     if (category) {
@@ -370,7 +370,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
       setEditCategoryForm({ ...category });
     }
   };
-
+ 
   const handleSaveCategoryEdit = () => {
     if (!editingCategoryId) return;
     const updated = categories.map(c =>
@@ -380,26 +380,26 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
     setEditingCategoryId(null);
     setEditCategoryForm({});
   };
-
+ 
   const handleDeleteCategory = (id: string) => {
     if (window.confirm('Delete this category?')) {
       setCategories(categories.filter(c => c.id !== id));
     }
   };
-
+ 
   const handleCategoryStatusToggle = (id: string) => {
     const updated = categories.map(c =>
-      c.id === id 
-        ? { ...c, status: toggleCategoryStatus(c.status) } 
+      c.id === id
+        ? { ...c, status: toggleCategoryStatus(c.status) }
         : c
     );
     setCategories(updated);
   };
-
+ 
   const filteredCategories = categories.filter(c =>
     c.name.toLowerCase().includes(categorySearchTerm.toLowerCase())
   );
-
+ 
   // ============================================
   // OPTION TYPES HANDLERS
   // ============================================
@@ -408,12 +408,12 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
     if (!optionFormData.name.trim()) errors.name = 'Name is required';
     if (!optionFormData.displayName.trim()) errors.displayName = 'Display name is required';
     if (!optionFormData.values.trim()) errors.values = 'At least one value is required';
-
+ 
     if (Object.keys(errors).length > 0) {
       setOptionErrors(errors);
       return;
     }
-
+ 
     const newOption: OptionType = {
       id: Date.now().toString(),
       name: optionFormData.name.trim().toLowerCase().replace(/\s+/g, '_'),
@@ -423,22 +423,22 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
       status: optionFormData.status,
       createdAt: new Date().toISOString().split('T')[0]
     };
-
+ 
     setOptionTypes([newOption, ...optionTypes]);
     resetOptionForm();
   };
-
+ 
   const handleUpdateOption = () => {
     if (!editingOptionId) return;
     const errors: Record<string, string> = {};
     if (!editOptionForm.displayName?.trim()) errors.displayName = 'Display name is required';
     if (!editOptionForm.values?.length) errors.values = 'At least one value is required';
-
+ 
     if (Object.keys(errors).length > 0) {
       setOptionErrors(errors);
       return;
     }
-
+ 
     const updated = optionTypes.map(opt =>
       opt.id === editingOptionId
         ? {
@@ -455,20 +455,20 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
     setEditOptionForm({});
     setOptionErrors({});
   };
-
+ 
   const handleDeleteOption = (id: string) => {
     if (window.confirm('Are you sure you want to delete this option type?')) {
       setOptionTypes(optionTypes.filter(o => o.id !== id));
     }
   };
-
+ 
   const handleRemoveValue = (optionId: string, valueToRemove: string) => {
     const updated = optionTypes.map(opt =>
       opt.id === optionId ? { ...opt, values: opt.values.filter(v => v !== valueToRemove) } : opt
     );
     setOptionTypes(updated);
   };
-
+ 
   const handleAddValue = (optionId: string) => {
     const newValue = prompt('Enter new value:');
     if (newValue && newValue.trim()) {
@@ -478,12 +478,12 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
       setOptionTypes(updated);
     }
   };
-
+ 
   const resetOptionForm = () => {
     setOptionFormData({ name: '', displayName: '', values: '', onHold: 0, status: 'Active' });
     setOptionErrors({});
   };
-
+ 
   const getStatusBadge = (status: string) => {
     switch(status) {
       case 'Active': return 'bg-green-100 text-green-800';
@@ -492,14 +492,14 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
       default: return 'bg-gray-100 text-gray-600';
     }
   };
-
+ 
   // ============================================
   // CRUD OPERATIONS
   // ============================================
   useEffect(() => {
     loadProducts();
-  }, []);
-
+ }, []);
+ 
   const loadProducts = async () => {
     try {
       await controller.initialize();
@@ -508,31 +508,31 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
       console.error('Failed to load products:', error);
     }
   };
-
+ 
   const handleFilterChange = (filters: Partial<FilterOptions>) => {
     controller.handleFilterChange(filters);
     setProducts(controller.getProducts());
   };
-
+ 
   const handlePageChange = (page: number) => {
     controller.handlePageChange(page);
     setProducts(controller.getProducts());
   };
-
+ 
   const handleRowsPerPageChange = (rows: number) => {
     controller.handleRowsPerPageChange(rows);
     setProducts(controller.getProducts());
   };
-
-  const foundProduct = selectedProductId 
-    ? products.find((p: Product) => p.id === selectedProductId) 
+ 
+  const foundProduct = selectedProductId
+    ? products.find((p: Product) => p.id === selectedProductId)
     : undefined;
-
+ 
   const handleAddStock = (id: string) => {
     setSelectedProductId(id);
     setIsAddStockModalOpen(true);
   };
-
+ 
   const handleConfirmAddStock = async (quantity: number) => {
     if (selectedProductId) {
       await controller.handleAddStock(selectedProductId, quantity);
@@ -541,12 +541,12 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
       setSelectedProductId(null);
     }
   };
-
+ 
   const handleRemoveStock = (id: string) => {
     setSelectedProductId(id);
     setIsRemoveStockModalOpen(true);
   };
-
+ 
   const handleConfirmRemoveStock = async (quantity: number) => {
     if (selectedProductId) {
       await controller.handleRemoveStock(selectedProductId, quantity);
@@ -555,12 +555,12 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
       setSelectedProductId(null);
     }
   };
-
+ 
   const handleEdit = (id: string) => {
     setSelectedProductId(id);
     setIsEditModalOpen(true);
   };
-
+ 
   const handleConfirmEdit = async (updatedData: Partial<Product>) => {
     if (selectedProductId) {
       await controller.handleUpdateProduct(selectedProductId, { id: selectedProductId, ...updatedData });
@@ -569,17 +569,17 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
       setSelectedProductId(null);
     }
   };
-
+ 
   const handleView = (id: string) => {
     setSelectedProductId(id);
     setIsViewModalOpen(true);
   };
-
+ 
   const handleDelete = (id: string) => {
     setSelectedProductId(id);
     setIsDeleteModalOpen(true);
   };
-
+ 
   const handleConfirmDelete = async () => {
     if (selectedProductId) {
       await controller.handleDeleteProduct(selectedProductId);
@@ -588,12 +588,12 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
       setSelectedProductId(null);
     }
   };
-
+ 
   const handleManageStock = (id: string) => {
     setSelectedProductId(id);
     setIsAddStockModalOpen(true);
   };
-
+ 
   const handleSelectProduct = (id: string, checked: boolean) => {
     if (checked) {
       setSelectedIds([...selectedIds, id]);
@@ -601,7 +601,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
       setSelectedIds(selectedIds.filter((sid: string) => sid !== id));
     }
   };
-
+ 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       setSelectedIds(products.map((p: Product) => p.id));
@@ -609,7 +609,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
       setSelectedIds([]);
     }
   };
-
+ 
   const handleBulkDelete = async () => {
     if (selectedIds.length > 0 && window.confirm(`Delete ${selectedIds.length} selected products?`)) {
       await controller.handleBulkDelete(selectedIds);
@@ -617,22 +617,22 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
       setSelectedIds([]);
     }
   };
-
+ 
   // ============================================
   // QUICK ACTION HANDLERS
   // ============================================
   const handleOptionTypes = () => {
     setShowOptionTypesPage(true);
   };
-
+ 
   const handleBackToInventory = () => {
     setShowOptionTypesPage(false);
   };
-
+ 
   const handleProductSettings = () => {
     setShowProductSettingsModal(true);
   };
-
+ 
   const handleInventoryClick = () => {
     setActiveTab('products');
     loadProducts();
@@ -640,7 +640,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
     setShowProductSettingsModal(false);
     setShowNewProductPage(false);
   };
-
+ 
   // ============================================
   // RENDER CATEGORIES CONTENT
   // ============================================
@@ -666,7 +666,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
             Add Category
           </button>
         </div>
-
+ 
         {showCategoryAddForm && (
           <div className="p-3 sm:p-4 bg-blue-50 border-b border-blue-100">
             <div className="flex flex-col sm:flex-row gap-3">
@@ -698,7 +698,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
             </div>
           </div>
         )}
-
+ 
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -809,7 +809,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
       </div>
     );
   };
-
+ 
   // ============================================
   // RENDER MAIN CONTENT
   // ============================================
@@ -817,7 +817,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
     // Check if details page should be shown
     if (isDetailsOpen && selectedProduct) {
       return (
-        <ProductDetailsPage 
+        <ProductDetailsPage
           product={selectedProduct}
           onBack={handleBackToList}
           onEdit={() => {
@@ -831,7 +831,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
         />
       );
     }
-
+ 
     // Check if new product page should be shown
     if (showNewProductPage) {
       return (
@@ -864,7 +864,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
               />
               {newProductErrors.name && <p className="text-red-500 text-xs mt-1">{newProductErrors.name}</p>}
             </div>
-
+ 
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 SKU <span className="text-red-500">*</span>
@@ -890,7 +890,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
               </div>
               {newProductErrors.sku && <p className="text-red-500 text-xs mt-1">{newProductErrors.sku}</p>}
             </div>
-
+ 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Category <span className="text-red-500">*</span>
@@ -911,7 +911,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
               </select>
               {newProductErrors.category && <p className="text-red-500 text-xs mt-1">{newProductErrors.category}</p>}
             </div>
-
+ 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Digital Product</label>
               <div className="flex gap-4 pt-1.5">
@@ -937,7 +937,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
                 </label>
               </div>
             </div>
-
+ 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
               <div className="relative">
@@ -952,7 +952,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
                 />
               </div>
             </div>
-
+ 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Cost</label>
               <div className="relative">
@@ -967,7 +967,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
                 />
               </div>
             </div>
-
+ 
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Stock Quantities</label>
               <div className="grid grid-cols-3 gap-3">
@@ -1000,10 +1000,10 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
                     min="0"
                   />
-                </div>
+ </div>
               </div>
             </div>
-
+ 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
               <select
@@ -1016,7 +1016,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
                 <option value="Inactive">Inactive</option>
               </select>
             </div>
-
+ 
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
               <textarea
@@ -1029,7 +1029,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
               />
             </div>
           </div>
-
+ 
           <div className="flex flex-wrap gap-3 mt-6 pt-4 border-t border-gray-200">
             <button
               onClick={handleNewProductSubmit}
@@ -1048,7 +1048,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
         </div>
       );
     }
-
+ 
     // Check if collections page should be shown
     if (showCollectionsPage) {
       return (
@@ -1065,12 +1065,12 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
               <p className="text-xs sm:text-sm text-gray-500">Manage product collections</p>
             </div>
           </div>
-
+ 
           <div id="collection-form" className="bg-gray-50 rounded-xl border border-gray-200 p-4 sm:p-6 mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
               {editingCollectionId ? 'Edit Collection' : 'Create New Collection'}
             </h2>
-            
+           
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1090,7 +1090,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
                   placeholder="Enter collection name"
                 />
               </div>
-
+ 
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
@@ -1108,7 +1108,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
                 />
               </div>
             </div>
-
+ 
             <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-gray-200">
               <button
                 onClick={editingCollectionId ? handleSaveCollectionEdit : handleAddCollection}
@@ -1133,7 +1133,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
               </button>
             </div>
           </div>
-
+ 
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
             <input
@@ -1144,7 +1144,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
               className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm"
             />
           </div>
-
+ 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
             {filteredCollections.length === 0 ? (
               <div className="col-span-full text-center py-12 text-gray-500">
@@ -1188,12 +1188,12 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
                         </button>
                       </div>
                     </div>
-                    
+                   
                     {collection.description && (
                       <p className="text-sm text-gray-500 mb-3 line-clamp-2">{collection.description}</p>
                     )}
                   </div>
-                  
+                 
                   <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0 flex gap-2">
                     <button className="flex-1 px-3 py-1.5 text-xs sm:text-sm bg-gray-50 text-gray-700 rounded-lg hover:bg-indigo-50 hover:text-indigo-700 transition-colors border border-gray-200 hover:border-indigo-200 flex items-center justify-center gap-1.5 font-medium">
                       <Eye size={14} />
@@ -1211,7 +1211,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
         </div>
       );
     }
-
+ 
     // Check if option types page should be shown
     if (showOptionTypesPage) {
       return (
@@ -1228,12 +1228,12 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
               <p className="text-xs sm:text-sm text-gray-500">Manage product variations</p>
             </div>
           </div>
-
+ 
           <div id="option-form" className="bg-gray-50 rounded-xl border border-gray-200 p-4 sm:p-6 mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
               {editingOptionId ? 'Edit Option Type' : 'Create New Option Type'}
             </h2>
-            
+           
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1257,7 +1257,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
                 />
                 {optionErrors.name && <p className="text-red-500 text-xs mt-1">{optionErrors.name}</p>}
               </div>
-
+ 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Display Name <span className="text-red-500">*</span>
@@ -1279,7 +1279,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
                 />
                 {optionErrors.displayName && <p className="text-red-500 text-xs mt-1">{optionErrors.displayName}</p>}
               </div>
-
+ 
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Values <span className="text-red-500">*</span>
@@ -1302,7 +1302,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
                 />
                 {optionErrors.values && <p className="text-red-500 text-xs mt-1">{optionErrors.values}</p>}
               </div>
-
+ 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">On Hold</label>
                 <input
@@ -1320,7 +1320,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
                   min="0"
                 />
               </div>
-
+ 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select
@@ -1341,7 +1341,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
                 </select>
               </div>
             </div>
-
+ 
             <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-gray-200">
               <button
                 onClick={editingOptionId ? handleUpdateOption : handleAddOption}
@@ -1365,7 +1365,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
               </button>
             </div>
           </div>
-
+ 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -1460,7 +1460,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
         </div>
       );
     }
-
+ 
     // Default - Main Inventory View (Single Card)
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -1493,7 +1493,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
             </div>
           </div>
         </div>
-
+ 
         {/* Filters inside card */}
         <div className="px-4 sm:px-6 py-3 border-b border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -1515,34 +1515,34 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
             </div>
           </div>
         </div>
-
+ 
         {/* Tabs inside card */}
         <div className="flex flex-wrap items-center gap-1 px-4 sm:px-6 py-2 border-b border-gray-200 bg-gray-50/50">
           <button className="text-sm font-medium px-3 py-1.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
             Inventory
           </button>
-          <button 
+          <button
             onClick={handleOptionTypes}
             className="text-sm font-medium px-3 py-1.5 rounded-md text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
           >
             Option Types
           </button>
-          <button 
+          <button
             onClick={handleCollections}
             className="text-sm font-medium px-3 py-1.5 rounded-md text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
           >
             Collections
           </button>
-          <button 
+          <button
             onClick={handleProductSettings}
             className="text-sm font-medium px-3 py-1.5 rounded-md text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
           >
             Product Settings
           </button>
         </div>
-
+ 
         {/* Table inside card */}
-        <InventoryTable 
+        <InventoryTable
           products={products}
           onEdit={handleEdit}
           onView={handleView}
@@ -1555,7 +1555,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
           onSelectProduct={handleSelectProduct}
           onSelectAll={handleSelectAll}
         />
-
+ 
         {/* Pagination inside card */}
         <div className="px-4 sm:px-6 py-3 border-t border-gray-200">
           <InventoryPagination
@@ -1569,14 +1569,14 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
       </div>
     );
   };
-
+ 
   // ============================================
   // MAIN RENDER
   // ============================================
   return (
     <div className="inventory-page p-4 sm:p-6">
       {renderContent()}
-
+ 
       {/* Modals */}
       <AddStockModal
         isOpen={isAddStockModalOpen}
@@ -1584,7 +1584,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
         onConfirm={handleConfirmAddStock}
         productName={selectedProduct?.name}
       />
-
+ 
       <RemoveStockModal
         isOpen={isRemoveStockModalOpen}
         onClose={() => setIsRemoveStockModalOpen(false)}
@@ -1592,14 +1592,14 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
         productName={selectedProduct?.name}
         currentStock={selectedProduct?.available || 0}
       />
-
+ 
       <EditProductModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         onSave={handleConfirmEdit}
         product={foundProduct}
       />
-
+ 
       <ViewProductModal
         isOpen={isViewModalOpen}
         onClose={() => setIsViewModalOpen(false)}
@@ -1607,14 +1607,14 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
         onEdit={handleEdit}
         onAddStock={handleAddStock}
       />
-
+ 
       <DeleteProductModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
         productName={selectedProduct?.name}
       />
-
+ 
       {/* Product Settings Modal */}
       {showProductSettingsModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1633,7 +1633,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
                 <X size={22} />
               </button>
             </div>
-            
+           
             <div className="space-y-3 mt-2">
               {productSettings.map((setting) => (
                 <div key={setting.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
@@ -1652,7 +1652,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
                 </div>
               ))}
             </div>
-            
+           
             <div className="mt-4 flex justify-end gap-3">
               <button
                 onClick={() => setShowProductSettingsModal(false)}
@@ -1671,5 +1671,6 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
     </div>
   );
 };
-
+ 
 export default InventoryPage;
+ 
