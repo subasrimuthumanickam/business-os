@@ -68,10 +68,18 @@ export const createProduct = async (data: {
     stock_quantity: number;
     unit: string;
     description: string | null;
+    // New Zoho-style fields — all optional with sensible DB-level defaults,
+    // so existing callers that don't pass them keep working unchanged.
+    type?: 'goods' | 'service';
+    tax_preference?: 'taxable' | 'non-taxable';
+    sales_account?: string | null;
+    purchase_account?: string | null;
 }): Promise<number> => {
     const result: any = await db.execute(
-        `INSERT INTO products (name, sku, category_id, price, stock_quantity, unit, description)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO products
+            (name, sku, category_id, price, stock_quantity, unit, description,
+             type, tax_preference, sales_account, purchase_account)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
             data.name,
             data.sku,
@@ -79,7 +87,11 @@ export const createProduct = async (data: {
             data.price,
             data.stock_quantity || 0,
             data.unit || 'pcs',
-            data.description || null
+            data.description || null,
+            data.type || 'goods',
+            data.tax_preference || 'taxable',
+            data.sales_account || 'Sales',
+            data.purchase_account || 'Cost of Goods Sold'
         ]
     );
     return result.insertId;
@@ -93,10 +105,15 @@ export const updateProduct = async (id: number, data: {
     unit: string;
     description: string | null;
     status?: string;
+    type?: 'goods' | 'service';
+    tax_preference?: 'taxable' | 'non-taxable';
+    sales_account?: string | null;
+    purchase_account?: string | null;
 }): Promise<number> => {
     const result: any = await db.execute(
         `UPDATE products SET
-            name = ?, sku = ?, category_id = ?, price = ?, unit = ?, description = ?, status = ?
+            name = ?, sku = ?, category_id = ?, price = ?, unit = ?, description = ?, status = ?,
+            type = ?, tax_preference = ?, sales_account = ?, purchase_account = ?
          WHERE id = ?`,
         [
             data.name,
@@ -106,6 +123,10 @@ export const updateProduct = async (id: number, data: {
             data.unit || 'pcs',
             data.description || null,
             data.status || 'active',
+            data.type || 'goods',
+            data.tax_preference || 'taxable',
+            data.sales_account || 'Sales',
+            data.purchase_account || 'Cost of Goods Sold',
             id
         ]
     );

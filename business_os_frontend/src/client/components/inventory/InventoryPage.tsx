@@ -4,9 +4,12 @@ import {
   BarChart3, TrendingUp, Clock, Users, DollarSign, AlertCircle, CheckCircle,
   ArrowUp, ArrowDown, Search, Filter, MoreVertical, Save, ArrowLeft
 } from 'lucide-react';
-import { InventoryHeader } from './InventoryHeader';
-import { InventoryFilters } from './InventoryFilters';
-import InventoryTable from './InventoryTable';
+// Old grid-based components — no longer rendered now that Inventory uses
+// the two-pane Zoho-style layout (InventoryItemList + ItemDetailPane).
+// Left commented (not deleted) in case you want to revert or repurpose them.
+// import { InventoryHeader } from './InventoryHeader';
+// import { InventoryFilters } from './InventoryFilters';
+// import InventoryTable from './InventoryTable';
 import { InventoryPagination } from './InventoryPagination';
 import { NewProductModal } from './NewProductModal';
 import { AddStockModal } from './AddStockModal';
@@ -15,8 +18,10 @@ import { DeleteProductModal } from './DeleteProductModal';
 import { EditProductModal } from './EditProductModal';
 import { ViewProductModal } from './ViewProductModal';
 import { InventoryController } from '../../controllers/inventory.controller';
-import ProductDetailsPage from './ProductDetailsPage';
-import { Product, FilterOptions, Category } from '../../types/Inventory.types';
+import { InventoryItemList } from './Inventoryitemlist';
+import { ItemDetailPane } from './Itemdetailpane';
+import { NewItemForm, NewItemFormState } from './Newitemform';
+import { Product, FilterOptions, Category, CreateProductDTO } from '../../types/Inventory.types';
 import { useNavigate } from 'react-router-dom';
 
 interface InventoryPageProps {
@@ -61,7 +66,6 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   // Quick action states
   const [showProductSettingsModal, setShowProductSettingsModal] = useState(false);
@@ -69,22 +73,26 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
   const [showOptionTypesPage, setShowOptionTypesPage] = useState(false);
   const [showCollectionsPage, setShowCollectionsPage] = useState(false);
 
-  // New Product Form State
-  const [newProductForm, setNewProductForm] = useState({
+  // New Item Form State (Zoho-style: type, sales/purchase info, tax preference)
+  const [newItemForm, setNewItemForm] = useState<NewItemFormState>({
+    type: 'goods',
     name: '',
+    unit: 'pcs',
     sku: '',
     category: '',
-    digital: 'No' as 'Yes' | 'No',
-    onHand: 0,
-    available: 0,
-    onHold: 0,
-    status: 'Draft' as 'Active' | 'Draft' | 'Inactive',
     price: 0,
+    sales_account: 'Sales',
     cost: 0,
-    description: ''
+    purchase_account: 'Cost of Goods Sold',
+    description: '',
+    purchase_description: '',
+    tax_preference: 'taxable',
   });
   const [newProductErrors, setNewProductErrors] = useState<Record<string, string>>({});
   const [newProductLoading, setNewProductLoading] = useState(false);
+
+  // Left-pane (item list) search term for the two-pane layout
+  const [listSearchTerm, setListSearchTerm] = useState('');
 
   // Option Types State
   const [optionTypes, setOptionTypes] = useState<OptionType[]>([
@@ -153,7 +161,18 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
   // ============================================
   const generateSKU = () => {
     const sku = Math.floor(100000000000 + Math.random() * 900000000000).toString();
-    setNewProductForm({ ...newProductForm, sku });
+    setNewItemForm({ ...newItemForm, sku });
+  };
+
+  // Generic field setter passed to NewItemForm as `onChange`
+  const handleNewItemFieldChange = (field: keyof NewItemFormState, value: any) => {
+    setNewItemForm({ ...newItemForm, [field]: value });
+  };
+
+  // Left-pane search — filters the visible product list client-side
+  const handleListSearchChange = (value: string) => {
+    setListSearchTerm(value);
+    handleFilterChange({ searchTerm: value });
   };
 
   // ============================================
@@ -162,11 +181,9 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
   const handleProductClick = (product: Product) => {
     setSelectedProductId(product.id);
     setSelectedProduct(product);
-    setIsDetailsOpen(true);
   };
 
   const handleBackToList = () => {
-    setIsDetailsOpen(false);
     setSelectedProduct(null);
     setSelectedProductId(null);
   };
@@ -182,28 +199,29 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
   };
 
   const resetNewProductForm = () => {
-    setNewProductForm({
+    setNewItemForm({
+      type: 'goods',
       name: '',
+      unit: 'pcs',
       sku: '',
       category: '',
-      digital: 'No',
-      onHand: 0,
-      available: 0,
-      onHold: 0,
-      status: 'Draft',
       price: 0,
+      sales_account: 'Sales',
       cost: 0,
-      description: ''
+      purchase_account: 'Cost of Goods Sold',
+      description: '',
+      purchase_description: '',
+      tax_preference: 'taxable',
     });
     setNewProductErrors({});
   };
 
-  const handleNewProductSubmit = () => {
+  const handleNewProductSubmit = async () => {
     const errors: Record<string, string> = {};
-    if (!newProductForm.name.trim()) errors.name = 'Product name is required';
-    if (!newProductForm.sku.trim()) errors.sku = 'SKU is required';
-    if (newProductForm.sku.length !== 12) errors.sku = 'SKU must be exactly 12 digits';
-    if (!newProductForm.category) errors.category = 'Category is required';
+    if (!newItemForm.name.trim()) errors.name = 'Item name is required';
+    if (!newItemForm.sku.trim()) errors.sku = 'SKU is required';
+    if (newItemForm.sku.length !== 12) errors.sku = 'SKU must be exactly 12 digits';
+    if (!newItemForm.category) errors.category = 'Category is required';
 
     if (Object.keys(errors).length > 0) {
       setNewProductErrors(errors);
@@ -211,31 +229,37 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
     }
 
     setNewProductLoading(true);
-    
-    setTimeout(() => {
-      const newProduct: Product = {
-        id: Date.now().toString(),
-        name: newProductForm.name,
-        digital: newProductForm.digital,
-        sku: newProductForm.sku,
-        stock_quantity: newProductForm.onHold,
-        unit: 'pcs',
-        onHand: newProductForm.onHand,
-        available: newProductForm.available || newProductForm.onHand,
-        onHold: newProductForm.onHold,
-        status: newProductForm.status === 'Active' ? 'active' : 'inactive',
-        category: newProductForm.category,
-        createdAt: new Date().toISOString(),
-        price: newProductForm.price,
-        cost: newProductForm.cost,
-        description: newProductForm.description
+
+    try {
+      const dto: CreateProductDTO = {
+        name: newItemForm.name,
+        sku: newItemForm.sku,
+        category_id: parseInt(newItemForm.category, 10), // form.category holds the category's id as a string
+        type: newItemForm.type,
+        price: newItemForm.price,
+        cost: newItemForm.cost,
+        tax_preference: newItemForm.tax_preference,
+        stock_quantity: 0,
+        unit: newItemForm.unit || 'pcs',
+        description: newItemForm.description,
+        status: 'active',
+        // Zoho-style fields — backend doesn't have columns for these yet,
+        // so they'll be silently dropped server-side until that's wired.
+        // See note on Inventory.types.ts / ItemDetailPane.tsx.
+        sales_account: newItemForm.sales_account,
+        purchase_account: newItemForm.purchase_account,
       };
-      
-      setProducts([newProduct, ...products]);
-      setNewProductLoading(false);
+
+      await controller.handleCreateProduct(dto);
+      await loadProducts(); // re-pull from DB so the list reflects the real saved row
       setShowNewProductPage(false);
       resetNewProductForm();
-    }, 500);
+    } catch (error) {
+      console.error('Failed to create product:', error);
+      setNewProductErrors({ submit: 'Failed to save item. Please try again.' });
+    } finally {
+      setNewProductLoading(false);
+    }
   };
 
   // ============================================
@@ -814,238 +838,18 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
   // RENDER MAIN CONTENT
   // ============================================
   const renderContent = () => {
-    // Check if details page should be shown
-    if (isDetailsOpen && selectedProduct) {
-      return (
-        <ProductDetailsPage 
-          product={selectedProduct}
-          onBack={handleBackToList}
-          onEdit={() => {
-            setIsDetailsOpen(false);
-            setIsEditModalOpen(true);
-          }}
-          onDelete={() => {
-            setIsDetailsOpen(false);
-            setIsDeleteModalOpen(true);
-          }}
-        />
-      );
-    }
-
-    // Check if new product page should be shown
+    // New Product page check
     if (showNewProductPage) {
       return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 max-w-4xl mx-auto">
-          <div className="flex items-center gap-3 mb-4">
-            <button
-              onClick={handleNewProductCancel}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ArrowLeft size={20} className="text-gray-600" />
-            </button>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-800">New Product</h1>
-              <p className="text-xs sm:text-sm text-gray-500">Fill in the details to create a new product</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Product Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={newProductForm.name}
-                onChange={(e) => setNewProductForm({ ...newProductForm, name: e.target.value })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
-                  newProductErrors.name ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Enter product name"
-              />
-              {newProductErrors.name && <p className="text-red-500 text-xs mt-1">{newProductErrors.name}</p>}
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                SKU <span className="text-red-500">*</span>
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newProductForm.sku}
-                  onChange={(e) => setNewProductForm({ ...newProductForm, sku: e.target.value.replace(/\D/g, '') })}
-                  className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
-                    newProductErrors.sku ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Enter 12-digit SKU"
-                  maxLength={12}
-                />
-                <button
-                  type="button"
-                  onClick={generateSKU}
-                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
-                >
-                  Generate
-                </button>
-              </div>
-              {newProductErrors.sku && <p className="text-red-500 text-xs mt-1">{newProductErrors.sku}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Category <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={newProductForm.category}
-                onChange={(e) => setNewProductForm({ ...newProductForm, category: e.target.value })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm ${
-                  newProductErrors.category ? 'border-red-500' : 'border-gray-300'
-                }`}
-              >
-                <option value="">Select category</option>
-                <option value="Electronics">Electronics</option>
-                <option value="Clothing">Clothing</option>
-                <option value="Books">Books</option>
-                <option value="Home & Garden">Home & Garden</option>
-                <option value="Toys">Toys</option>
-              </select>
-              {newProductErrors.category && <p className="text-red-500 text-xs mt-1">{newProductErrors.category}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Digital Product</label>
-              <div className="flex gap-4 pt-1.5">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    value="No"
-                    checked={newProductForm.digital === 'No'}
-                    onChange={(e) => setNewProductForm({ ...newProductForm, digital: e.target.value as 'Yes' | 'No' })}
-                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">No</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    value="Yes"
-                    checked={newProductForm.digital === 'Yes'}
-                    onChange={(e) => setNewProductForm({ ...newProductForm, digital: e.target.value as 'Yes' | 'No' })}
-                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">Yes</span>
-                </label>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                <input
-                  type="number"
-                  value={newProductForm.price}
-                  onChange={(e) => setNewProductForm({ ...newProductForm, price: parseFloat(e.target.value) || 0 })}
-                  className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cost</label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                <input
-                  type="number"
-                  value={newProductForm.cost}
-                  onChange={(e) => setNewProductForm({ ...newProductForm, cost: parseFloat(e.target.value) || 0 })}
-                  className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Stock Quantities</label>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">On Hand</label>
-                  <input
-                    type="number"
-                    value={newProductForm.onHand}
-                    onChange={(e) => setNewProductForm({ ...newProductForm, onHand: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                    min="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Available</label>
-                  <input
-                    type="number"
-                    value={newProductForm.available}
-                    onChange={(e) => setNewProductForm({ ...newProductForm, available: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                    min="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">On Hold</label>
-                  <input
-                    type="number"
-                    value={newProductForm.onHold}
-                    onChange={(e) => setNewProductForm({ ...newProductForm, onHold: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                    min="0"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select
-                value={newProductForm.status}
-                onChange={(e) => setNewProductForm({ ...newProductForm, status: e.target.value as 'Active' | 'Draft' | 'Inactive' })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-              >
-                <option value="Active">Active</option>
-                <option value="Draft">Draft</option>
-                <option value="Inactive">Inactive</option>
-              </select>
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-              <textarea
-                value={newProductForm.description}
-                onChange={(e) => setNewProductForm({ ...newProductForm, description: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm resize-y"
-                rows={3}
-                placeholder="Enter product description"
-                maxLength={2000}
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-3 mt-6 pt-4 border-t border-gray-200">
-            <button
-              onClick={handleNewProductSubmit}
-              disabled={newProductLoading}
-              className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
-            >
-              {newProductLoading ? 'Creating...' : 'Create Product'}
-            </button>
-            <button
-              onClick={handleNewProductCancel}
-              className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm font-medium"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
+        <NewItemForm
+          form={newItemForm}
+          errors={newProductErrors}
+          categories={categories.map(c => ({ id: c.id, name: c.name }))}
+          loading={newProductLoading}
+          onChange={handleNewItemFieldChange}
+          onCancel={handleNewProductCancel}
+          onSubmit={handleNewProductSubmit}
+        />
       );
     }
 
@@ -1461,14 +1265,14 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
       );
     }
 
-    // Default - Main Inventory View (Single Card)
+    // Default - Main Inventory View (Two-pane Zoho-style layout)
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         {/* Header inside card */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-3">
-              <h2 className="text-lg font-semibold text-gray-800">Products</h2>
+              <h2 className="text-lg font-semibold text-gray-800">Items</h2>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -1477,12 +1281,6 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
               >
                 <Package size={15} /> Manage Stock
               </button>
-              <button
-                onClick={handleNewProduct}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors"
-              >
-                <Plus size={15} /> New Product
-              </button>
               <div className="h-5 w-px bg-gray-300"></div>
               <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors">
                 Export
@@ -1490,28 +1288,6 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
               <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors">
                 Import
               </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Filters inside card */}
-        <div className="px-4 sm:px-6 py-3 border-b border-gray-200">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="relative flex-1 max-w-full sm:max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-              <input
-                type="text"
-                placeholder="Search product name or SKU"
-                className="w-full pl-9 pr-4 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <select className="bg-gray-100 px-3 py-1.5 rounded-md outline-none text-sm font-medium text-gray-700 border-0 cursor-pointer">
-                <option>All Categories</option>
-              </select>
-              <select className="bg-gray-100 px-3 py-1.5 rounded-md outline-none text-sm font-medium text-gray-700 border-0 cursor-pointer">
-                <option>All Status</option>
-              </select>
             </div>
           </div>
         </div>
@@ -1541,20 +1317,39 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
           </button>
         </div>
 
-        {/* Table inside card */}
-        <InventoryTable 
-          products={products}
-          onEdit={handleEdit}
-          onView={handleView}
-          onDelete={handleDelete}
-          onAddStock={handleAddStock}
-          onProductClick={handleProductClick}
-          onRemoveStock={handleRemoveStock}
-          onManageStock={handleManageStock}
-          selectedIds={selectedIds}
-          onSelectProduct={handleSelectProduct}
-          onSelectAll={handleSelectAll}
-        />
+        {/* Two-pane master-detail: item list (left) + item detail (right) */}
+        <div className="flex h-[calc(100vh-260px)] min-h-[480px]">
+          <div className="w-[280px] sm:w-[320px] shrink-0">
+            <InventoryItemList
+              products={products}
+              selectedProductId={selectedProductId}
+              searchTerm={listSearchTerm}
+              onSearchChange={handleListSearchChange}
+              onSelectProduct={handleProductClick}
+              onNewItem={handleNewProduct}
+            />
+          </div>
+
+          <div className="flex-1 min-w-0">
+            {foundProduct ? (
+              <ItemDetailPane
+                product={foundProduct}
+                onEdit={() => handleEdit(foundProduct.id)}
+                onDelete={() => handleDelete(foundProduct.id)}
+                onAddStock={() => handleAddStock(foundProduct.id)}
+                onRemoveStock={() => handleRemoveStock(foundProduct.id)}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center px-6">
+                <Package size={40} className="text-gray-300 mb-3" />
+                <h3 className="text-base font-medium text-gray-600">Select an item</h3>
+                <p className="text-sm text-gray-400 mt-1">
+                  Choose an item from the list, or create a new one to see its details here.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Pagination inside card */}
         <div className="px-4 sm:px-6 py-3 border-t border-gray-200">
@@ -1570,11 +1365,12 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
     );
   };
 
+
   // ============================================
   // MAIN RENDER
   // ============================================
   return (
-    <div className="inventory-page p-4 sm:p-6">
+    <div className="inventory-page">
       {renderContent()}
 
       {/* Modals */}

@@ -11,17 +11,17 @@ import {
 // 1. GET ALL PRODUCTS (supports ?search=&category_id=&status=)
 export const getAllProductsHandler = async (req: Request, res: Response): Promise<any> => {
     try {
-        
+
         const search = req.query.search as string | undefined;
-const category_id = req.query.category_id as string | undefined;
-const status = req.query.status as string | undefined;
+        const category_id = req.query.category_id as string | undefined;
+        const status = req.query.status as string | undefined;
 
-const filters: { search?: string; category_id?: number; status?: string } = {};
-if (search) filters.search = String(search);
-if (category_id) filters.category_id = Number(category_id);
-if (status) filters.status = String(status);
+        const filters: { search?: string; category_id?: number; status?: string } = {};
+        if (search) filters.search = String(search);
+        if (category_id) filters.category_id = Number(category_id);
+        if (status) filters.status = String(status);
 
-const products = await getAllProducts(filters);
+        const products = await getAllProducts(filters);
 
         return res.status(200).json({ success: true, data: products });
     } catch (error: any) {
@@ -45,10 +45,27 @@ export const getProductHandler = async (req: Request, res: Response): Promise<an
 
 // 3. CREATE NEW PRODUCT
 export const createProductHandler = async (req: Request, res: Response): Promise<any> => {
-    const { name, sku, category_id, price, stock_quantity, unit, description } = req.body;
+    const {
+        name, sku, category_id, price, stock_quantity, unit, description,
+        type, tax_preference, sales_account, purchase_account
+    } = req.body;
 
     if (!name || !sku) {
         return res.status(400).json({ success: false, message: "Product name and SKU are required." });
+    }
+
+    // Guard against the exact bug we hit earlier: a stray numeric/typo value
+    // landing in `unit`. Unit should always be a short non-numeric word.
+    if (unit !== undefined && unit !== null && /^\d+$/.test(String(unit).trim())) {
+        return res.status(400).json({ success: false, message: "Unit cannot be a plain number." });
+    }
+
+    if (type !== undefined && !['goods', 'service'].includes(type)) {
+        return res.status(400).json({ success: false, message: "Type must be 'goods' or 'service'." });
+    }
+
+    if (tax_preference !== undefined && !['taxable', 'non-taxable'].includes(tax_preference)) {
+        return res.status(400).json({ success: false, message: "Tax preference must be 'taxable' or 'non-taxable'." });
     }
 
     try {
@@ -64,7 +81,11 @@ export const createProductHandler = async (req: Request, res: Response): Promise
             price: Number(price) || 0,
             stock_quantity: Number(stock_quantity) || 0,
             unit: unit || 'pcs',
-            description: description || null
+            description: description || null,
+            type: type || 'goods',
+            tax_preference: tax_preference || 'taxable',
+            sales_account: sales_account || 'Sales',
+            purchase_account: purchase_account || 'Cost of Goods Sold'
         });
 
         return res.status(201).json({ success: true, message: "Product added successfully", data: { id: insertId } });
@@ -80,10 +101,17 @@ export const createProductHandler = async (req: Request, res: Response): Promise
 // 4. UPDATE PRODUCT
 export const updateProductHandler = async (req: Request, res: Response): Promise<any> => {
     const { id } = req.params;
-    const { name, sku, category_id, price, unit, description, status } = req.body;
+    const {
+        name, sku, category_id, price, unit, description, status,
+        type, tax_preference, sales_account, purchase_account
+    } = req.body;
 
     if (!name || !sku) {
         return res.status(400).json({ success: false, message: "Product name and SKU are required." });
+    }
+
+    if (unit !== undefined && unit !== null && /^\d+$/.test(String(unit).trim())) {
+        return res.status(400).json({ success: false, message: "Unit cannot be a plain number." });
     }
 
     try {
@@ -99,7 +127,11 @@ export const updateProductHandler = async (req: Request, res: Response): Promise
             price: Number(price) || 0,
             unit: unit || 'pcs',
             description: description || null,
-            status: status || 'active'
+            status: status || 'active',
+            type: type || 'goods',
+            tax_preference: tax_preference || 'taxable',
+            sales_account: sales_account || 'Sales',
+            purchase_account: purchase_account || 'Cost of Goods Sold'
         });
 
         return res.status(200).json({ success: true, message: "Product updated successfully" });

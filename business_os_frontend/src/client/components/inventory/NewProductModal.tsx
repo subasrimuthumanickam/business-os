@@ -21,16 +21,31 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
   onClose,
   onSave,
 }) => {
+  // const [formData, setFormData] = useState<CreateProductDTO>({
+  //   type: 'goods',
+  //   name: '',
+  //   sku: '',
+  //   category_id: null,
+  //   price: 0,
+  //   stock_quantity: 0,
+  //   unit: 'pcs',
+  //   description: '',
+  //   status: 'active',
+  // });
+
   const [formData, setFormData] = useState<CreateProductDTO>({
-    name: '',
-    sku: '',
-    category_id: null,
-    price: 0,
-    stock_quantity: 0,
-    unit: 'pcs',
-    description: '',
-    status: 'active',
-  });
+  type: 'goods', // Default
+  name: '',
+  sku: '',
+  category_id: null,
+  price: 0,
+  stock_quantity: 0,
+  unit: 'pcs',
+  description: '',
+  status: 'active',
+  tax_preference: 'taxable', // Default
+  digital: 'No'
+});
 
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -72,6 +87,7 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
 
   const resetForm = () => {
     setFormData({
+      type: 'goods',
       name: '',
       sku: '',
       category_id: null,
@@ -80,6 +96,8 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
       unit: 'pcs',
       description: '',
       status: 'active',
+      tax_preference: 'taxable',
+      digital: 'No',
     });
     setErrors({});
   };
@@ -200,6 +218,45 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
                 />
               </div>
             </div>
+
+            <div className="mb-6 pb-4 border-b">
+    <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+    <div className="flex gap-6">
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input 
+          type="radio" 
+          name="type" 
+          value="goods" 
+          checked={formData.type === 'goods'} 
+          onChange={(e) => setFormData({...formData, type: e.target.value as 'goods' | 'service'})} 
+        />
+        Goods
+      </label>
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input 
+          type="radio" 
+          name="type" 
+          value="service" 
+          checked={formData.type === 'service'} 
+          onChange={(e) => setFormData({...formData, type: e.target.value as 'goods' | 'service'})} 
+        />
+        Service
+      </label>
+    </div>
+  </div>
+
+
+  <div className="mb-6">
+    <label className="block text-sm font-medium text-gray-700 mb-2">Tax Preference</label>
+    <div className="flex gap-6">
+      <label className="flex items-center gap-2">
+        <input type="radio" value="taxable" checked={formData.tax_preference === 'taxable'} onChange={(e) => setFormData({...formData, tax_preference: 'taxable'})} /> Taxable
+      </label>
+      <label className="flex items-center gap-2">
+        <input type="radio" value="non-taxable" checked={formData.tax_preference === 'non-taxable'} onChange={(e) => setFormData({...formData, tax_preference: 'non-taxable'})} /> Non-Taxable
+      </label>
+    </div>
+  </div>
 
             {/* Right Column */}
             <div className="space-y-4">
