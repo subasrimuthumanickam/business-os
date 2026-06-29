@@ -67,33 +67,100 @@ export const createInvoice = async (
       INSERT INTO invoice_items
       (
         invoice_id,
+        product_id,
         item_name,
         quantity,
         rate,
         amount
       )
-      VALUES (?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?)
       `,
       [
         invoiceId,
+        item.product_id,
         item.item_name,
         item.quantity,
         item.rate,
         item.amount
       ],
+      // (itemErr: any) => {
+
+      //   if (itemErr) {
+      //     reject(itemErr);
+      //     return;
+      //   }
+
+      //   completed++;
+
+      //   if (completed === items.length) {
+      //     resolve({ invoiceId });
+      //   }
+      // }
+
       (itemErr: any) => {
 
-        if (itemErr) {
-          reject(itemErr);
-          return;
-        }
+  if (itemErr) {
+    reject(itemErr);
+    return;
+  }
 
-        completed++;
+  // Create Inventory Transaction
+  db.run(
+    `
+    INSERT INTO inventory_transactions
+    (
+      product_id,
+      transaction_type,
+      reference_type,
+      reference_id,
+      quantity,
+      created_at
+    )
+    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `,
+    [
+      item.product_id,
+      "SALE",
+      "INVOICE",
+      invoiceId,
+      item.quantity
+    ],
+    (transErr: any) => {
 
-        if (completed === items.length) {
-          resolve({ invoiceId });
-        }
+      if (transErr) {
+        reject(transErr);
+        return;
       }
+
+      // Reduce stock
+      // Reduce stock
+db.run(
+  `
+  UPDATE products
+  SET stock_quantity = stock_quantity - ?
+  WHERE id = ?
+  `,
+  [
+    item.quantity,
+    item.product_id
+  ],
+  (stockErr: any) => {
+
+    if (stockErr) {
+      reject(stockErr);
+      return;
+    }
+
+    completed++;
+
+    if (completed === items.length) {
+      resolve({ invoiceId });
+    }
+  }
+);
+    }
+  );
+}
     );
 
   });
@@ -126,7 +193,16 @@ export const getInvoiceById = async (id: number): Promise<any> => {
     console.log("Searching Invoice ID:", id);
 
     db.get(
-      `SELECT * FROM invoices WHERE id = ?`,
+      `
+      SELECT
+        invoices.*,
+        customers.display_name AS customer_name,
+        customers.email AS customer_email,
+        customers.phone_work AS customer_phone
+      FROM invoices
+      LEFT JOIN customers ON customers.id = invoices.customer_id
+      WHERE invoices.id = ?
+      `,
       [id],
       (err: any, invoice: any) => {
 
@@ -233,15 +309,17 @@ export const updateInvoice = async (
                 INSERT INTO invoice_items
                 (
                   invoice_id,
+                  product_id,
                   item_name,
                   quantity,
                   rate,
                   amount
                 )
-                VALUES (?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?)
                 `,
                 [
                   id,
+                  item.product_id,
                   item.item_name,
                   item.quantity,
                   item.rate,

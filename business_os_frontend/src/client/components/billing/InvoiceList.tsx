@@ -231,23 +231,8 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
 
   return (
     <div>
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-green-50 rounded-lg p-4">
-          <p className="text-xs text-green-600 font-medium">Total Revenue</p>
-          <p className="text-2xl font-bold text-gray-800">${totalRevenue.toFixed(2)}</p>
-        </div>
-        <div className="bg-blue-50 rounded-lg p-4">
-          <p className="text-xs text-blue-600 font-medium">Paid Invoices</p>
-          <p className="text-2xl font-bold text-gray-800">{paidInvoices}</p>
-        </div>
-        <div className="bg-yellow-50 rounded-lg p-4">
-          <p className="text-xs text-yellow-600 font-medium">Pending Amount</p>
-          <p className="text-2xl font-bold text-gray-800">${pendingAmount.toFixed(2)}</p>
-        </div>
-      </div>
-
-      {/* Search and Actions */}
+      
+{/* Search and Actions */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">

@@ -22,17 +22,21 @@
 
 .invoice-container {
   max-width: 1000px;
+  width: 100%;
   margin: auto;
   background: white;
   padding: 40px;
   border-radius: 12px;
   box-shadow: 0 5px 25px rgba(0,0,0,0.08);
+  box-sizing: border-box;
 }
 
 .invoice-header {
   display: flex;
+  flex-wrap: nowrap;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 16px;
   border-bottom: 2px solid #e5e7eb;
   padding-bottom: 20px;
 }
@@ -49,6 +53,7 @@
 
 .invoice-title {
   text-align: right;
+  flex-shrink: 0;
 }
 
 .invoice-title h2 {
@@ -82,7 +87,9 @@
 
 .invoice-info {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
+  gap: 16px;
   margin-top: 35px;
 }
 
@@ -126,6 +133,7 @@
 
 .invoice-totals {
   width: 320px;
+  max-width: 100%;
   margin-left: auto;
   margin-top: 30px;
 }
@@ -160,6 +168,7 @@
 }
 .invoice-footer-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end; /* right side */
   align-items: center;
   gap: 12px;
@@ -196,6 +205,30 @@
 .btn-download:hover {
   background: #1d4ed8;
 }
+
+/* Narrow-container fallback — when InvoiceView is rendered inside a
+   constrained pane (e.g. ItemDetailPane.tsx's content area) rather than
+   as a full standalone page, give the header room to breathe instead of
+   the two halves squeezing/wrapping in a way that visually looks centered. */
+@media (max-width: 700px) {
+  .invoice-page {
+    padding: 16px;
+  }
+
+  .invoice-container {
+    padding: 20px;
+  }
+
+  .invoice-header {
+    flex-wrap: wrap;
+  }
+
+  .invoice-title {
+    text-align: right;
+    width: 100%;
+  }
+}
+
 @media print {
 
   .invoice-toolbar {
