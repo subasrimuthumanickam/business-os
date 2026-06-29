@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Edit, Trash2, MoreVertical, Package, Plus, Minus,
-  Tag, FileText, Clock as ClockIcon
+  Tag, FileText, Clock as ClockIcon, FileSpreadsheet, ShoppingCart, Receipt
 } from 'lucide-react';
-import { Product } from '../../types/Inventory.types';
- 
+import { Product, ProductTransaction } from '../../types/Inventory.types';
+import { InventoryService } from '../../services/inventory.service';
+
 interface ItemDetailPaneProps {
   product: Product;
   onEdit: () => void;
@@ -12,18 +13,23 @@ interface ItemDetailPaneProps {
   onAddStock: () => void;
   onRemoveStock: () => void;
 }
- 
+
 type DetailTab = 'overview' | 'transactions' | 'history';
- 
+
 /**
  * Right pane of the Zoho-style master-detail Inventory layout.
  * Mirrors Zoho Books' Item overview: tab bar (Overview / Transactions /
  * History) and a two-column Sales Information / Purchase Information card.
  *
- * NOTE: sales_account / purchase_account / tax_preference / type are
- * UI-only fields right now (see Inventory.types.ts) — backend + DB
- * columns for these still need to be added in a later pass. Sales Rate
- * reads from the existing `price` column, Purchase Rate from `cost`.
+ * sales_account / purchase_account / tax_preference / type are now real
+ * DB columns (see migration 2026_06_25_add_zoho_fields_to_products.sql).
+ * Selling Price reads from `price`, Purchase Rate from `cost`.
+ *
+ * Transactions tab pulls real Invoice / Estimate / Sales Order line items
+ * referencing this product via GET /products/:id/transactions. Invoices
+ * may under-report until invoice_items.product_id starts getting
+ * populated on save (separate follow-up, see
+ * 2026_06_25_add_product_id_to_invoice_items.sql notes).
  */
 export const ItemDetailPane: React.FC<ItemDetailPaneProps> = ({
   product,
@@ -34,15 +40,43 @@ export const ItemDetailPane: React.FC<ItemDetailPaneProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<DetailTab>('overview');
   const [menuOpen, setMenuOpen] = useState(false);
- 
+  const [transactions, setTransactions] = useState<ProductTransaction[]>([]);
+  const [transactionsLoading, setTransactionsLoading] = useState(false);
+  const [transactionsError, setTransactionsError] = useState<string | null>(null);
+
   const isGoods = (product.type ?? 'goods') === 'goods';
- 
+
+  useEffect(() => {
+    if (activeTab !== 'transactions') return;
+
+    let cancelled = false;
+    setTransactionsLoading(true);
+    setTransactionsError(null);
+
+    InventoryService.getInstance()
+      .getProductTransactions(product.id)
+      .then((data) => {
+        if (!cancelled) setTransactions(data);
+      })
+      .catch((err) => {
+        console.error('Failed to load transactions:', err);
+        if (!cancelled) setTransactionsError('Could not load transactions. Please try again.');
+      })
+      .finally(() => {
+        if (!cancelled) setTransactionsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, product.id]);
+
   const tabs: { key: DetailTab; label: string }[] = [
     { key: 'overview', label: 'Overview' },
     { key: 'transactions', label: 'Transactions' },
     { key: 'history', label: 'History' },
   ];
- 
+
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Header */}
@@ -59,7 +93,7 @@ export const ItemDetailPane: React.FC<ItemDetailPaneProps> = ({
             {product.status === 'active' ? 'Active' : 'Inactive'}
           </span>
         </div>
- 
+
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={onAddStock}
@@ -80,7 +114,7 @@ export const ItemDetailPane: React.FC<ItemDetailPaneProps> = ({
           >
             <Edit size={15} />
           </button>
- 
+
           <div className="relative">
             <button
               onClick={() => setMenuOpen((v) => !v)}
@@ -123,7 +157,7 @@ export const ItemDetailPane: React.FC<ItemDetailPaneProps> = ({
           </div>
         </div>
       </div>
- 
+
       {/* Tabs */}
       <div className="flex items-center gap-1 px-5 border-b border-gray-200">
         {tabs.map((tab) => (
@@ -140,7 +174,7 @@ export const ItemDetailPane: React.FC<ItemDetailPaneProps> = ({
           </button>
         ))}
       </div>
- 
+
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-5">
         {activeTab === 'overview' && (
@@ -178,7 +212,7 @@ export const ItemDetailPane: React.FC<ItemDetailPaneProps> = ({
                 </p>
               </div>
             </div>
- 
+
             {/* Stock row — only for Goods */}
             {isGoods && (
               <div className="grid grid-cols-3 gap-3">
@@ -204,7 +238,7 @@ export const ItemDetailPane: React.FC<ItemDetailPaneProps> = ({
                 </div>
               </div>
             )}
- 
+
             {/* Sales Info + Purchase Info — Zoho-style two column */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
               <div className="border border-gray-200 rounded-lg p-4">
@@ -228,7 +262,7 @@ export const ItemDetailPane: React.FC<ItemDetailPaneProps> = ({
                   </div>
                 </dl>
               </div>
- 
+
               <div className="border border-gray-200 rounded-lg p-4">
                 <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-1.5">
                   <Tag size={14} className="text-gray-400" /> Purchase Information
@@ -251,7 +285,7 @@ export const ItemDetailPane: React.FC<ItemDetailPaneProps> = ({
                 </dl>
               </div>
             </div>
- 
+
             {/* Description */}
             {product.description && (
               <div className="pt-2">
@@ -263,17 +297,81 @@ export const ItemDetailPane: React.FC<ItemDetailPaneProps> = ({
             )}
           </div>
         )}
- 
+
         {activeTab === 'transactions' && (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <FileText size={36} className="text-gray-300 mb-3" />
-            <h3 className="text-sm font-medium text-gray-600">No transactions yet</h3>
-            <p className="text-xs text-gray-400 mt-1 max-w-xs">
-              Invoices, bills, and sales orders involving this item will show up here once backend wiring is complete.
-            </p>
+          <div>
+            {transactionsLoading && (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <FileText size={36} className="text-gray-300 mb-3 animate-pulse" />
+                <p className="text-sm text-gray-500">Loading transactions...</p>
+              </div>
+            )}
+
+            {!transactionsLoading && transactionsError && (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <FileText size={36} className="text-red-300 mb-3" />
+                <h3 className="text-sm font-medium text-red-600">{transactionsError}</h3>
+              </div>
+            )}
+
+            {!transactionsLoading && !transactionsError && transactions.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <FileText size={36} className="text-gray-300 mb-3" />
+                <h3 className="text-sm font-medium text-gray-600">No transactions yet</h3>
+                <p className="text-xs text-gray-400 mt-1 max-w-xs">
+                  Invoices, estimates, and sales orders involving this item will show up here.
+                </p>
+              </div>
+            )}
+
+            {!transactionsLoading && !transactionsError && transactions.length > 0 && (
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                      <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Number</th>
+                      <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                      <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-3 py-2 text-right text-[11px] font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                      <th className="px-3 py-2 text-right text-[11px] font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {transactions.map((txn) => (
+                      <tr key={`${txn.type}-${txn.id}`} className="hover:bg-gray-50">
+                        <td className="px-3 py-2">
+                          <span className="inline-flex items-center gap-1 text-xs text-gray-600">
+                            {txn.type === 'invoice' && <Receipt size={12} className="text-blue-500" />}
+                            {txn.type === 'estimate' && <FileSpreadsheet size={12} className="text-purple-500" />}
+                            {txn.type === 'sales_order' && <ShoppingCart size={12} className="text-emerald-500" />}
+                            {txn.type === 'invoice' ? 'Invoice' : txn.type === 'estimate' ? 'Estimate' : 'Sales Order'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-xs font-medium text-gray-800">{txn.number}</td>
+                        <td className="px-3 py-2 text-xs text-gray-600">{txn.customer_name}</td>
+                        <td className="px-3 py-2 text-xs text-gray-500">
+                          {txn.date ? new Date(txn.date).toLocaleDateString('en-IN') : '—'}
+                        </td>
+                        <td className="px-3 py-2">
+                          <span className="px-2 py-0.5 text-[11px] rounded-full bg-gray-100 text-gray-600 capitalize">
+                            {txn.status}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-xs text-right text-gray-700">{txn.quantity}</td>
+                        <td className="px-3 py-2 text-xs text-right font-medium text-gray-800">
+                          ₹{Number(txn.amount).toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
- 
+
         {activeTab === 'history' && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <ClockIcon size={36} className="text-gray-300 mb-3" />
@@ -287,6 +385,5 @@ export const ItemDetailPane: React.FC<ItemDetailPaneProps> = ({
     </div>
   );
 };
- 
+
 export default ItemDetailPane;
- 

@@ -171,6 +171,22 @@ export interface PaginatedResponse<T> {
 }
 
 // ============================================
+// Product Transaction Types (Invoices / Estimates / Sales Orders)
+// ============================================
+
+export interface ProductTransaction {
+  type: 'invoice' | 'estimate' | 'sales_order';
+  id: number;
+  number: string;
+  date: string;
+  status: string;
+  customer_name: string;
+  quantity: number;
+  rate: number;
+  amount: number;
+}
+
+// ============================================
 // Stock Management Types
 // ============================================
 

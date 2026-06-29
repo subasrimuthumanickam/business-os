@@ -32,8 +32,9 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
   // const [loading, setLoading] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showViewModal, setShowViewModal] = useState(false);
+  // const [showViewModal, setShowViewModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  
 
   // Simulate API fetch
   useEffect(() => {
@@ -120,6 +121,9 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
         },
       ];
       setInvoices(mockInvoices);
+      if (mockInvoices.length > 0) {
+  setSelectedInvoice(mockInvoices[0]);
+}
       if (onInvoiceUpdate) onInvoiceUpdate(mockInvoices);
     } catch (error) {
       console.error('Error fetching invoices:', error);
@@ -286,128 +290,244 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
         </button>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full">
+      <div className="flex h-[80vh] border rounded-xl overflow-hidden bg-white">
+
+  {/* LEFT SIDE */}
+
+  <div className="w-[32%] border-r overflow-y-auto">
+
+    {filteredInvoices.map((invoice) => (
+
+      <div
+        key={invoice.id}
+        onClick={() => setSelectedInvoice(invoice)}
+        className={`p-4 border-b cursor-pointer transition-all
+        ${
+          selectedInvoice?.id === invoice.id
+            ? "bg-blue-50 border-l-4 border-blue-600"
+            : "hover:bg-gray-50"
+        }`}
+      >
+
+        <div className="flex justify-between items-start">
+
+          <div>
+
+            <h3 className="font-semibold text-gray-800">
+              {invoice.clientName}
+            </h3>
+
+            <p className="text-blue-600 text-sm mt-1">
+              {invoice.invoiceNumber}
+            </p>
+
+            <p className="text-xs text-gray-500 mt-1">
+              {new Date(invoice.date).toLocaleDateString()}
+            </p>
+
+          </div>
+
+          <div className="text-right">
+
+            <h4 className="font-semibold">
+              ${invoice.amount.toFixed(2)}
+            </h4>
+
+            <span
+              className={`inline-flex mt-2 px-2 py-1 rounded-full text-xs border ${getStatusColor(
+                invoice.status
+              )}`}
+            >
+              {invoice.status.toUpperCase()}
+            </span>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    ))}
+
+  </div>
+
+
+
+  {/* RIGHT SIDE */}
+
+  <div className="flex-1 overflow-y-auto bg-gray-100 p-8">
+
+    {selectedInvoice ? (
+
+      <div className="bg-white shadow rounded-lg p-10 max-w-4xl mx-auto">
+
+        {/* Header */}
+
+        <div className="flex justify-between mb-10">
+
+          <div>
+            <h1 className="text-5xl font-light text-red-600">
+              INVOICE
+            </h1>
+
+            <p className="text-gray-500 mt-2">
+              {selectedInvoice.invoiceNumber}
+            </p>
+          </div>
+
+          <div className="text-right">
+
+            <h3 className="font-bold text-xl">
+              {selectedInvoice.clientName}
+            </h3>
+
+            <p className="text-gray-600">
+              {selectedInvoice.clientEmail}
+            </p>
+
+          </div>
+
+        </div>
+
+
+        {/* Dates */}
+
+        <div className="grid grid-cols-3 gap-10 mb-10">
+
+          <div>
+            <p className="text-gray-500 text-sm">
+              Invoice Date
+            </p>
+
+            <h4 className="font-semibold mt-2">
+              {new Date(
+                selectedInvoice.date
+              ).toLocaleDateString()}
+            </h4>
+          </div>
+
+          <div>
+            <p className="text-gray-500 text-sm">
+              Due Date
+            </p>
+
+            <h4 className="font-semibold mt-2">
+              {new Date(
+                selectedInvoice.dueDate
+              ).toLocaleDateString()}
+            </h4>
+          </div>
+
+          <div>
+
+            <p className="text-gray-500 text-sm">
+              Balance Due
+            </p>
+
+            <h2 className="text-3xl text-red-600 font-bold mt-2">
+              ${selectedInvoice.amount.toFixed(2)}
+            </h2>
+
+          </div>
+
+        </div>
+
+
+
+        {/* Items Table */}
+
+        <table className="w-full border">
+
           <thead className="bg-gray-50">
+
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Invoice
+
+              <th className="text-left px-4 py-3">
+                Description
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Client
+
+              <th className="px-4 py-3">
+                Qty
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Plan
+
+              <th className="px-4 py-3">
+                Rate
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+
+              <th className="px-4 py-3 text-right">
                 Amount
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Date
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Due Date
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
+
             </tr>
+
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredInvoices.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                  No invoices found
+
+          <tbody>
+
+            {selectedInvoice.items?.map((item, index) => (
+
+              <tr key={index} className="border-t">
+
+                <td className="px-4 py-4">
+                  {item.description}
                 </td>
+
+                <td className="text-center">
+                  {item.quantity}
+                </td>
+
+                <td className="text-center">
+                  ${item.rate.toFixed(2)}
+                </td>
+
+                <td className="text-right px-4">
+                  ${item.amount.toFixed(2)}
+                </td>
+
               </tr>
-            ) : (
-              filteredInvoices.map((invoice: Invoice) => (
-                <tr key={invoice.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 text-sm font-medium text-blue-600">
-                    {invoice.invoiceNumber}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-700">
-                    {invoice.clientName}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">
-                      {invoice.plan}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm font-medium text-gray-800">
-                    ${invoice.amount.toFixed(2)}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {new Date(invoice.date).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {new Date(invoice.dueDate).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}
-                  </td>
-                  <td className="px-4 py-3">
-                    <select
-                      value={invoice.status}
-                      onChange={(e) => handleStatusChange(invoice.id, e.target.value as Invoice['status'])}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border ${getStatusColor(invoice.status)}`}
-                    >
-                      <option value="paid">Paid</option>
-                      <option value="pending">Pending</option>
-                      <option value="overdue">Overdue</option>
-                      <option value="failed">Failed</option>
-                    </select>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <button 
-                        onClick={() => {
-                          setSelectedInvoice(invoice);
-                          setShowViewModal(true);
-                        }}
-                        className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
-                      >
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                      </button>
-                      <button className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                          <polyline points="7 10 12 15 17 10" />
-                          <line x1="12" y1="15" x2="12" y2="3" />
-                        </svg>
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setSelectedInvoice(invoice);
-                          setShowDeleteModal(true);
-                        }}
-                        className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
-                      >
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        </svg>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
+
+            ))}
+
           </tbody>
+
         </table>
+
+
+        {/* Total */}
+
+        <div className="mt-10 flex justify-end">
+
+          <div className="w-72">
+
+            <div className="flex justify-between py-3 border-t">
+
+              <span className="font-semibold">
+                Total
+              </span>
+
+              <span className="font-bold text-xl">
+                ${selectedInvoice.amount.toFixed(2)}
+              </span>
+
+            </div>
+
+          </div>
+
+        </div>
+
       </div>
+
+    ) : (
+
+      <div className="flex justify-center items-center h-full text-gray-500">
+        Select an Invoice
+      </div>
+
+    )}
+
+  </div>
+
+</div>
 
       {/* Delete Modal */}
       {showDeleteModal && selectedInvoice && (
@@ -436,98 +556,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
         </div>
       )}
 
-      {/* View Modal */}
-      {showViewModal && selectedInvoice && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">Invoice Details</h3>
-              <button
-                onClick={() => setShowViewModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">Invoice Number</p>
-                  <p className="font-medium">{selectedInvoice.invoiceNumber}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Status</p>
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border ${getStatusColor(selectedInvoice.status)}`}>
-                    {getStatusIcon(selectedInvoice.status)}
-                    {selectedInvoice.status.charAt(0).toUpperCase() + selectedInvoice.status.slice(1)}
-                  </span>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Client</p>
-                  <p className="font-medium">{selectedInvoice.clientName}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Plan</p>
-                  <p className="font-medium">{selectedInvoice.plan}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Date</p>
-                  <p>{new Date(selectedInvoice.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Due Date</p>
-                  <p>{new Date(selectedInvoice.dueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-sm text-gray-500">Amount</p>
-                  <p className="text-2xl font-bold text-blue-600">${selectedInvoice.amount.toFixed(2)}</p>
-                </div>
-              </div>
-              
-              {selectedInvoice.items && selectedInvoice.items.length > 0 && (
-                <div>
-                  <p className="text-sm font-medium text-gray-700 mb-2">Items</p>
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Description</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Qty</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Rate</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {selectedInvoice.items.map((item, index) => (
-                        <tr key={index}>
-                          <td className="px-3 py-2">{item.description}</td>
-                          <td className="px-3 py-2">{item.quantity}</td>
-                          <td className="px-3 py-2">${item.rate.toFixed(2)}</td>
-                          <td className="px-3 py-2 font-medium">${item.amount.toFixed(2)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-              <button
-                onClick={() => setShowViewModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50"
-              >
-                Close
-              </button>
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
-                Download PDF
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      
     </div>
   );
 };
