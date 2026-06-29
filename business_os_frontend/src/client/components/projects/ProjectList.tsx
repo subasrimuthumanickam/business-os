@@ -1587,31 +1587,5576 @@
 
 // export default ProjectList;
 // src/client/components/projects/ProjectList.tsx
+// import React, { useState, useEffect, useRef } from 'react';
+// import { 
+//   Search, 
+//   Plus, 
+//   Filter, 
+//   Clock, 
+//   MoreVertical, 
+//   Edit, 
+//   Trash2, 
+//   Copy,
+//   FileText,
+//   Play,
+//   ChevronDown,
+//   Download,
+//   Upload,
+//   RefreshCw,
+//   CheckCircle,
+//   XCircle,
+//   AlertCircle,
+//   LayoutGrid,
+//   List,
+//   DollarSign,
+//   User,
+//   Calendar,
+//   Tag,
+//   LayoutDashboard,
+//   ClipboardList,
+//   Timer,
+//   Save,
+//   X,
+//   Users,
+//   Pause,
+//   Square,
+//   Circle,
+//   ArrowLeft,
+//   StopCircle,
+//   Menu
+// } from 'lucide-react';
+// import TimeTracker from './TimeTracker';
+// import TaskBoard from './TaskBoard';
+// import ProjectDetail from './ProjectDetail';
+// import ProjectEdit from './ProjectEdit';
+// import LogTimePage from './LogTimePage';
+
+// // ==================== TYPES ====================
+// interface Project {
+//   id: string;
+//   customerName: string;
+//   projectName: string;
+//   billingMethod: 'Based on Task Hours' | 'Based on Project Hours' | 'Fixed Cost for Project' | 'Based on Staff Hours';
+//   rate: number | null;
+//   status: 'active' | 'inactive' | 'completed';
+//   loggedHours: string;
+//   budget: number | null;
+//   startDate: string;
+//   endDate: string;
+//   description: string;
+//   createdAt: string;
+//   updatedAt: string;
+//   timerRunning?: boolean;
+//   timerSeconds?: number;
+//   timerStartTime?: string;
+// }
+
+// type ViewMode = 'list' | 'card';
+// type TabType = 'projects' | 'taskboard' | 'timetracker';
+// type ViewState = 'list' | 'detail' | 'edit' | 'create';
+
+// // ==================== ADD TASK MODAL ====================
+// interface AddTaskModalProps {
+//   isOpen: boolean;
+//   onClose: () => void;
+//   onSave: (taskData: any) => void;
+//   projectName?: string;
+// }
+
+// const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onSave, projectName }) => {
+//   const [formData, setFormData] = useState({
+//     title: '',
+//     description: '',
+//     status: 'todo' as 'todo' | 'in-progress' | 'review' | 'done',
+//     priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
+//     assignee: '',
+//     dueDate: '',
+//     estimatedHours: 0,
+//     tags: '',
+//     projectName: projectName || '',
+//   });
+
+//   const [errors, setErrors] = useState<Record<string, string>>({});
+//   const [isSaving, setIsSaving] = useState(false);
+
+//   if (!isOpen) return null;
+
+//   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+//     const { name, value } = e.target;
+//     setFormData(prev => ({ ...prev, [name]: value }));
+//     if (errors[name]) {
+//       setErrors(prev => ({ ...prev, [name]: '' }));
+//     }
+//   };
+
+//   const handleSubmit = () => {
+//     const newErrors: Record<string, string> = {};
+//     if (!formData.title.trim()) newErrors.title = 'Task title is required';
+//     if (!formData.assignee) newErrors.assignee = 'Please select an assignee';
+//     if (!formData.dueDate) newErrors.dueDate = 'Please select a due date';
+//     if (formData.estimatedHours <= 0) newErrors.estimatedHours = 'Estimated hours must be greater than 0';
+
+//     if (Object.keys(newErrors).length > 0) {
+//       setErrors(newErrors);
+//       return;
+//     }
+
+//     setIsSaving(true);
+//     const tagsArray = formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+
+//     setTimeout(() => {
+//       onSave({
+//         ...formData,
+//         tags: tagsArray,
+//         loggedHours: 0,
+//         comments: 0,
+//         attachments: 0,
+//         subtasks: [],
+//         createdAt: new Date().toISOString(),
+//         updatedAt: new Date().toISOString()
+//       });
+//       setIsSaving(false);
+//       onClose();
+//     }, 500);
+//   };
+
+//   return (
+//     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+//       <div className="bg-white rounded-xl p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+//         <div className="flex items-center justify-between mb-4">
+//           <h3 className="text-lg font-semibold text-gray-800">Add New Task</h3>
+//           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition">
+//             <X className="w-5 h-5 text-gray-500" />
+//           </button>
+//         </div>
+//         <div className="space-y-4">
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">
+//               Task Title <span className="text-red-500">*</span>
+//             </label>
+//             <input 
+//               type="text" 
+//               name="title" 
+//               value={formData.title} 
+//               onChange={handleChange} 
+//               className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.title ? 'border-red-300' : 'border-gray-300'}`} 
+//               placeholder="Enter task title" 
+//             />
+//             {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
+//           </div>
+
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+//             <textarea 
+//               name="description" 
+//               value={formData.description} 
+//               onChange={handleChange} 
+//               rows={3} 
+//               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
+//               placeholder="Enter task description" 
+//             />
+//           </div>
+
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+//               <select 
+//                 name="status" 
+//                 value={formData.status} 
+//                 onChange={handleChange} 
+//                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+//               >
+//                 <option value="todo">To Do</option>
+//                 <option value="in-progress">In Progress</option>
+//                 <option value="review">Review</option>
+//                 <option value="done">Done</option>
+//               </select>
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+//               <select 
+//                 name="priority" 
+//                 value={formData.priority} 
+//                 onChange={handleChange} 
+//                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+//               >
+//                 <option value="low">Low</option>
+//                 <option value="medium">Medium</option>
+//                 <option value="high">High</option>
+//                 <option value="urgent">Urgent</option>
+//               </select>
+//             </div>
+//           </div>
+
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">
+//                 Assignee <span className="text-red-500">*</span>
+//               </label>
+//               <select 
+//                 name="assignee" 
+//                 value={formData.assignee} 
+//                 onChange={handleChange} 
+//                 className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.assignee ? 'border-red-300' : 'border-gray-300'}`}
+//               >
+//                 <option value="">Select Assignee</option>
+//                 <option value="Patricia Boyle">Patricia Boyle</option>
+//                 <option value="John Doe">John Doe</option>
+//                 <option value="Jane Smith">Jane Smith</option>
+//                 <option value="Michael Johnson">Michael Johnson</option>
+//               </select>
+//               {errors.assignee && <p className="text-xs text-red-500 mt-1">{errors.assignee}</p>}
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">
+//                 Due Date <span className="text-red-500">*</span>
+//               </label>
+//               <input 
+//                 type="date" 
+//                 name="dueDate" 
+//                 value={formData.dueDate} 
+//                 onChange={handleChange} 
+//                 className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.dueDate ? 'border-red-300' : 'border-gray-300'}`} 
+//               />
+//               {errors.dueDate && <p className="text-xs text-red-500 mt-1">{errors.dueDate}</p>}
+//             </div>
+//           </div>
+
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">
+//                 Estimated Hours <span className="text-red-500">*</span>
+//               </label>
+//               <input 
+//                 type="number" 
+//                 name="estimatedHours" 
+//                 value={formData.estimatedHours} 
+//                 onChange={handleChange} 
+//                 className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.estimatedHours ? 'border-red-300' : 'border-gray-300'}`} 
+//                 placeholder="0" 
+//                 min="0" 
+//                 step="0.5" 
+//               />
+//               {errors.estimatedHours && <p className="text-xs text-red-500 mt-1">{errors.estimatedHours}</p>}
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+//               <input 
+//                 type="text" 
+//                 name="tags" 
+//                 value={formData.tags} 
+//                 onChange={handleChange} 
+//                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
+//                 placeholder="Design, Backend (comma separated)" 
+//               />
+//             </div>
+//           </div>
+//         </div>
+
+//         <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
+//           <button 
+//             onClick={onClose} 
+//             className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+//           >
+//             Cancel
+//           </button>
+//           <button 
+//             onClick={handleSubmit} 
+//             disabled={isSaving} 
+//             className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-2 disabled:opacity-50"
+//           >
+//             <Save className="w-4 h-4" />
+//             {isSaving ? 'Adding...' : 'Add Task'}
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// // ==================== EDIT TASK MODAL ====================
+// interface EditTaskModalProps {
+//   isOpen: boolean;
+//   onClose: () => void;
+//   onSave: (taskData: any) => void;
+//   task: any;
+// }
+
+// const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, onSave, task }) => {
+//   const [formData, setFormData] = useState({
+//     title: '',
+//     description: '',
+//     status: 'todo' as 'todo' | 'in-progress' | 'review' | 'done',
+//     priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
+//     assignee: '',
+//     dueDate: '',
+//     estimatedHours: 0,
+//     tags: '',
+//     projectName: '',
+//   });
+
+//   const [errors, setErrors] = useState<Record<string, string>>({});
+//   const [isSaving, setIsSaving] = useState(false);
+
+//   React.useEffect(() => {
+//     if (task) {
+//       setFormData({
+//         title: task.title || '',
+//         description: task.description || '',
+//         status: task.status || 'todo',
+//         priority: task.priority || 'medium',
+//         assignee: task.assignee || '',
+//         dueDate: task.dueDate || '',
+//         estimatedHours: task.estimatedHours || 0,
+//         tags: task.tags ? task.tags.join(', ') : '',
+//         projectName: task.projectName || '',
+//       });
+//     }
+//   }, [task]);
+
+//   if (!isOpen || !task) return null;
+
+//   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+//     const { name, value } = e.target;
+//     setFormData(prev => ({ ...prev, [name]: value }));
+//     if (errors[name]) {
+//       setErrors(prev => ({ ...prev, [name]: '' }));
+//     }
+//   };
+
+//   const handleSubmit = () => {
+//     const newErrors: Record<string, string> = {};
+//     if (!formData.title.trim()) newErrors.title = 'Task title is required';
+//     if (!formData.assignee) newErrors.assignee = 'Please select an assignee';
+//     if (!formData.dueDate) newErrors.dueDate = 'Please select a due date';
+//     if (formData.estimatedHours <= 0) newErrors.estimatedHours = 'Estimated hours must be greater than 0';
+
+//     if (Object.keys(newErrors).length > 0) {
+//       setErrors(newErrors);
+//       return;
+//     }
+
+//     setIsSaving(true);
+//     const tagsArray = formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+
+//     setTimeout(() => {
+//       onSave({
+//         ...formData,
+//         id: task.id,
+//         tags: tagsArray,
+//       });
+//       setIsSaving(false);
+//       onClose();
+//     }, 500);
+//   };
+
+//   return (
+//     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+//       <div className="bg-white rounded-xl p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+//         <div className="flex items-center justify-between mb-4">
+//           <h3 className="text-lg font-semibold text-gray-800">Edit Task</h3>
+//           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition">
+//             <X className="w-5 h-5 text-gray-500" />
+//           </button>
+//         </div>
+//         <div className="space-y-4">
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">
+//               Task Title <span className="text-red-500">*</span>
+//             </label>
+//             <input 
+//               type="text" 
+//               name="title" 
+//               value={formData.title} 
+//               onChange={handleChange} 
+//               className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.title ? 'border-red-300' : 'border-gray-300'}`} 
+//               placeholder="Enter task title" 
+//             />
+//             {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
+//           </div>
+
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+//             <textarea 
+//               name="description" 
+//               value={formData.description} 
+//               onChange={handleChange} 
+//               rows={3} 
+//               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
+//               placeholder="Enter task description" 
+//             />
+//           </div>
+
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+//               <select 
+//                 name="status" 
+//                 value={formData.status} 
+//                 onChange={handleChange} 
+//                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+//               >
+//                 <option value="todo">To Do</option>
+//                 <option value="in-progress">In Progress</option>
+//                 <option value="review">Review</option>
+//                 <option value="done">Done</option>
+//               </select>
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+//               <select 
+//                 name="priority" 
+//                 value={formData.priority} 
+//                 onChange={handleChange} 
+//                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+//               >
+//                 <option value="low">Low</option>
+//                 <option value="medium">Medium</option>
+//                 <option value="high">High</option>
+//                 <option value="urgent">Urgent</option>
+//               </select>
+//             </div>
+//           </div>
+
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">
+//                 Assignee <span className="text-red-500">*</span>
+//               </label>
+//               <select 
+//                 name="assignee" 
+//                 value={formData.assignee} 
+//                 onChange={handleChange} 
+//                 className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.assignee ? 'border-red-300' : 'border-gray-300'}`}
+//               >
+//                 <option value="">Select Assignee</option>
+//                 <option value="Patricia Boyle">Patricia Boyle</option>
+//                 <option value="John Doe">John Doe</option>
+//                 <option value="Jane Smith">Jane Smith</option>
+//               </select>
+//               {errors.assignee && <p className="text-xs text-red-500 mt-1">{errors.assignee}</p>}
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">
+//                 Due Date <span className="text-red-500">*</span>
+//               </label>
+//               <input 
+//                 type="date" 
+//                 name="dueDate" 
+//                 value={formData.dueDate} 
+//                 onChange={handleChange} 
+//                 className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.dueDate ? 'border-red-300' : 'border-gray-300'}`} 
+//               />
+//               {errors.dueDate && <p className="text-xs text-red-500 mt-1">{errors.dueDate}</p>}
+//             </div>
+//           </div>
+
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">
+//                 Estimated Hours <span className="text-red-500">*</span>
+//               </label>
+//               <input 
+//                 type="number" 
+//                 name="estimatedHours" 
+//                 value={formData.estimatedHours} 
+//                 onChange={handleChange} 
+//                 className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.estimatedHours ? 'border-red-300' : 'border-gray-300'}`} 
+//                 placeholder="0" 
+//                 min="0" 
+//                 step="0.5" 
+//               />
+//               {errors.estimatedHours && <p className="text-xs text-red-500 mt-1">{errors.estimatedHours}</p>}
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+//               <input 
+//                 type="text" 
+//                 name="tags" 
+//                 value={formData.tags} 
+//                 onChange={handleChange} 
+//                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
+//                 placeholder="Design, Backend (comma separated)" 
+//               />
+//             </div>
+//           </div>
+//         </div>
+
+//         <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
+//           <button 
+//             onClick={onClose} 
+//             className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+//           >
+//             Cancel
+//           </button>
+//           <button 
+//             onClick={handleSubmit} 
+//             disabled={isSaving} 
+//             className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-2 disabled:opacity-50"
+//           >
+//             <Save className="w-4 h-4" />
+//             {isSaving ? 'Updating...' : 'Update Task'}
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// // ==================== CREATE PROJECT PAGE ====================
+// interface CreateProjectPageProps {
+//   onBack: () => void;
+//   onSave: (projectData: any) => void;
+// }
+
+// const CreateProjectPage: React.FC<CreateProjectPageProps> = ({ onBack, onSave }) => {
+//   const [formData, setFormData] = useState({
+//     projectName: '',
+//     customerName: '',
+//     billingMethod: 'Based on Task Hours',
+//     rate: 0,
+//     budget: 0,
+//     status: 'active' as 'active' | 'inactive' | 'completed',
+//     startDate: '',
+//     endDate: '',
+//     description: '',
+//   });
+
+//   const [errors, setErrors] = useState<Record<string, string>>({});
+//   const [isSaving, setIsSaving] = useState(false);
+
+//   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+//     const { name, value } = e.target;
+//     setFormData(prev => ({ ...prev, [name]: value }));
+//     if (errors[name]) {
+//       setErrors(prev => ({ ...prev, [name]: '' }));
+//     }
+//   };
+
+//   const handleSubmit = () => {
+//     const newErrors: Record<string, string> = {};
+//     if (!formData.projectName.trim()) newErrors.projectName = 'Project name is required';
+//     if (!formData.customerName.trim()) newErrors.customerName = 'Customer name is required';
+
+//     if (Object.keys(newErrors).length > 0) {
+//       setErrors(newErrors);
+//       return;
+//     }
+
+//     setIsSaving(true);
+
+//     setTimeout(() => {
+//       onSave({
+//         ...formData,
+//         loggedHours: '00:00',
+//         createdAt: new Date().toISOString(),
+//         updatedAt: new Date().toISOString()
+//       });
+//       setIsSaving(false);
+//     }, 500);
+//   };
+
+//   return (
+//     <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
+//       <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
+//         <div className="flex items-center gap-3">
+//           <button 
+//             onClick={onBack} 
+//             className="p-2 text-gray-600 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition"
+//           >
+//             <ArrowLeft className="w-5 h-5" />
+//           </button>
+//           <div>
+//             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Create New Project</h1>
+//             <p className="text-sm text-gray-500">Fill in the details to create a new project</p>
+//           </div>
+//         </div>
+//         <div className="flex items-center gap-2">
+//           <button 
+//             onClick={onBack} 
+//             className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm flex items-center"
+//           >
+//             <X className="w-4 h-4 mr-1.5" /> Cancel
+//           </button>
+//           <button 
+//             onClick={handleSubmit} 
+//             disabled={isSaving} 
+//             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm flex items-center disabled:opacity-50 shadow-sm"
+//           >
+//             <Save className="w-4 h-4 mr-1.5" />
+//             {isSaving ? 'Creating...' : 'Create Project'}
+//           </button>
+//         </div>
+//       </div>
+
+//       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 max-w-3xl mx-auto">
+//         <div className="space-y-5">
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">
+//               Project Name <span className="text-red-500">*</span>
+//             </label>
+//             <input 
+//               type="text" 
+//               name="projectName" 
+//               value={formData.projectName} 
+//               onChange={handleChange} 
+//               className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 ${errors.projectName ? 'border-red-300' : 'border-gray-300'}`} 
+//               placeholder="Enter project name" 
+//             />
+//             {errors.projectName && <p className="text-xs text-red-500 mt-1">{errors.projectName}</p>}
+//           </div>
+
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">
+//               Customer <span className="text-red-500">*</span>
+//             </label>
+//             <input 
+//               type="text" 
+//               name="customerName" 
+//               value={formData.customerName} 
+//               onChange={handleChange} 
+//               className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 ${errors.customerName ? 'border-red-300' : 'border-gray-300'}`} 
+//               placeholder="Enter customer name" 
+//             />
+//             {errors.customerName && <p className="text-xs text-red-500 mt-1">{errors.customerName}</p>}
+//           </div>
+
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">
+//               Billing Method <span className="text-red-500">*</span>
+//             </label>
+//             <select 
+//               name="billingMethod" 
+//               value={formData.billingMethod} 
+//               onChange={handleChange} 
+//               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+//             >
+//               <option value="Based on Task Hours">Based on Task Hours</option>
+//               <option value="Based on Project Hours">Based on Project Hours</option>
+//               <option value="Fixed Cost for Project">Fixed Cost for Project</option>
+//               <option value="Based on Staff Hours">Based on Staff Hours</option>
+//             </select>
+//           </div>
+
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Rate Per Hour</label>
+//               <div className="relative">
+//                 <span className="absolute left-3 top-2 text-gray-500">$</span>
+//                 <input 
+//                   type="number" 
+//                   name="rate" 
+//                   value={formData.rate} 
+//                   onChange={handleChange} 
+//                   className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" 
+//                   placeholder="0.00" 
+//                   min="0" 
+//                   step="0.5" 
+//                 />
+//               </div>
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Budget</label>
+//               <div className="relative">
+//                 <span className="absolute left-3 top-2 text-gray-500">$</span>
+//                 <input 
+//                   type="number" 
+//                   name="budget" 
+//                   value={formData.budget} 
+//                   onChange={handleChange} 
+//                   className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" 
+//                   placeholder="0.00" 
+//                   min="0" 
+//                   step="100" 
+//                 />
+//               </div>
+//             </div>
+//           </div>
+
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+//               <input 
+//                 type="date" 
+//                 name="startDate" 
+//                 value={formData.startDate} 
+//                 onChange={handleChange} 
+//                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" 
+//               />
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+//               <input 
+//                 type="date" 
+//                 name="endDate" 
+//                 value={formData.endDate} 
+//                 onChange={handleChange} 
+//                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" 
+//               />
+//             </div>
+//           </div>
+
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+//             <select 
+//               name="status" 
+//               value={formData.status} 
+//               onChange={handleChange} 
+//               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+//             >
+//               <option value="active">Active</option>
+//               <option value="inactive">Inactive</option>
+//               <option value="completed">Completed</option>
+//             </select>
+//           </div>
+
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+//             <textarea 
+//               name="description" 
+//               value={formData.description} 
+//               onChange={handleChange} 
+//               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" 
+//               rows={3} 
+//               placeholder="Max 2000 characters" 
+//               maxLength={2000} 
+//             />
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// // ==================== PROJECTS TAB ====================
+// interface ProjectsTabProps {
+//   viewMode: ViewMode;
+//   setViewMode: (mode: ViewMode) => void;
+//   viewBy: 'all' | 'active' | 'inactive' | 'completed';
+//   setViewBy: (view: 'all' | 'active' | 'inactive' | 'completed') => void;
+//   searchTerm: string;
+//   setSearchTerm: (term: string) => void;
+//   projects: Project[];
+//   setProjects: (projects: Project[] | ((prev: Project[]) => Project[])) => void;
+//   selectedProjects: string[];
+//   setSelectedProjects: (ids: string[] | ((prev: string[]) => string[])) => void;
+//   currentPage: number;
+//   setCurrentPage: (page: number) => void;
+//   itemsPerPage: number;
+//   handleDeleteProject: (id: string) => void;
+//   onProjectClick: (projectId: string) => void;
+//   onEditClick: (project: Project) => void;
+//   onStartTimer: (projectId: string) => void;
+//   onStopTimer: (projectId: string) => void;
+//   onCompleteProject: (projectId: string) => void;
+//   onLogTime: (projectName: string) => void;
+// }
+
+// const ProjectsTab: React.FC<ProjectsTabProps> = ({
+//   viewMode,
+//   setViewMode,
+//   viewBy,
+//   setViewBy,
+//   searchTerm,
+//   setSearchTerm,
+//   projects,
+//   setProjects,
+//   selectedProjects,
+//   setSelectedProjects,
+//   currentPage,
+//   setCurrentPage,
+//   itemsPerPage,
+//   handleDeleteProject,
+//   onProjectClick,
+//   onEditClick,
+//   onStartTimer,
+//   onStopTimer,
+//   onCompleteProject,
+//   onLogTime
+// }) => {
+//   const filteredProjects = projects.filter((project: Project) => {
+//     const matchesView = viewBy === 'all' || project.status === viewBy;
+//     const matchesSearch = project.projectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+//                          project.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+//     return matchesView && matchesSearch;
+//   });
+
+//   const paginatedProjects = filteredProjects.slice(
+//     (currentPage - 1) * itemsPerPage,
+//     currentPage * itemsPerPage
+//   );
+
+//   const totalPages = Math.ceil(filteredProjects.length / itemsPerPage);
+
+//   const toggleProjectSelection = (projectId: string) => {
+//     setSelectedProjects((prev: string[]) =>
+//       prev.includes(projectId)
+//         ? prev.filter((id: string) => id !== projectId)
+//         : [...prev, projectId]
+//     );
+//   };
+
+//   const toggleAllProjects = () => {
+//     if (selectedProjects.length === paginatedProjects.length && paginatedProjects.length > 0) {
+//       setSelectedProjects([]);
+//     } else {
+//       setSelectedProjects(paginatedProjects.map((p: Project) => p.id));
+//     }
+//   };
+
+//   const getStatusColor = (status: string) => {
+//     switch(status) {
+//       case 'active': return 'bg-green-100 text-green-800 border-green-200';
+//       case 'inactive': return 'bg-gray-100 text-gray-800 border-gray-200';
+//       case 'completed': return 'bg-blue-100 text-blue-800 border-blue-200';
+//       default: return 'bg-gray-100 text-gray-800 border-gray-200';
+//     }
+//   };
+
+//   const getStatusIcon = (status: string) => {
+//     switch(status) {
+//       case 'active': return <CheckCircle className="w-4 h-4 text-green-500" />;
+//       case 'inactive': return <XCircle className="w-4 h-4 text-gray-500" />;
+//       case 'completed': return <CheckCircle className="w-4 h-4 text-blue-500" />;
+//       default: return <AlertCircle className="w-4 h-4 text-gray-500" />;
+//     }
+//   };
+
+//   const getBillingMethodBadgeColor = (method: string) => {
+//     switch(method) {
+//       case 'Based on Task Hours': return 'bg-purple-100 text-purple-800';
+//       case 'Based on Project Hours': return 'bg-blue-100 text-blue-800';
+//       case 'Fixed Cost for Project': return 'bg-green-100 text-green-800';
+//       case 'Based on Staff Hours': return 'bg-orange-100 text-orange-800';
+//       default: return 'bg-gray-100 text-gray-800';
+//     }
+//   };
+
+//   const handleBulkAction = (action: string) => {
+//     switch(action) {
+//       case 'active':
+//         setProjects((prev: Project[]) => prev.map((p: Project) => 
+//           selectedProjects.includes(p.id) ? { ...p, status: 'active' } : p
+//         ));
+//         break;
+//       case 'inactive':
+//         setProjects((prev: Project[]) => prev.map((p: Project) => 
+//           selectedProjects.includes(p.id) ? { ...p, status: 'inactive' } : p
+//         ));
+//         break;
+//       case 'delete':
+//         setProjects((prev: Project[]) => prev.filter((p: Project) => !selectedProjects.includes(p.id)));
+//         break;
+//     }
+//     setSelectedProjects([]);
+//   };
+
+//   // Format timer display
+//   const formatTimerDisplay = (seconds: number) => {
+//     const hrs = Math.floor(seconds / 3600);
+//     const mins = Math.floor((seconds % 3600) / 60);
+//     const secs = seconds % 60;
+//     return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+//   };
+
+//   // ✅ FULLY RESPONSIVE TABLE - No horizontal scroll needed
+//   const renderListView = () => (
+//     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+//       <div className="overflow-x-auto">
+//         <table className="w-full min-w-[700px] md:min-w-full">
+//           <thead className="bg-gray-50">
+//             <tr>
+//               <th className="px-2 py-2 text-left w-8">
+//                 <input 
+//                   type="checkbox" 
+//                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
+//                   checked={selectedProjects.length === paginatedProjects.length && paginatedProjects.length > 0} 
+//                   onChange={toggleAllProjects} 
+//                 />
+//               </th>
+//               <th className="px-2 py-2 text-left text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 Customer
+//               </th>
+//               <th className="px-2 py-2 text-left text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 Project
+//               </th>
+//               <th className="px-2 py-2 text-left text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden sm:table-cell">
+//                 Billing
+//               </th>
+//               <th className="px-2 py-2 text-left text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden lg:table-cell">
+//                 Rate
+//               </th>
+//               <th className="px-2 py-2 text-left text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden sm:table-cell">
+//                 Status
+//               </th>
+//               <th className="px-2 py-2 text-left text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden md:table-cell">
+//                 Timer
+//               </th>
+//               <th className="px-2 py-2 text-left text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden xl:table-cell">
+//                 Hours
+//               </th>
+//               <th className="px-2 py-2 text-left text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden xl:table-cell">
+//                 Budget
+//               </th>
+//               <th className="px-2 py-2 text-left text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 Actions
+//               </th>
+//             </tr>
+//           </thead>
+//           <tbody className="bg-white divide-y divide-gray-200">
+//             {paginatedProjects.length === 0 ? (
+//               <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-500">No projects found</td></tr>
+//             ) : (
+//               paginatedProjects.map((project: Project) => (
+//                 <tr key={project.id} className="hover:bg-gray-50 transition">
+//                   <td className="px-2 py-2">
+//                     <input 
+//                       type="checkbox" 
+//                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
+//                       checked={selectedProjects.includes(project.id)} 
+//                       onChange={() => toggleProjectSelection(project.id)} 
+//                     />
+//                   </td>
+//                   <td className="px-2 py-2">
+//                     <div 
+//                       className="text-xs md:text-sm font-medium text-gray-700 hover:text-purple-600 cursor-pointer transition-colors duration-200 truncate max-w-[60px] sm:max-w-[80px] md:max-w-[120px] lg:max-w-[150px]"
+//                       onClick={() => onProjectClick(project.id)}
+//                       title={project.customerName}
+//                     >
+//                       {project.customerName}
+//                     </div>
+//                   </td>
+//                   <td className="px-2 py-2">
+//                     <div 
+//                       className="text-xs md:text-sm font-medium text-gray-800 hover:text-purple-600 cursor-pointer transition-colors duration-200"
+//                       onClick={() => onProjectClick(project.id)}
+//                     >
+//                       <div className="truncate max-w-[80px] sm:max-w-[120px] md:max-w-[150px] lg:max-w-[200px]" title={project.projectName}>
+//                         {project.projectName}
+//                       </div>
+//                       <div className="text-[9px] md:text-xs text-gray-500 truncate max-w-[80px] sm:max-w-[120px] md:max-w-[150px] lg:max-w-[200px]" title={project.description}>
+//                         {project.description}
+//                       </div>
+//                     </div>
+//                   </td>
+//                   <td className="px-2 py-2 hidden sm:table-cell">
+//                     <span className={`px-1.5 py-0.5 text-[9px] md:text-[10px] font-medium rounded-full ${getBillingMethodBadgeColor(project.billingMethod)} truncate max-w-[70px] md:max-w-[100px] inline-block`}>
+//                       {project.billingMethod.length > 10 ? project.billingMethod.substring(0, 10) + '...' : project.billingMethod}
+//                     </span>
+//                   </td>
+//                   <td className="px-2 py-2 text-[10px] md:text-sm text-gray-600 hidden lg:table-cell">
+//                     {project.rate ? `$${project.rate.toFixed(2)}/hr` : '-'}
+//                   </td>
+//                   <td className="px-2 py-2 hidden sm:table-cell">
+//                     <div className={`inline-flex items-center px-1.5 py-0.5 text-[9px] md:text-[10px] font-medium rounded-full border ${getStatusColor(project.status)}`}>
+//                       {getStatusIcon(project.status)}
+//                       <span className="ml-0.5 hidden sm:inline">{project.status.charAt(0).toUpperCase() + project.status.slice(1)}</span>
+//                       <span className="ml-0.5 sm:hidden">{project.status.charAt(0).toUpperCase()}</span>
+//                     </div>
+//                   </td>
+//                   <td className="px-2 py-2 hidden md:table-cell">
+//                     {project.status === 'completed' ? (
+//                       <span className="text-[10px] md:text-xs text-green-600 font-medium">✅ Done</span>
+//                     ) : (
+//                       <div className="flex items-center gap-0.5">
+//                         <div className="flex items-center gap-0.5 bg-gray-100 rounded px-1 py-0.5">
+//                           <Clock className={`w-2.5 h-2.5 md:w-3 md:h-3 ${project.timerRunning ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
+//                           <span className={`text-[8px] md:text-[10px] font-mono font-medium ${project.timerRunning ? 'text-green-600' : 'text-gray-600'}`}>
+//                             {formatTimerDisplay(project.timerSeconds || 0)}
+//                           </span>
+//                         </div>
+//                         <div className="flex items-center gap-0.5">
+//                           {!project.timerRunning ? (
+//                             <button
+//                               onClick={() => onStartTimer(project.id)}
+//                               className="p-0.5 text-green-600 hover:bg-green-50 rounded transition"
+//                               title="Start Timer"
+//                             >
+//                               <Play className="w-2.5 h-2.5 md:w-3 md:h-3" />
+//                             </button>
+//                           ) : (
+//                             <button
+//                               onClick={() => onStopTimer(project.id)}
+//                               className="p-0.5 text-yellow-600 hover:bg-yellow-50 rounded transition"
+//                               title="Pause Timer"
+//                             >
+//                               <Pause className="w-2.5 h-2.5 md:w-3 md:h-3" />
+//                             </button>
+//                           )}
+//                           <button
+//                             onClick={() => onCompleteProject(project.id)}
+//                             className="p-0.5 text-blue-600 hover:bg-blue-50 rounded transition"
+//                             title="Complete Project"
+//                           >
+//                             <CheckCircle className="w-2.5 h-2.5 md:w-3 md:h-3" />
+//                           </button>
+//                         </div>
+//                       </div>
+//                     )}
+//                   </td>
+//                   <td className="px-2 py-2 hidden xl:table-cell">
+//                     <div className="flex items-center text-[10px] md:text-xs text-gray-600">
+//                       <Clock className="w-2.5 h-2.5 md:w-3 md:h-3 mr-0.5 text-gray-400" />
+//                       <span className="font-mono">{project.loggedHours}</span>
+//                     </div>
+//                   </td>
+//                   <td className="px-2 py-2 hidden xl:table-cell text-[10px] md:text-xs text-gray-600">
+//                     {project.budget ? `$${project.budget.toFixed(2)}` : '-'}
+//                   </td>
+//                   <td className="px-2 py-2">
+//                     <div className="flex items-center gap-0.5">
+//                       <button 
+//                         onClick={() => onEditClick(project)} 
+//                         className="p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition"
+//                         title="Edit"
+//                       >
+//                         <Edit className="w-3 h-3 md:w-3.5 md:h-3.5" />
+//                       </button>
+//                       <button 
+//                         onClick={() => onLogTime(project.projectName)} 
+//                         className="p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition"
+//                         title="Log Time"
+//                       >
+//                         <Clock className="w-3 h-3 md:w-3.5 md:h-3.5" />
+//                       </button>
+//                       <button 
+//                         onClick={() => { 
+//                           const np = { ...project, id: String(Date.now()), projectName: `${project.projectName} (Copy)`, loggedHours: '00:00', timerSeconds: 0, timerRunning: false }; 
+//                           setProjects((prev: Project[]) => [...prev, np]); 
+//                         }} 
+//                         className="p-1 text-gray-400 hover:text-purple-600 rounded hover:bg-purple-50 transition"
+//                         title="Clone"
+//                       >
+//                         <Copy className="w-3 h-3 md:w-3.5 md:h-3.5" />
+//                       </button>
+//                       <button 
+//                         onClick={() => handleDeleteProject(project.id)} 
+//                         className="p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 transition"
+//                         title="Delete"
+//                       >
+//                         <Trash2 className="w-3 h-3 md:w-3.5 md:h-3.5" />
+//                       </button>
+//                     </div>
+//                   </td>
+//                 </tr>
+//               ))
+//             )}
+//           </tbody>
+//         </table>
+//       </div>
+//       {filteredProjects.length > 0 && (
+//         <div className="px-3 py-2 bg-gray-50 border-t border-gray-200 flex flex-wrap items-center justify-between gap-2">
+//           <div className="text-[10px] md:text-sm text-gray-700">
+//             Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredProjects.length)} of {filteredProjects.length} results
+//           </div>
+//           <div className="flex items-center gap-1">
+//             <button 
+//               onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))} 
+//               disabled={currentPage === 1} 
+//               className="px-2 py-0.5 border border-gray-300 rounded text-[10px] md:text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+//             >
+//               Prev
+//             </button>
+//             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p: number) => (
+//               <button 
+//                 key={p} 
+//                 onClick={() => setCurrentPage(p)} 
+//                 className={`px-2 py-0.5 rounded text-[10px] md:text-sm ${currentPage === p ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+//               >
+//                 {p}
+//               </button>
+//             ))}
+//             {totalPages > 5 && <span className="text-[10px] md:text-sm text-gray-500">...</span>}
+//             <button 
+//               onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))} 
+//               disabled={currentPage === totalPages} 
+//               className="px-2 py-0.5 border border-gray-300 rounded text-[10px] md:text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+//             >
+//               Next
+//             </button>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+
+//   const renderCardView = () => {
+//     const getInitials = (name: string) => name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+//     const getRandomColor = (name: string) => {
+//       const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500', 'bg-red-500'];
+//       return colors[name.length % colors.length];
+//     };
+//     return (
+//       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+//         {paginatedProjects.map((project: Project) => (
+//           <div 
+//             key={project.id} 
+//             className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition p-3 sm:p-4 cursor-pointer"
+//             onClick={() => onProjectClick(project.id)}
+//           >
+//             <div className="flex items-start justify-between mb-3">
+//               <div className="flex items-center space-x-2">
+//                 <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full ${getRandomColor(project.customerName)} text-white flex items-center justify-center text-[10px] sm:text-xs font-medium flex-shrink-0`}>
+//                   {getInitials(project.customerName)}
+//                 </div>
+//                 <div>
+//                   <div 
+//                     className="text-sm font-semibold text-gray-700 hover:text-purple-600 cursor-pointer transition-colors duration-200"
+//                     onClick={() => onProjectClick(project.id)}
+//                   >
+//                     {project.customerName}
+//                   </div>
+//                   <p className="text-xs text-gray-500">{project.projectName}</p>
+//                 </div>
+//               </div>
+//               <span className={`px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded-full ${getStatusColor(project.status)}`}>
+//                 {project.status}
+//               </span>
+//             </div>
+//             <p className="text-xs text-gray-600 line-clamp-2 mb-3">{project.description}</p>
+//             <div className="grid grid-cols-2 gap-2 mb-3">
+//               <div className="bg-gray-50 rounded p-1.5 sm:p-2">
+//                 <div className="text-[10px] text-gray-500">Billing</div>
+//                 <div className="text-[10px] sm:text-xs font-medium text-gray-700 truncate">{project.billingMethod}</div>
+//               </div>
+//               <div className="bg-gray-50 rounded p-1.5 sm:p-2">
+//                 <div className="text-[10px] text-gray-500">Rate</div>
+//                 <div className="text-[10px] sm:text-xs font-medium text-gray-700">{project.rate ? `$${project.rate.toFixed(2)}/hr` : '-'}</div>
+//               </div>
+//             </div>
+//             <div className="flex items-center justify-between text-xs sm:text-sm">
+//               <div className="flex items-center space-x-1">
+//                 <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+//                 <span className="font-mono">{project.loggedHours}</span>
+//               </div>
+//               <div className="flex items-center space-x-1">
+//                 <DollarSign className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+//                 <span>${project.budget?.toFixed(2) || '0'}</span>
+//               </div>
+//             </div>
+            
+//             {project.status !== 'completed' && (
+//               <div className="mt-2 sm:mt-3 flex items-center justify-between bg-gray-50 rounded-lg p-1.5 sm:p-2">
+//                 <div className="flex items-center gap-1 sm:gap-1.5">
+//                   <Clock className={`w-3 h-3 sm:w-4 sm:h-4 ${project.timerRunning ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
+//                   <span className={`text-[10px] sm:text-xs font-mono font-medium ${project.timerRunning ? 'text-green-600' : 'text-gray-600'}`}>
+//                     {formatTimerDisplay(project.timerSeconds || 0)}
+//                   </span>
+//                 </div>
+//                 <div className="flex items-center gap-0.5 sm:gap-1">
+//                   {!project.timerRunning ? (
+//                     <button
+//                       onClick={() => onStartTimer(project.id)}
+//                       className="p-0.5 sm:p-1 text-green-600 hover:bg-green-50 rounded transition"
+//                     >
+//                       <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                     </button>
+//                   ) : (
+//                     <button
+//                       onClick={() => onStopTimer(project.id)}
+//                       className="p-0.5 sm:p-1 text-yellow-600 hover:bg-yellow-50 rounded transition"
+//                     >
+//                       <Pause className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                     </button>
+//                   )}
+//                   <button
+//                     onClick={() => onCompleteProject(project.id)}
+//                     className="p-0.5 sm:p-1 text-blue-600 hover:bg-blue-50 rounded transition"
+//                   >
+//                     <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                   </button>
+//                 </div>
+//               </div>
+//             )}
+            
+//             <div className="mt-2 sm:mt-3 flex items-center justify-between">
+//               <button className="text-[10px] sm:text-xs text-blue-600 hover:text-blue-700">Create Expense</button>
+//               <button 
+//                 onClick={() => onLogTime(project.projectName)} 
+//                 className="text-[10px] sm:text-xs text-blue-600 hover:text-blue-700 flex items-center gap-0.5 sm:gap-1"
+//               >
+//                 <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Log Time
+//               </button>
+//             </div>
+//           </div>
+//         ))}
+//       </div>
+//     );
+//   };
+
+//   return (
+//     <>
+//       {/* Filters - Responsive */}
+//       <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 mb-4 sm:mb-6 border border-gray-200">
+//         <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-3 sm:gap-4">
+//           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+//             <div className="relative flex-1 sm:flex-none">
+//               <select 
+//                 className="appearance-none bg-gray-50 border border-gray-300 rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 pr-7 sm:pr-8 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 w-full" 
+//                 value={viewBy} 
+//                 onChange={(e) => setViewBy(e.target.value as any)}
+//               >
+//                 <option value="all">All Projects</option>
+//                 <option value="active">Active</option>
+//                 <option value="inactive">Inactive</option>
+//                 <option value="completed">Completed</option>
+//               </select>
+//               <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4 absolute right-2 sm:right-3 top-2 sm:top-2.5 text-gray-500 pointer-events-none" />
+//             </div>
+//             <div className="relative flex-1 sm:flex-none">
+//               <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 absolute left-2.5 sm:left-3 top-1.5 sm:top-2.5 text-gray-400" />
+//               <input 
+//                 type="text" 
+//                 placeholder="Search projects..." 
+//                 className="pl-8 sm:pl-9 pr-3 sm:pr-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 w-full sm:w-40 md:w-56" 
+//                 value={searchTerm} 
+//                 onChange={(e) => setSearchTerm(e.target.value)} 
+//               />
+//             </div>
+//           </div>
+//           <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+//             <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+//               <button 
+//                 onClick={() => setViewMode('list')} 
+//                 className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition flex items-center space-x-1 ${viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+//               >
+//                 <List className="w-3.5 h-3.5 sm:w-4 sm:h-4" /><span className="hidden xs:inline">List</span>
+//               </button>
+//               <button 
+//                 onClick={() => setViewMode('card')} 
+//                 className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition flex items-center space-x-1 ${viewMode === 'card' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+//               >
+//                 <LayoutGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4" /><span className="hidden xs:inline">Card</span>
+//               </button>
+//             </div>
+//             <button className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center">
+//               <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />Filter
+//             </button>
+//             <button className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center hidden sm:flex">
+//               <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />Export
+//             </button>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Bulk Update */}
+//       {selectedProjects.length > 0 && (
+//         <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4 flex flex-wrap items-center justify-between gap-2">
+//           <span className="text-xs sm:text-sm text-blue-700 font-medium">{selectedProjects.length} selected</span>
+//           <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+//             <button onClick={() => handleBulkAction('active')} className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm bg-green-600 text-white rounded hover:bg-green-700">Active</button>
+//             <button onClick={() => handleBulkAction('inactive')} className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm bg-gray-600 text-white rounded hover:bg-gray-700">Inactive</button>
+//             <button onClick={() => handleBulkAction('delete')} className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm bg-red-600 text-white rounded hover:bg-red-700">Delete</button>
+//             <button onClick={() => setSelectedProjects([])} className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm text-gray-600 hover:text-gray-800">Clear</button>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Content */}
+//       {viewMode === 'list' ? renderListView() : renderCardView()}
+
+//       {/* Stats - Responsive grid */}
+//       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mt-4 sm:mt-6">
+//         <div className="bg-white rounded-lg shadow-sm p-2 sm:p-4 border border-gray-200">
+//           <div className="text-[10px] sm:text-sm text-gray-500">Total</div>
+//           <div className="text-base sm:text-2xl font-bold text-gray-900">{projects.length}</div>
+//         </div>
+//         <div className="bg-white rounded-lg shadow-sm p-2 sm:p-4 border border-gray-200">
+//           <div className="text-[10px] sm:text-sm text-gray-500">Active</div>
+//           <div className="text-base sm:text-2xl font-bold text-green-600">{projects.filter((p: Project) => p.status === 'active').length}</div>
+//         </div>
+//         <div className="bg-white rounded-lg shadow-sm p-2 sm:p-4 border border-gray-200">
+//           <div className="text-[10px] sm:text-sm text-gray-500">Hours</div>
+//           <div className="text-base sm:text-2xl font-bold text-blue-600">455:48</div>
+//         </div>
+//         <div className="bg-white rounded-lg shadow-sm p-2 sm:p-4 border border-gray-200">
+//           <div className="text-[10px] sm:text-sm text-gray-500">Revenue</div>
+//           <div className="text-base sm:text-2xl font-bold text-purple-600">$29,500</div>
+//         </div>
+//       </div>
+//     </>
+//   );
+// };
+
+// // ==================== MAIN COMPONENT ====================
+// const ProjectList: React.FC = () => {
+//   const [activeTab, setActiveTab] = useState<TabType>('projects');
+//   const [viewMode, setViewMode] = useState<ViewMode>('list');
+//   const [viewBy, setViewBy] = useState<'all' | 'active' | 'inactive' | 'completed'>('all');
+//   const [searchTerm, setSearchTerm] = useState('');
+//   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+//   const [currentPage, setCurrentPage] = useState(1);
+//   const [itemsPerPage] = useState(6);
+//   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+//   const [view, setView] = useState<ViewState>('list');
+//   const [editProjectData, setEditProjectData] = useState<Project | null>(null);
+//   const [timerProjectName, setTimerProjectName] = useState<string>('');
+//   const [showLogTimePage, setShowLogTimePage] = useState(false);
+//   const [logTimeProject, setLogTimeProject] = useState('');
+
+//   const timerRefs = useRef<Record<string, NodeJS.Timeout>>({});
+
+//   const [projects, setProjects] = useState<Project[]>([
+//     { id: '1', customerName: 'Bruce Wayne', projectName: 'Design contract for Mr. Bruce', billingMethod: 'Based on Task Hours', rate: 45, status: 'active', loggedHours: '106:41', budget: 5000, startDate: '2024-01-15', endDate: '2024-06-30', description: 'Complete UI/UX design for Wayne Enterprises', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '2', customerName: 'Bruce Wayne', projectName: 'Design project for Bruce', billingMethod: 'Based on Task Hours', rate: 45, status: 'active', loggedHours: '35:28', budget: 3000, startDate: '2024-02-01', endDate: '2024-07-15', description: 'Redesign of corporate website', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '3', customerName: 'Aaron Brown', projectName: 'Design project for MR.X', billingMethod: 'Based on Task Hours', rate: 45, status: 'active', loggedHours: '138:00', budget: 8000, startDate: '2024-01-10', endDate: '2024-08-20', description: 'Mobile app design for MR.X', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '4', customerName: 'Aaron Brown', projectName: 'Design project - Z', billingMethod: 'Based on Task Hours', rate: null, status: 'active', loggedHours: '26:00', budget: 2500, startDate: '2024-03-01', endDate: '2024-09-01', description: 'Logo and branding design', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '5', customerName: 'Dinesh Ramamurthy', projectName: 'Designing project', billingMethod: 'Based on Project Hours', rate: 45, status: 'active', loggedHours: '32:04', budget: 2000, startDate: '2024-02-15', endDate: '2024-07-01', description: 'Web application interface design', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '6', customerName: 'Arthur K', projectName: 'Web app designing', billingMethod: 'Based on Task Hours', rate: 45, status: 'active', loggedHours: '65:00', budget: 4500, startDate: '2024-01-20', endDate: '2024-10-15', description: 'E-commerce platform design', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '7', customerName: 'Aaron Brown', projectName: 'Web Designing', billingMethod: 'Based on Task Hours', rate: 45, status: 'completed', loggedHours: '52:35', budget: 3500, startDate: '2023-12-01', endDate: '2024-05-30', description: 'Corporate website redesign', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '8', customerName: 'Aaron Brown', projectName: 'Web designing', billingMethod: 'Based on Task Hours', rate: 45, status: 'inactive', loggedHours: '00:00', budget: 1000, startDate: '2024-04-01', endDate: '2024-12-31', description: 'Portfolio website design', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 }
+//   ]);
+
+//   useEffect(() => {
+//     try {
+//       const savedTimers = localStorage.getItem('projectTimers');
+//       if (savedTimers) {
+//         const timerData = JSON.parse(savedTimers);
+//         setProjects(prev => prev.map(project => ({
+//           ...project,
+//           timerRunning: timerData[project.id]?.running || false,
+//           timerSeconds: timerData[project.id]?.seconds || 0
+//         })));
+//       }
+//     } catch (error) {
+//       console.error('Failed to load timer data:', error);
+//     }
+//   }, []);
+
+//   useEffect(() => {
+//     try {
+//       const timerData: Record<string, { running: boolean; seconds: number }> = {};
+//       projects.forEach(project => {
+//         timerData[project.id] = {
+//           running: project.timerRunning || false,
+//           seconds: project.timerSeconds || 0
+//         };
+//       });
+//       localStorage.setItem('projectTimers', JSON.stringify(timerData));
+//     } catch (error) {
+//       console.error('Failed to save timer data:', error);
+//     }
+//   }, [projects]);
+
+//   useEffect(() => {
+//     return () => {
+//       Object.values(timerRefs.current).forEach(clearInterval);
+//     };
+//   }, []);
+
+//   const handleStartTimer = (projectId: string) => {
+//     if (timerRefs.current[projectId]) {
+//       clearInterval(timerRefs.current[projectId]);
+//       delete timerRefs.current[projectId];
+//     }
+
+//     timerRefs.current[projectId] = setInterval(() => {
+//       setProjects(prev => prev.map(p => 
+//         p.id === projectId ? { ...p, timerSeconds: (p.timerSeconds || 0) + 1 } : p
+//       ));
+//     }, 1000);
+
+//     setProjects(prev => prev.map(p => 
+//       p.id === projectId ? { ...p, timerRunning: true } : p
+//     ));
+//   };
+
+//   const handleStopTimer = (projectId: string) => {
+//     if (timerRefs.current[projectId]) {
+//       clearInterval(timerRefs.current[projectId]);
+//       delete timerRefs.current[projectId];
+//     }
+//     setProjects(prev => prev.map(p => 
+//       p.id === projectId ? { ...p, timerRunning: false } : p
+//     ));
+//   };
+
+//   const handleCompleteProject = (projectId: string) => {
+//     if (timerRefs.current[projectId]) {
+//       clearInterval(timerRefs.current[projectId]);
+//       delete timerRefs.current[projectId];
+//     }
+
+//     setProjects(prev => prev.map(p => {
+//       if (p.id === projectId) {
+//         const timerSeconds = p.timerSeconds || 0;
+//         const hoursToAdd = timerSeconds / 3600;
+//         const currentHours = parseFloat(p.loggedHours) || 0;
+//         const newHours = (currentHours + hoursToAdd).toFixed(2);
+//         return { 
+//           ...p, 
+//           status: 'completed',
+//           loggedHours: newHours,
+//           timerRunning: false,
+//           timerSeconds: 0
+//         };
+//       }
+//       return p;
+//     }));
+
+//     if (timerRefs.current[projectId]) {
+//       delete timerRefs.current[projectId];
+//     }
+//   };
+
+//   const handleDeleteProject = (id: string) => {
+//     if (window.confirm('Delete this project?')) {
+//       if (timerRefs.current[id]) {
+//         clearInterval(timerRefs.current[id]);
+//         delete timerRefs.current[id];
+//       }
+//       setProjects((prev: Project[]) => prev.filter((p: Project) => p.id !== id));
+//     }
+//   };
+
+//   const handleProjectClick = (projectId: string) => {
+//     setSelectedProjectId(projectId);
+//     setView('detail');
+//   };
+
+//   const handleBackToList = () => {
+//     setSelectedProjectId(null);
+//     setView('list');
+//     setEditProjectData(null);
+//     setShowLogTimePage(false);
+//   };
+
+//   const handleEditClick = (project: Project) => {
+//     setEditProjectData(project);
+//     setView('edit');
+//   };
+
+//   const handleEditSave = (updatedData: any) => {
+//     const existingProject = projects.find(p => p.id === updatedData.id);
+//     if (!existingProject) return;
+
+//     const updatedProjects = projects.map((p: Project) => {
+//       if (p.id === updatedData.id) {
+//         return {
+//           ...p,
+//           projectName: updatedData.name,
+//           description: updatedData.description,
+//           billingMethod: updatedData.billingMethod as Project['billingMethod'],
+//           rate: updatedData.rate,
+//           budget: updatedData.budget,
+//           status: updatedData.status as Project['status'],
+//           startDate: updatedData.startDate,
+//           endDate: updatedData.endDate,
+//           customerName: updatedData.customerName,
+//           updatedAt: new Date().toISOString()
+//         };
+//       }
+//       return p;
+//     });
+
+//     setProjects(updatedProjects);
+//     setTimeout(() => {
+//       setView('list');
+//       setEditProjectData(null);
+//     }, 100);
+//   };
+
+//   const handleCreateProject = (projectData: any) => {
+//     const newProject: Project = {
+//       id: String(Date.now()),
+//       customerName: projectData.customerName,
+//       projectName: projectData.projectName,
+//       billingMethod: projectData.billingMethod as Project['billingMethod'],
+//       rate: projectData.rate || null,
+//       status: projectData.status as Project['status'],
+//       loggedHours: '00:00',
+//       budget: projectData.budget || null,
+//       startDate: projectData.startDate || '',
+//       endDate: projectData.endDate || '',
+//       description: projectData.description || '',
+//       createdAt: new Date().toISOString(),
+//       updatedAt: new Date().toISOString(),
+//       timerRunning: false,
+//       timerSeconds: 0
+//     };
+//     setProjects([newProject, ...projects]);
+//     setView('list');
+//   };
+
+//   const handleStartTimerHeader = () => {
+//     setTimerProjectName('');
+//     setActiveTab('timetracker');
+//   };
+
+//   const handleLogTimeClick = (projectName: string) => {
+//     setLogTimeProject(projectName);
+//     setShowLogTimePage(true);
+//   };
+
+//   const handleLogTimeSave = (data: any) => {
+//     console.log('Time logged:', data);
+//     setShowLogTimePage(false);
+//     alert(`Time logged successfully!\nProject: ${data.project}\nTime: ${data.timeSpent}`);
+//   };
+
+//   if (view === 'create') {
+//     return <CreateProjectPage onBack={handleBackToList} onSave={handleCreateProject} />;
+//   }
+
+//   if (view === 'edit' && editProjectData) {
+//     const editData = {
+//       id: editProjectData.id,
+//       name: editProjectData.projectName,
+//       description: editProjectData.description,
+//       billingMethod: editProjectData.billingMethod,
+//       rate: editProjectData.rate || 0,
+//       budget: editProjectData.budget || 0,
+//       status: editProjectData.status,
+//       startDate: editProjectData.startDate,
+//       endDate: editProjectData.endDate,
+//       customerName: editProjectData.customerName,
+//       assignedUsers: []
+//     };
+//     return (
+//       <ProjectEdit 
+//         projectId={editProjectData.id}
+//         projectName={editProjectData.projectName}
+//         onBack={handleBackToList}
+//         onSave={handleEditSave}
+//         initialData={editData}
+//       />
+//     );
+//   }
+
+//   if (view === 'detail' && selectedProjectId) {
+//     return <ProjectDetail projectId={selectedProjectId} onBack={handleBackToList} />;
+//   }
+
+//   if (showLogTimePage) {
+//     return (
+//       <LogTimePage 
+//         onBack={() => setShowLogTimePage(false)} 
+//         onSave={handleLogTimeSave}
+//         preselectedProject={logTimeProject}
+//       />
+//     );
+//   }
+
+//   const renderTabContent = () => {
+//     switch(activeTab) {
+//       case 'projects':
+//         return (
+//           <ProjectsTab
+//             viewMode={viewMode}
+//             setViewMode={setViewMode}
+//             viewBy={viewBy}
+//             setViewBy={setViewBy}
+//             searchTerm={searchTerm}
+//             setSearchTerm={setSearchTerm}
+//             projects={projects}
+//             setProjects={setProjects}
+//             selectedProjects={selectedProjects}
+//             setSelectedProjects={setSelectedProjects}
+//             currentPage={currentPage}
+//             setCurrentPage={setCurrentPage}
+//             itemsPerPage={itemsPerPage}
+//             handleDeleteProject={handleDeleteProject}
+//             onProjectClick={handleProjectClick}
+//             onEditClick={handleEditClick}
+//             onStartTimer={handleStartTimer}
+//             onStopTimer={handleStopTimer}
+//             onCompleteProject={handleCompleteProject}
+//             onLogTime={handleLogTimeClick}
+//           />
+//         );
+//       case 'taskboard':
+//         return <TaskBoard />;
+//       case 'timetracker':
+//         return <TimeTracker preselectedProject={timerProjectName} />;
+//       default:
+//         return null;
+//     }
+//   };
+
+//   const handleHeaderStart = () => {
+//     setTimerProjectName('');
+//     setActiveTab('timetracker');
+//   };
+
+//   const handleHeaderLogTime = () => {
+//     setLogTimeProject('');
+//     setShowLogTimePage(true);
+//   };
+
+//   return (
+//     <div className="p-3 sm:p-6 bg-gray-50 min-h-screen">
+//       {/* Projects Tab Header */}
+//       {activeTab === 'projects' && (
+//         <div className="flex flex-wrap items-start sm:items-center justify-between mb-3 sm:mb-4 gap-3">
+//           <div>
+//             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Projects</h1>
+//             <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">Manage all your projects from one place</p>
+//           </div>
+//           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+//             <button 
+//               onClick={() => setView('create')} 
+//               className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+//             >
+//               <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               <span className="hidden xs:inline">New Project</span>
+//               <span className="xs:hidden">New</span>
+//             </button>
+//             <button 
+//               onClick={handleHeaderStart}
+//               className="px-3 sm:px-4 py-1.5 sm:py-2 bg-green-600 text-white rounded-lg flex items-center hover:bg-green-700 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+//             >
+//               <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               <span className="hidden xs:inline">Start</span>
+//             </button>
+//             <button 
+//               onClick={handleHeaderLogTime}
+//               className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+//             >
+//               <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               <span className="hidden xs:inline">Log Time</span>
+//               <span className="xs:hidden">Log</span>
+//             </button>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Task Board Header */}
+//       {activeTab === 'taskboard' && (
+//         <div className="flex flex-wrap items-start sm:items-center justify-between mb-3 sm:mb-4 gap-3">
+//           <div>
+//             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Task Board</h1>
+//             <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">Manage and track tasks across your projects</p>
+//           </div>
+//           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+//             <button 
+//               className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+//             >
+//               <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               Edit
+//             </button>
+//             <button 
+//               className="px-3 sm:px-4 py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg flex items-center hover:bg-purple-700 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+//             >
+//               <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               <span className="hidden xs:inline">Add Task</span>
+//               <span className="xs:hidden">Add</span>
+//             </button>
+//             <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm text-gray-500 bg-white px-2 sm:px-4 py-1 sm:py-2 rounded-lg shadow-sm border border-gray-200">
+//               <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+//               <span>10 Total</span>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Time Tracker Header */}
+//       {activeTab === 'timetracker' && (
+//         <div className="flex flex-wrap items-start sm:items-center justify-between mb-3 sm:mb-4 gap-3">
+//           <div>
+//             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Time Tracker</h1>
+//             <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">Track and log time for your projects</p>
+//           </div>
+//           <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm text-gray-500 bg-white px-2 sm:px-4 py-1 sm:py-2 rounded-lg shadow-sm border border-gray-200">
+//             <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+//             <span>3 Entries</span>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Navigation Tabs - Responsive */}
+//       <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-2 sm:px-4 mb-4 sm:mb-6 overflow-x-auto">
+//         <nav className="flex space-x-3 sm:space-x-6 min-w-fit">
+//           <button 
+//             onClick={() => setActiveTab('projects')} 
+//             className={`py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-1 sm:space-x-2 whitespace-nowrap ${
+//               activeTab === 'projects' 
+//                 ? 'border-blue-600 text-blue-600' 
+//                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+//             }`}
+//           >
+//             <LayoutDashboard className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+//             <span>Projects</span>
+//           </button>
+//           <button 
+//             onClick={() => setActiveTab('taskboard')} 
+//             className={`py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-1 sm:space-x-2 whitespace-nowrap ${
+//               activeTab === 'taskboard' 
+//                 ? 'border-blue-600 text-blue-600' 
+//                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+//             }`}
+//           >
+//             <ClipboardList className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+//             <span>Task Board</span>
+//           </button>
+//           <button 
+//             onClick={() => setActiveTab('timetracker')} 
+//             className={`py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-1 sm:space-x-2 whitespace-nowrap ${
+//               activeTab === 'timetracker' 
+//                 ? 'border-blue-600 text-blue-600' 
+//                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+//             }`}
+//           >
+//             <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+//             <span>Time Tracker</span>
+//           </button>
+//         </nav>
+//       </div>
+
+//       {/* Content */}
+//       <div>
+//         {renderTabContent()}
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default ProjectList;
+// src/client/components/projects/ProjectList.tsx
+// import React, { useState, useEffect, useRef } from 'react';
+// import { 
+//   Search, 
+//   Plus, 
+//   Filter, 
+//   Clock, 
+//   MoreVertical, 
+//   Edit, 
+//   Trash2, 
+//   Copy,
+//   FileText,
+//   Play,
+//   ChevronDown,
+//   Download,
+//   Upload,
+//   RefreshCw,
+//   CheckCircle,
+//   XCircle,
+//   AlertCircle,
+//   LayoutGrid,
+//   List,
+//   DollarSign,
+//   User,
+//   Calendar,
+//   Tag,
+//   LayoutDashboard,
+//   ClipboardList,
+//   Timer,
+//   Save,
+//   X,
+//   Users,
+//   Pause,
+//   Square,
+//   Circle,
+//   ArrowLeft,
+//   StopCircle,
+//   Menu
+// } from 'lucide-react';
+// import TimeTracker from './TimeTracker';
+// import TaskBoard from './TaskBoard';
+// import ProjectDetail from './ProjectDetail';
+// import ProjectEdit from './ProjectEdit';
+// import LogTimePage from './LogTimePage';
+
+// // ==================== TYPES ====================
+// interface Project {
+//   id: string;
+//   customerName: string;
+//   projectName: string;
+//   billingMethod: 'Based on Task Hours' | 'Based on Project Hours' | 'Fixed Cost for Project' | 'Based on Staff Hours';
+//   rate: number | null;
+//   status: 'active' | 'inactive' | 'completed';
+//   loggedHours: string;
+//   budget: number | null;
+//   startDate: string;
+//   endDate: string;
+//   description: string;
+//   createdAt: string;
+//   updatedAt: string;
+//   timerRunning?: boolean;
+//   timerSeconds?: number;
+//   timerStartTime?: string;
+// }
+
+// type ViewMode = 'list' | 'card';
+// type TabType = 'projects' | 'taskboard' | 'timetracker';
+// type ViewState = 'list' | 'detail' | 'edit' | 'create';
+
+// // ==================== ADD TASK MODAL ====================
+// interface AddTaskModalProps {
+//   isOpen: boolean;
+//   onClose: () => void;
+//   onSave: (taskData: any) => void;
+//   projectName?: string;
+// }
+
+// const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onSave, projectName }) => {
+//   const [formData, setFormData] = useState({
+//     title: '',
+//     description: '',
+//     status: 'todo' as 'todo' | 'in-progress' | 'review' | 'done',
+//     priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
+//     assignee: '',
+//     dueDate: '',
+//     estimatedHours: 0,
+//     tags: '',
+//     projectName: projectName || '',
+//   });
+
+//   const [errors, setErrors] = useState<Record<string, string>>({});
+//   const [isSaving, setIsSaving] = useState(false);
+
+//   if (!isOpen) return null;
+
+//   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+//     const { name, value } = e.target;
+//     setFormData(prev => ({ ...prev, [name]: value }));
+//     if (errors[name]) {
+//       setErrors(prev => ({ ...prev, [name]: '' }));
+//     }
+//   };
+
+//   const handleSubmit = () => {
+//     const newErrors: Record<string, string> = {};
+//     if (!formData.title.trim()) newErrors.title = 'Task title is required';
+//     if (!formData.assignee) newErrors.assignee = 'Please select an assignee';
+//     if (!formData.dueDate) newErrors.dueDate = 'Please select a due date';
+//     if (formData.estimatedHours <= 0) newErrors.estimatedHours = 'Estimated hours must be greater than 0';
+
+//     if (Object.keys(newErrors).length > 0) {
+//       setErrors(newErrors);
+//       return;
+//     }
+
+//     setIsSaving(true);
+//     const tagsArray = formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+
+//     setTimeout(() => {
+//       onSave({
+//         ...formData,
+//         tags: tagsArray,
+//         loggedHours: 0,
+//         comments: 0,
+//         attachments: 0,
+//         subtasks: [],
+//         createdAt: new Date().toISOString(),
+//         updatedAt: new Date().toISOString()
+//       });
+//       setIsSaving(false);
+//       onClose();
+//     }, 500);
+//   };
+
+//   return (
+//     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+//       <div className="bg-white rounded-xl p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+//         <div className="flex items-center justify-between mb-4">
+//           <h3 className="text-lg font-semibold text-gray-800">Add New Task</h3>
+//           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition">
+//             <X className="w-5 h-5 text-gray-500" />
+//           </button>
+//         </div>
+//         <div className="space-y-4">
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">
+//               Task Title <span className="text-red-500">*</span>
+//             </label>
+//             <input 
+//               type="text" 
+//               name="title" 
+//               value={formData.title} 
+//               onChange={handleChange} 
+//               className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.title ? 'border-red-300' : 'border-gray-300'}`} 
+//               placeholder="Enter task title" 
+//             />
+//             {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
+//           </div>
+
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+//             <textarea 
+//               name="description" 
+//               value={formData.description} 
+//               onChange={handleChange} 
+//               rows={3} 
+//               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
+//               placeholder="Enter task description" 
+//             />
+//           </div>
+
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+//               <select 
+//                 name="status" 
+//                 value={formData.status} 
+//                 onChange={handleChange} 
+//                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+//               >
+//                 <option value="todo">To Do</option>
+//                 <option value="in-progress">In Progress</option>
+//                 <option value="review">Review</option>
+//                 <option value="done">Done</option>
+//               </select>
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+//               <select 
+//                 name="priority" 
+//                 value={formData.priority} 
+//                 onChange={handleChange} 
+//                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+//               >
+//                 <option value="low">Low</option>
+//                 <option value="medium">Medium</option>
+//                 <option value="high">High</option>
+//                 <option value="urgent">Urgent</option>
+//               </select>
+//             </div>
+//           </div>
+
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">
+//                 Assignee <span className="text-red-500">*</span>
+//               </label>
+//               <select 
+//                 name="assignee" 
+//                 value={formData.assignee} 
+//                 onChange={handleChange} 
+//                 className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.assignee ? 'border-red-300' : 'border-gray-300'}`}
+//               >
+//                 <option value="">Select Assignee</option>
+//                 <option value="Patricia Boyle">Patricia Boyle</option>
+//                 <option value="John Doe">John Doe</option>
+//                 <option value="Jane Smith">Jane Smith</option>
+//                 <option value="Michael Johnson">Michael Johnson</option>
+//               </select>
+//               {errors.assignee && <p className="text-xs text-red-500 mt-1">{errors.assignee}</p>}
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">
+//                 Due Date <span className="text-red-500">*</span>
+//               </label>
+//               <input 
+//                 type="date" 
+//                 name="dueDate" 
+//                 value={formData.dueDate} 
+//                 onChange={handleChange} 
+//                 className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.dueDate ? 'border-red-300' : 'border-gray-300'}`} 
+//               />
+//               {errors.dueDate && <p className="text-xs text-red-500 mt-1">{errors.dueDate}</p>}
+//             </div>
+//           </div>
+
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">
+//                 Estimated Hours <span className="text-red-500">*</span>
+//               </label>
+//               <input 
+//                 type="number" 
+//                 name="estimatedHours" 
+//                 value={formData.estimatedHours} 
+//                 onChange={handleChange} 
+//                 className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.estimatedHours ? 'border-red-300' : 'border-gray-300'}`} 
+//                 placeholder="0" 
+//                 min="0" 
+//                 step="0.5" 
+//               />
+//               {errors.estimatedHours && <p className="text-xs text-red-500 mt-1">{errors.estimatedHours}</p>}
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+//               <input 
+//                 type="text" 
+//                 name="tags" 
+//                 value={formData.tags} 
+//                 onChange={handleChange} 
+//                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
+//                 placeholder="Design, Backend (comma separated)" 
+//               />
+//             </div>
+//           </div>
+//         </div>
+
+//         <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
+//           <button 
+//             onClick={onClose} 
+//             className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+//           >
+//             Cancel
+//           </button>
+//           <button 
+//             onClick={handleSubmit} 
+//             disabled={isSaving} 
+//             className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-2 disabled:opacity-50"
+//           >
+//             <Save className="w-4 h-4" />
+//             {isSaving ? 'Adding...' : 'Add Task'}
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// // ==================== EDIT TASK MODAL ====================
+// interface EditTaskModalProps {
+//   isOpen: boolean;
+//   onClose: () => void;
+//   onSave: (taskData: any) => void;
+//   task: any;
+// }
+
+// const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, onSave, task }) => {
+//   const [formData, setFormData] = useState({
+//     title: '',
+//     description: '',
+//     status: 'todo' as 'todo' | 'in-progress' | 'review' | 'done',
+//     priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
+//     assignee: '',
+//     dueDate: '',
+//     estimatedHours: 0,
+//     tags: '',
+//     projectName: '',
+//   });
+
+//   const [errors, setErrors] = useState<Record<string, string>>({});
+//   const [isSaving, setIsSaving] = useState(false);
+
+//   React.useEffect(() => {
+//     if (task) {
+//       setFormData({
+//         title: task.title || '',
+//         description: task.description || '',
+//         status: task.status || 'todo',
+//         priority: task.priority || 'medium',
+//         assignee: task.assignee || '',
+//         dueDate: task.dueDate || '',
+//         estimatedHours: task.estimatedHours || 0,
+//         tags: task.tags ? task.tags.join(', ') : '',
+//         projectName: task.projectName || '',
+//       });
+//     }
+//   }, [task]);
+
+//   if (!isOpen || !task) return null;
+
+//   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+//     const { name, value } = e.target;
+//     setFormData(prev => ({ ...prev, [name]: value }));
+//     if (errors[name]) {
+//       setErrors(prev => ({ ...prev, [name]: '' }));
+//     }
+//   };
+
+//   const handleSubmit = () => {
+//     const newErrors: Record<string, string> = {};
+//     if (!formData.title.trim()) newErrors.title = 'Task title is required';
+//     if (!formData.assignee) newErrors.assignee = 'Please select an assignee';
+//     if (!formData.dueDate) newErrors.dueDate = 'Please select a due date';
+//     if (formData.estimatedHours <= 0) newErrors.estimatedHours = 'Estimated hours must be greater than 0';
+
+//     if (Object.keys(newErrors).length > 0) {
+//       setErrors(newErrors);
+//       return;
+//     }
+
+//     setIsSaving(true);
+//     const tagsArray = formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+
+//     setTimeout(() => {
+//       onSave({
+//         ...formData,
+//         id: task.id,
+//         tags: tagsArray,
+//       });
+//       setIsSaving(false);
+//       onClose();
+//     }, 500);
+//   };
+
+//   return (
+//     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+//       <div className="bg-white rounded-xl p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+//         <div className="flex items-center justify-between mb-4">
+//           <h3 className="text-lg font-semibold text-gray-800">Edit Task</h3>
+//           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition">
+//             <X className="w-5 h-5 text-gray-500" />
+//           </button>
+//         </div>
+//         <div className="space-y-4">
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">
+//               Task Title <span className="text-red-500">*</span>
+//             </label>
+//             <input 
+//               type="text" 
+//               name="title" 
+//               value={formData.title} 
+//               onChange={handleChange} 
+//               className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.title ? 'border-red-300' : 'border-gray-300'}`} 
+//               placeholder="Enter task title" 
+//             />
+//             {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
+//           </div>
+
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+//             <textarea 
+//               name="description" 
+//               value={formData.description} 
+//               onChange={handleChange} 
+//               rows={3} 
+//               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
+//               placeholder="Enter task description" 
+//             />
+//           </div>
+
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+//               <select 
+//                 name="status" 
+//                 value={formData.status} 
+//                 onChange={handleChange} 
+//                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+//               >
+//                 <option value="todo">To Do</option>
+//                 <option value="in-progress">In Progress</option>
+//                 <option value="review">Review</option>
+//                 <option value="done">Done</option>
+//               </select>
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+//               <select 
+//                 name="priority" 
+//                 value={formData.priority} 
+//                 onChange={handleChange} 
+//                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+//               >
+//                 <option value="low">Low</option>
+//                 <option value="medium">Medium</option>
+//                 <option value="high">High</option>
+//                 <option value="urgent">Urgent</option>
+//               </select>
+//             </div>
+//           </div>
+
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">
+//                 Assignee <span className="text-red-500">*</span>
+//               </label>
+//               <select 
+//                 name="assignee" 
+//                 value={formData.assignee} 
+//                 onChange={handleChange} 
+//                 className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.assignee ? 'border-red-300' : 'border-gray-300'}`}
+//               >
+//                 <option value="">Select Assignee</option>
+//                 <option value="Patricia Boyle">Patricia Boyle</option>
+//                 <option value="John Doe">John Doe</option>
+//                 <option value="Jane Smith">Jane Smith</option>
+//               </select>
+//               {errors.assignee && <p className="text-xs text-red-500 mt-1">{errors.assignee}</p>}
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">
+//                 Due Date <span className="text-red-500">*</span>
+//               </label>
+//               <input 
+//                 type="date" 
+//                 name="dueDate" 
+//                 value={formData.dueDate} 
+//                 onChange={handleChange} 
+//                 className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.dueDate ? 'border-red-300' : 'border-gray-300'}`} 
+//               />
+//               {errors.dueDate && <p className="text-xs text-red-500 mt-1">{errors.dueDate}</p>}
+//             </div>
+//           </div>
+
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">
+//                 Estimated Hours <span className="text-red-500">*</span>
+//               </label>
+//               <input 
+//                 type="number" 
+//                 name="estimatedHours" 
+//                 value={formData.estimatedHours} 
+//                 onChange={handleChange} 
+//                 className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.estimatedHours ? 'border-red-300' : 'border-gray-300'}`} 
+//                 placeholder="0" 
+//                 min="0" 
+//                 step="0.5" 
+//               />
+//               {errors.estimatedHours && <p className="text-xs text-red-500 mt-1">{errors.estimatedHours}</p>}
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+//               <input 
+//                 type="text" 
+//                 name="tags" 
+//                 value={formData.tags} 
+//                 onChange={handleChange} 
+//                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
+//                 placeholder="Design, Backend (comma separated)" 
+//               />
+//             </div>
+//           </div>
+//         </div>
+
+//         <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
+//           <button 
+//             onClick={onClose} 
+//             className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+//           >
+//             Cancel
+//           </button>
+//           <button 
+//             onClick={handleSubmit} 
+//             disabled={isSaving} 
+//             className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-2 disabled:opacity-50"
+//           >
+//             <Save className="w-4 h-4" />
+//             {isSaving ? 'Updating...' : 'Update Task'}
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// // ==================== CREATE PROJECT PAGE ====================
+// interface CreateProjectPageProps {
+//   onBack: () => void;
+//   onSave: (projectData: any) => void;
+// }
+
+// const CreateProjectPage: React.FC<CreateProjectPageProps> = ({ onBack, onSave }) => {
+//   const [formData, setFormData] = useState({
+//     projectName: '',
+//     customerName: '',
+//     billingMethod: 'Based on Task Hours',
+//     rate: 0,
+//     budget: 0,
+//     status: 'active' as 'active' | 'inactive' | 'completed',
+//     startDate: '',
+//     endDate: '',
+//     description: '',
+//   });
+
+//   const [errors, setErrors] = useState<Record<string, string>>({});
+//   const [isSaving, setIsSaving] = useState(false);
+
+//   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+//     const { name, value } = e.target;
+//     setFormData(prev => ({ ...prev, [name]: value }));
+//     if (errors[name]) {
+//       setErrors(prev => ({ ...prev, [name]: '' }));
+//     }
+//   };
+
+//   const handleSubmit = () => {
+//     const newErrors: Record<string, string> = {};
+//     if (!formData.projectName.trim()) newErrors.projectName = 'Project name is required';
+//     if (!formData.customerName.trim()) newErrors.customerName = 'Customer name is required';
+
+//     if (Object.keys(newErrors).length > 0) {
+//       setErrors(newErrors);
+//       return;
+//     }
+
+//     setIsSaving(true);
+
+//     setTimeout(() => {
+//       onSave({
+//         ...formData,
+//         loggedHours: '00:00',
+//         createdAt: new Date().toISOString(),
+//         updatedAt: new Date().toISOString()
+//       });
+//       setIsSaving(false);
+//     }, 500);
+//   };
+
+//   return (
+//     <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
+//       <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
+//         <div className="flex items-center gap-3">
+//           <button 
+//             onClick={onBack} 
+//             className="p-2 text-gray-600 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition"
+//           >
+//             <ArrowLeft className="w-5 h-5" />
+//           </button>
+//           <div>
+//             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Create New Project</h1>
+//             <p className="text-sm text-gray-500">Fill in the details to create a new project</p>
+//           </div>
+//         </div>
+//         <div className="flex items-center gap-2">
+//           <button 
+//             onClick={onBack} 
+//             className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm flex items-center"
+//           >
+//             <X className="w-4 h-4 mr-1.5" /> Cancel
+//           </button>
+//           <button 
+//             onClick={handleSubmit} 
+//             disabled={isSaving} 
+//             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm flex items-center disabled:opacity-50 shadow-sm"
+//           >
+//             <Save className="w-4 h-4 mr-1.5" />
+//             {isSaving ? 'Creating...' : 'Create Project'}
+//           </button>
+//         </div>
+//       </div>
+
+//       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 max-w-3xl mx-auto">
+//         <div className="space-y-5">
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">
+//               Project Name <span className="text-red-500">*</span>
+//             </label>
+//             <input 
+//               type="text" 
+//               name="projectName" 
+//               value={formData.projectName} 
+//               onChange={handleChange} 
+//               className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 ${errors.projectName ? 'border-red-300' : 'border-gray-300'}`} 
+//               placeholder="Enter project name" 
+//             />
+//             {errors.projectName && <p className="text-xs text-red-500 mt-1">{errors.projectName}</p>}
+//           </div>
+
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">
+//               Customer <span className="text-red-500">*</span>
+//             </label>
+//             <input 
+//               type="text" 
+//               name="customerName" 
+//               value={formData.customerName} 
+//               onChange={handleChange} 
+//               className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 ${errors.customerName ? 'border-red-300' : 'border-gray-300'}`} 
+//               placeholder="Enter customer name" 
+//             />
+//             {errors.customerName && <p className="text-xs text-red-500 mt-1">{errors.customerName}</p>}
+//           </div>
+
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">
+//               Billing Method <span className="text-red-500">*</span>
+//             </label>
+//             <select 
+//               name="billingMethod" 
+//               value={formData.billingMethod} 
+//               onChange={handleChange} 
+//               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+//             >
+//               <option value="Based on Task Hours">Based on Task Hours</option>
+//               <option value="Based on Project Hours">Based on Project Hours</option>
+//               <option value="Fixed Cost for Project">Fixed Cost for Project</option>
+//               <option value="Based on Staff Hours">Based on Staff Hours</option>
+//             </select>
+//           </div>
+
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Rate Per Hour</label>
+//               <div className="relative">
+//                 <span className="absolute left-3 top-2 text-gray-500">$</span>
+//                 <input 
+//                   type="number" 
+//                   name="rate" 
+//                   value={formData.rate} 
+//                   onChange={handleChange} 
+//                   className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" 
+//                   placeholder="0.00" 
+//                   min="0" 
+//                   step="0.5" 
+//                 />
+//               </div>
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Budget</label>
+//               <div className="relative">
+//                 <span className="absolute left-3 top-2 text-gray-500">$</span>
+//                 <input 
+//                   type="number" 
+//                   name="budget" 
+//                   value={formData.budget} 
+//                   onChange={handleChange} 
+//                   className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" 
+//                   placeholder="0.00" 
+//                   min="0" 
+//                   step="100" 
+//                 />
+//               </div>
+//             </div>
+//           </div>
+
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+//               <input 
+//                 type="date" 
+//                 name="startDate" 
+//                 value={formData.startDate} 
+//                 onChange={handleChange} 
+//                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" 
+//               />
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+//               <input 
+//                 type="date" 
+//                 name="endDate" 
+//                 value={formData.endDate} 
+//                 onChange={handleChange} 
+//                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" 
+//               />
+//             </div>
+//           </div>
+
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+//             <select 
+//               name="status" 
+//               value={formData.status} 
+//               onChange={handleChange} 
+//               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+//             >
+//               <option value="active">Active</option>
+//               <option value="inactive">Inactive</option>
+//               <option value="completed">Completed</option>
+//             </select>
+//           </div>
+
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+//             <textarea 
+//               name="description" 
+//               value={formData.description} 
+//               onChange={handleChange} 
+//               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" 
+//               rows={3} 
+//               placeholder="Max 2000 characters" 
+//               maxLength={2000} 
+//             />
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// // ==================== PROJECTS TAB ====================
+// interface ProjectsTabProps {
+//   viewMode: ViewMode;
+//   setViewMode: (mode: ViewMode) => void;
+//   viewBy: 'all' | 'active' | 'inactive' | 'completed';
+//   setViewBy: (view: 'all' | 'active' | 'inactive' | 'completed') => void;
+//   searchTerm: string;
+//   setSearchTerm: (term: string) => void;
+//   projects: Project[];
+//   setProjects: (projects: Project[] | ((prev: Project[]) => Project[])) => void;
+//   selectedProjects: string[];
+//   setSelectedProjects: (ids: string[] | ((prev: string[]) => string[])) => void;
+//   currentPage: number;
+//   setCurrentPage: (page: number) => void;
+//   itemsPerPage: number;
+//   handleDeleteProject: (id: string) => void;
+//   onProjectClick: (projectId: string) => void;
+//   onEditClick: (project: Project) => void;
+//   onStartTimer: (projectId: string) => void;
+//   onStopTimer: (projectId: string) => void;
+//   onCompleteProject: (projectId: string) => void;
+//   onLogTime: (projectName: string) => void;
+// }
+
+// const ProjectsTab: React.FC<ProjectsTabProps> = ({
+//   viewMode,
+//   setViewMode,
+//   viewBy,
+//   setViewBy,
+//   searchTerm,
+//   setSearchTerm,
+//   projects,
+//   setProjects,
+//   selectedProjects,
+//   setSelectedProjects,
+//   currentPage,
+//   setCurrentPage,
+//   itemsPerPage,
+//   handleDeleteProject,
+//   onProjectClick,
+//   onEditClick,
+//   onStartTimer,
+//   onStopTimer,
+//   onCompleteProject,
+//   onLogTime
+// }) => {
+//   const filteredProjects = projects.filter((project: Project) => {
+//     const matchesView = viewBy === 'all' || project.status === viewBy;
+//     const matchesSearch = project.projectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+//                          project.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+//     return matchesView && matchesSearch;
+//   });
+
+//   const paginatedProjects = filteredProjects.slice(
+//     (currentPage - 1) * itemsPerPage,
+//     currentPage * itemsPerPage
+//   );
+
+//   const totalPages = Math.ceil(filteredProjects.length / itemsPerPage);
+
+//   const toggleProjectSelection = (projectId: string) => {
+//     setSelectedProjects((prev: string[]) =>
+//       prev.includes(projectId)
+//         ? prev.filter((id: string) => id !== projectId)
+//         : [...prev, projectId]
+//     );
+//   };
+
+//   const toggleAllProjects = () => {
+//     if (selectedProjects.length === paginatedProjects.length && paginatedProjects.length > 0) {
+//       setSelectedProjects([]);
+//     } else {
+//       setSelectedProjects(paginatedProjects.map((p: Project) => p.id));
+//     }
+//   };
+
+//   const getStatusColor = (status: string) => {
+//     switch(status) {
+//       case 'active': return 'bg-green-100 text-green-800 border-green-200';
+//       case 'inactive': return 'bg-gray-100 text-gray-800 border-gray-200';
+//       case 'completed': return 'bg-blue-100 text-blue-800 border-blue-200';
+//       default: return 'bg-gray-100 text-gray-800 border-gray-200';
+//     }
+//   };
+
+//   const getStatusIcon = (status: string) => {
+//     switch(status) {
+//       case 'active': return <CheckCircle className="w-4 h-4 text-green-500" />;
+//       case 'inactive': return <XCircle className="w-4 h-4 text-gray-500" />;
+//       case 'completed': return <CheckCircle className="w-4 h-4 text-blue-500" />;
+//       default: return <AlertCircle className="w-4 h-4 text-gray-500" />;
+//     }
+//   };
+
+//   const getBillingMethodBadgeColor = (method: string) => {
+//     switch(method) {
+//       case 'Based on Task Hours': return 'bg-purple-100 text-purple-800';
+//       case 'Based on Project Hours': return 'bg-blue-100 text-blue-800';
+//       case 'Fixed Cost for Project': return 'bg-green-100 text-green-800';
+//       case 'Based on Staff Hours': return 'bg-orange-100 text-orange-800';
+//       default: return 'bg-gray-100 text-gray-800';
+//     }
+//   };
+
+//   const handleBulkAction = (action: string) => {
+//     switch(action) {
+//       case 'active':
+//         setProjects((prev: Project[]) => prev.map((p: Project) => 
+//           selectedProjects.includes(p.id) ? { ...p, status: 'active' } : p
+//         ));
+//         break;
+//       case 'inactive':
+//         setProjects((prev: Project[]) => prev.map((p: Project) => 
+//           selectedProjects.includes(p.id) ? { ...p, status: 'inactive' } : p
+//         ));
+//         break;
+//       case 'delete':
+//         setProjects((prev: Project[]) => prev.filter((p: Project) => !selectedProjects.includes(p.id)));
+//         break;
+//     }
+//     setSelectedProjects([]);
+//   };
+
+//   // Format timer display
+//   const formatTimerDisplay = (seconds: number) => {
+//     const hrs = Math.floor(seconds / 3600);
+//     const mins = Math.floor((seconds % 3600) / 60);
+//     const secs = seconds % 60;
+//     return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+//   };
+
+//   // ✅ FULLY RESPONSIVE TABLE - No horizontal scroll needed
+//   const renderListView = () => (
+//     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+//       <div className="w-full overflow-x-auto">
+//         <table className="w-full table-auto">
+//           <thead className="bg-gray-50">
+//             <tr>
+//               <th className="px-1.5 py-2 text-left w-6 sm:w-8">
+//                 <input 
+//                   type="checkbox" 
+//                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3 h-3 sm:w-4 sm:h-4" 
+//                   checked={selectedProjects.length === paginatedProjects.length && paginatedProjects.length > 0} 
+//                   onChange={toggleAllProjects} 
+//                 />
+//               </th>
+//               <th className="px-1.5 py-2 text-left text-[9px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 Customer
+//               </th>
+//               <th className="px-1.5 py-2 text-left text-[9px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 Project
+//               </th>
+//               <th className="px-1.5 py-2 text-left text-[9px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden sm:table-cell">
+//                 Billing
+//               </th>
+//               <th className="px-1.5 py-2 text-left text-[9px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden md:table-cell">
+//                 Rate
+//               </th>
+//               <th className="px-1.5 py-2 text-left text-[9px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden sm:table-cell">
+//                 Status
+//               </th>
+//               <th className="px-1.5 py-2 text-left text-[9px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden md:table-cell">
+//                 Timer
+//               </th>
+//               <th className="px-1.5 py-2 text-left text-[9px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden lg:table-cell">
+//                 Hours
+//               </th>
+//               <th className="px-1.5 py-2 text-left text-[9px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden lg:table-cell">
+//                 Budget
+//               </th>
+//               <th className="px-1.5 py-2 text-left text-[9px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 Actions
+//               </th>
+//             </tr>
+//           </thead>
+//           <tbody className="bg-white divide-y divide-gray-200">
+//             {paginatedProjects.length === 0 ? (
+//               <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-500 text-sm">No projects found</td></tr>
+//             ) : (
+//               paginatedProjects.map((project: Project) => (
+//                 <tr key={project.id} className="hover:bg-gray-50 transition">
+//                   <td className="px-1.5 py-1.5 sm:py-2">
+//                     <input 
+//                       type="checkbox" 
+//                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3 h-3 sm:w-4 sm:h-4" 
+//                       checked={selectedProjects.includes(project.id)} 
+//                       onChange={() => toggleProjectSelection(project.id)} 
+//                     />
+//                   </td>
+//                   <td className="px-1.5 py-1.5 sm:py-2">
+//                     <div 
+//                       className="text-[10px] sm:text-xs md:text-sm font-medium text-gray-700 hover:text-purple-600 cursor-pointer transition-colors duration-200 truncate max-w-[50px] sm:max-w-[80px] md:max-w-[100px] lg:max-w-[120px]"
+//                       onClick={() => onProjectClick(project.id)}
+//                       title={project.customerName}
+//                     >
+//                       {project.customerName}
+//                     </div>
+//                   </td>
+//                   <td className="px-1.5 py-1.5 sm:py-2">
+//                     <div 
+//                       className="text-[10px] sm:text-xs md:text-sm font-medium text-gray-800 hover:text-purple-600 cursor-pointer transition-colors duration-200"
+//                       onClick={() => onProjectClick(project.id)}
+//                     >
+//                       <div className="truncate max-w-[60px] sm:max-w-[100px] md:max-w-[140px] lg:max-w-[180px]" title={project.projectName}>
+//                         {project.projectName}
+//                       </div>
+//                       <div className="text-[8px] sm:text-[9px] md:text-xs text-gray-500 truncate max-w-[60px] sm:max-w-[100px] md:max-w-[140px] lg:max-w-[180px]" title={project.description}>
+//                         {project.description}
+//                       </div>
+//                     </div>
+//                   </td>
+//                   <td className="px-1.5 py-1.5 sm:py-2 hidden sm:table-cell">
+//                     <span className={`px-1 py-0.5 text-[8px] sm:text-[9px] md:text-[10px] font-medium rounded-full ${getBillingMethodBadgeColor(project.billingMethod)} truncate max-w-[60px] sm:max-w-[80px] md:max-w-[100px] inline-block`}>
+//                       {project.billingMethod.length > 10 ? project.billingMethod.substring(0, 10) + '…' : project.billingMethod}
+//                     </span>
+//                   </td>
+//                   <td className="px-1.5 py-1.5 sm:py-2 text-[9px] sm:text-[10px] md:text-sm text-gray-600 hidden md:table-cell">
+//                     {project.rate ? `$${project.rate.toFixed(2)}` : '-'}
+//                   </td>
+//                   <td className="px-1.5 py-1.5 sm:py-2 hidden sm:table-cell">
+//                     <div className={`inline-flex items-center px-1 py-0.5 text-[8px] sm:text-[9px] md:text-[10px] font-medium rounded-full border ${getStatusColor(project.status)}`}>
+//                       {getStatusIcon(project.status)}
+//                       <span className="ml-0.5 hidden sm:inline">{project.status.charAt(0).toUpperCase() + project.status.slice(1)}</span>
+//                       <span className="ml-0.5 sm:hidden">{project.status.charAt(0).toUpperCase()}</span>
+//                     </div>
+//                   </td>
+//                   <td className="px-1.5 py-1.5 sm:py-2 hidden md:table-cell">
+//                     {project.status === 'completed' ? (
+//                       <span className="text-[8px] sm:text-[9px] md:text-xs text-green-600 font-medium">✅ Done</span>
+//                     ) : (
+//                       <div className="flex items-center gap-0.5">
+//                         <div className="flex items-center gap-0.5 bg-gray-100 rounded px-0.5 py-0.5 sm:px-1">
+//                           <Clock className={`w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 ${project.timerRunning ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
+//                           <span className={`text-[7px] sm:text-[8px] md:text-[10px] font-mono font-medium ${project.timerRunning ? 'text-green-600' : 'text-gray-600'}`}>
+//                             {formatTimerDisplay(project.timerSeconds || 0)}
+//                           </span>
+//                         </div>
+//                         <div className="flex items-center gap-0.5">
+//                           {!project.timerRunning ? (
+//                             <button
+//                               onClick={() => onStartTimer(project.id)}
+//                               className="p-0.5 text-green-600 hover:bg-green-50 rounded transition"
+//                               title="Start Timer"
+//                             >
+//                               <Play className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3" />
+//                             </button>
+//                           ) : (
+//                             <button
+//                               onClick={() => onStopTimer(project.id)}
+//                               className="p-0.5 text-yellow-600 hover:bg-yellow-50 rounded transition"
+//                               title="Pause Timer"
+//                             >
+//                               <Pause className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3" />
+//                             </button>
+//                           )}
+//                           <button
+//                             onClick={() => onCompleteProject(project.id)}
+//                             className="p-0.5 text-blue-600 hover:bg-blue-50 rounded transition"
+//                             title="Complete Project"
+//                           >
+//                             <CheckCircle className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3" />
+//                           </button>
+//                         </div>
+//                       </div>
+//                     )}
+//                   </td>
+//                   <td className="px-1.5 py-1.5 sm:py-2 hidden lg:table-cell">
+//                     <div className="flex items-center text-[8px] sm:text-[9px] md:text-xs text-gray-600">
+//                       <Clock className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 mr-0.5 text-gray-400" />
+//                       <span className="font-mono">{project.loggedHours}</span>
+//                     </div>
+//                   </td>
+//                   <td className="px-1.5 py-1.5 sm:py-2 hidden lg:table-cell text-[8px] sm:text-[9px] md:text-xs text-gray-600">
+//                     {project.budget ? `$${project.budget.toFixed(2)}` : '-'}
+//                   </td>
+//                   <td className="px-1.5 py-1.5 sm:py-2">
+//                     <div className="flex items-center gap-0.5">
+//                       <button 
+//                         onClick={() => onEditClick(project)} 
+//                         className="p-0.5 sm:p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition"
+//                         title="Edit"
+//                       >
+//                         <Edit className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5" />
+//                       </button>
+//                       <button 
+//                         onClick={() => onLogTime(project.projectName)} 
+//                         className="p-0.5 sm:p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition"
+//                         title="Log Time"
+//                       >
+//                         <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5" />
+//                       </button>
+//                       <button 
+//                         onClick={() => { 
+//                           const np = { ...project, id: String(Date.now()), projectName: `${project.projectName} (Copy)`, loggedHours: '00:00', timerSeconds: 0, timerRunning: false }; 
+//                           setProjects((prev: Project[]) => [...prev, np]); 
+//                         }} 
+//                         className="p-0.5 sm:p-1 text-gray-400 hover:text-purple-600 rounded hover:bg-purple-50 transition"
+//                         title="Clone"
+//                       >
+//                         <Copy className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5" />
+//                       </button>
+//                       <button 
+//                         onClick={() => handleDeleteProject(project.id)} 
+//                         className="p-0.5 sm:p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 transition"
+//                         title="Delete"
+//                       >
+//                         <Trash2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5" />
+//                       </button>
+//                     </div>
+//                   </td>
+//                 </tr>
+//               ))
+//             )}
+//           </tbody>
+//         </table>
+//       </div>
+//       {filteredProjects.length > 0 && (
+//         <div className="px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-50 border-t border-gray-200 flex flex-wrap items-center justify-between gap-1 sm:gap-2">
+//           <div className="text-[9px] sm:text-[10px] md:text-sm text-gray-700">
+//             {`${(currentPage - 1) * itemsPerPage + 1}-${Math.min(currentPage * itemsPerPage, filteredProjects.length)} of ${filteredProjects.length}`}
+//           </div>
+//           <div className="flex items-center gap-0.5 sm:gap-1">
+//             <button 
+//               onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))} 
+//               disabled={currentPage === 1} 
+//               className="px-1.5 sm:px-2 py-0.5 border border-gray-300 rounded text-[9px] sm:text-[10px] md:text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+//             >
+//               ←
+//             </button>
+//             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p: number) => (
+//               <button 
+//                 key={p} 
+//                 onClick={() => setCurrentPage(p)} 
+//                 className={`px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] md:text-sm ${currentPage === p ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+//               >
+//                 {p}
+//               </button>
+//             ))}
+//             {totalPages > 5 && <span className="text-[9px] sm:text-[10px] md:text-sm text-gray-500">…</span>}
+//             <button 
+//               onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))} 
+//               disabled={currentPage === totalPages} 
+//               className="px-1.5 sm:px-2 py-0.5 border border-gray-300 rounded text-[9px] sm:text-[10px] md:text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+//             >
+//               →
+//             </button>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+
+//   const renderCardView = () => {
+//     const getInitials = (name: string) => name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+//     const getRandomColor = (name: string) => {
+//       const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500', 'bg-red-500'];
+//       return colors[name.length % colors.length];
+//     };
+//     return (
+//       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+//         {paginatedProjects.map((project: Project) => (
+//           <div 
+//             key={project.id} 
+//             className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition p-3 sm:p-4 cursor-pointer"
+//             onClick={() => onProjectClick(project.id)}
+//           >
+//             <div className="flex items-start justify-between mb-3">
+//               <div className="flex items-center space-x-2">
+//                 <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full ${getRandomColor(project.customerName)} text-white flex items-center justify-center text-[10px] sm:text-xs font-medium flex-shrink-0`}>
+//                   {getInitials(project.customerName)}
+//                 </div>
+//                 <div>
+//                   <div 
+//                     className="text-sm font-semibold text-gray-700 hover:text-purple-600 cursor-pointer transition-colors duration-200"
+//                     onClick={() => onProjectClick(project.id)}
+//                   >
+//                     {project.customerName}
+//                   </div>
+//                   <p className="text-xs text-gray-500">{project.projectName}</p>
+//                 </div>
+//               </div>
+//               <span className={`px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded-full ${getStatusColor(project.status)}`}>
+//                 {project.status}
+//               </span>
+//             </div>
+//             <p className="text-xs text-gray-600 line-clamp-2 mb-3">{project.description}</p>
+//             <div className="grid grid-cols-2 gap-2 mb-3">
+//               <div className="bg-gray-50 rounded p-1.5 sm:p-2">
+//                 <div className="text-[10px] text-gray-500">Billing</div>
+//                 <div className="text-[10px] sm:text-xs font-medium text-gray-700 truncate">{project.billingMethod}</div>
+//               </div>
+//               <div className="bg-gray-50 rounded p-1.5 sm:p-2">
+//                 <div className="text-[10px] text-gray-500">Rate</div>
+//                 <div className="text-[10px] sm:text-xs font-medium text-gray-700">{project.rate ? `$${project.rate.toFixed(2)}/hr` : '-'}</div>
+//               </div>
+//             </div>
+//             <div className="flex items-center justify-between text-xs sm:text-sm">
+//               <div className="flex items-center space-x-1">
+//                 <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+//                 <span className="font-mono">{project.loggedHours}</span>
+//               </div>
+//               <div className="flex items-center space-x-1">
+//                 <DollarSign className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+//                 <span>${project.budget?.toFixed(2) || '0'}</span>
+//               </div>
+//             </div>
+            
+//             {project.status !== 'completed' && (
+//               <div className="mt-2 sm:mt-3 flex items-center justify-between bg-gray-50 rounded-lg p-1.5 sm:p-2">
+//                 <div className="flex items-center gap-1 sm:gap-1.5">
+//                   <Clock className={`w-3 h-3 sm:w-4 sm:h-4 ${project.timerRunning ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
+//                   <span className={`text-[10px] sm:text-xs font-mono font-medium ${project.timerRunning ? 'text-green-600' : 'text-gray-600'}`}>
+//                     {formatTimerDisplay(project.timerSeconds || 0)}
+//                   </span>
+//                 </div>
+//                 <div className="flex items-center gap-0.5 sm:gap-1">
+//                   {!project.timerRunning ? (
+//                     <button
+//                       onClick={() => onStartTimer(project.id)}
+//                       className="p-0.5 sm:p-1 text-green-600 hover:bg-green-50 rounded transition"
+//                     >
+//                       <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                     </button>
+//                   ) : (
+//                     <button
+//                       onClick={() => onStopTimer(project.id)}
+//                       className="p-0.5 sm:p-1 text-yellow-600 hover:bg-yellow-50 rounded transition"
+//                     >
+//                       <Pause className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                     </button>
+//                   )}
+//                   <button
+//                     onClick={() => onCompleteProject(project.id)}
+//                     className="p-0.5 sm:p-1 text-blue-600 hover:bg-blue-50 rounded transition"
+//                   >
+//                     <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                   </button>
+//                 </div>
+//               </div>
+//             )}
+            
+//             <div className="mt-2 sm:mt-3 flex items-center justify-between">
+//               <button className="text-[10px] sm:text-xs text-blue-600 hover:text-blue-700">Create Expense</button>
+//               <button 
+//                 onClick={() => onLogTime(project.projectName)} 
+//                 className="text-[10px] sm:text-xs text-blue-600 hover:text-blue-700 flex items-center gap-0.5 sm:gap-1"
+//               >
+//                 <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Log Time
+//               </button>
+//             </div>
+//           </div>
+//         ))}
+//       </div>
+//     );
+//   };
+
+//   return (
+//     <>
+//       {/* Filters - Responsive */}
+//       <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 mb-4 sm:mb-6 border border-gray-200">
+//         <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-3 sm:gap-4">
+//           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+//             <div className="relative flex-1 sm:flex-none">
+//               <select 
+//                 className="appearance-none bg-gray-50 border border-gray-300 rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 pr-7 sm:pr-8 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 w-full" 
+//                 value={viewBy} 
+//                 onChange={(e) => setViewBy(e.target.value as any)}
+//               >
+//                 <option value="all">All Projects</option>
+//                 <option value="active">Active</option>
+//                 <option value="inactive">Inactive</option>
+//                 <option value="completed">Completed</option>
+//               </select>
+//               <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4 absolute right-2 sm:right-3 top-2 sm:top-2.5 text-gray-500 pointer-events-none" />
+//             </div>
+//             <div className="relative flex-1 sm:flex-none">
+//               <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 absolute left-2.5 sm:left-3 top-1.5 sm:top-2.5 text-gray-400" />
+//               <input 
+//                 type="text" 
+//                 placeholder="Search projects..." 
+//                 className="pl-8 sm:pl-9 pr-3 sm:pr-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 w-full sm:w-40 md:w-56" 
+//                 value={searchTerm} 
+//                 onChange={(e) => setSearchTerm(e.target.value)} 
+//               />
+//             </div>
+//           </div>
+//           <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+//             <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+//               <button 
+//                 onClick={() => setViewMode('list')} 
+//                 className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition flex items-center space-x-1 ${viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+//               >
+//                 <List className="w-3.5 h-3.5 sm:w-4 sm:h-4" /><span className="hidden xs:inline">List</span>
+//               </button>
+//               <button 
+//                 onClick={() => setViewMode('card')} 
+//                 className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition flex items-center space-x-1 ${viewMode === 'card' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+//               >
+//                 <LayoutGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4" /><span className="hidden xs:inline">Card</span>
+//               </button>
+//             </div>
+//             <button className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center">
+//               <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />Filter
+//             </button>
+//             <button className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center hidden sm:flex">
+//               <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />Export
+//             </button>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Bulk Update */}
+//       {selectedProjects.length > 0 && (
+//         <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4 flex flex-wrap items-center justify-between gap-2">
+//           <span className="text-xs sm:text-sm text-blue-700 font-medium">{selectedProjects.length} selected</span>
+//           <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+//             <button onClick={() => handleBulkAction('active')} className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm bg-green-600 text-white rounded hover:bg-green-700">Active</button>
+//             <button onClick={() => handleBulkAction('inactive')} className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm bg-gray-600 text-white rounded hover:bg-gray-700">Inactive</button>
+//             <button onClick={() => handleBulkAction('delete')} className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm bg-red-600 text-white rounded hover:bg-red-700">Delete</button>
+//             <button onClick={() => setSelectedProjects([])} className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm text-gray-600 hover:text-gray-800">Clear</button>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Content */}
+//       {viewMode === 'list' ? renderListView() : renderCardView()}
+
+//       {/* Stats - Responsive grid */}
+//       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mt-4 sm:mt-6">
+//         <div className="bg-white rounded-lg shadow-sm p-2 sm:p-4 border border-gray-200">
+//           <div className="text-[10px] sm:text-sm text-gray-500">Total</div>
+//           <div className="text-base sm:text-2xl font-bold text-gray-900">{projects.length}</div>
+//         </div>
+//         <div className="bg-white rounded-lg shadow-sm p-2 sm:p-4 border border-gray-200">
+//           <div className="text-[10px] sm:text-sm text-gray-500">Active</div>
+//           <div className="text-base sm:text-2xl font-bold text-green-600">{projects.filter((p: Project) => p.status === 'active').length}</div>
+//         </div>
+//         <div className="bg-white rounded-lg shadow-sm p-2 sm:p-4 border border-gray-200">
+//           <div className="text-[10px] sm:text-sm text-gray-500">Hours</div>
+//           <div className="text-base sm:text-2xl font-bold text-blue-600">455:48</div>
+//         </div>
+//         <div className="bg-white rounded-lg shadow-sm p-2 sm:p-4 border border-gray-200">
+//           <div className="text-[10px] sm:text-sm text-gray-500">Revenue</div>
+//           <div className="text-base sm:text-2xl font-bold text-purple-600">$29,500</div>
+//         </div>
+//       </div>
+//     </>
+//   );
+// };
+
+// // ==================== MAIN COMPONENT ====================
+// const ProjectList: React.FC = () => {
+//   const [activeTab, setActiveTab] = useState<TabType>('projects');
+//   const [viewMode, setViewMode] = useState<ViewMode>('list');
+//   const [viewBy, setViewBy] = useState<'all' | 'active' | 'inactive' | 'completed'>('all');
+//   const [searchTerm, setSearchTerm] = useState('');
+//   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+//   const [currentPage, setCurrentPage] = useState(1);
+//   const [itemsPerPage] = useState(6);
+//   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+//   const [view, setView] = useState<ViewState>('list');
+//   const [editProjectData, setEditProjectData] = useState<Project | null>(null);
+//   const [timerProjectName, setTimerProjectName] = useState<string>('');
+//   const [showLogTimePage, setShowLogTimePage] = useState(false);
+//   const [logTimeProject, setLogTimeProject] = useState('');
+
+//   const timerRefs = useRef<Record<string, NodeJS.Timeout>>({});
+
+//   const [projects, setProjects] = useState<Project[]>([
+//     { id: '1', customerName: 'Bruce Wayne', projectName: 'Design contract for Mr. Bruce', billingMethod: 'Based on Task Hours', rate: 45, status: 'active', loggedHours: '106:41', budget: 5000, startDate: '2024-01-15', endDate: '2024-06-30', description: 'Complete UI/UX design for Wayne Enterprises', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '2', customerName: 'Bruce Wayne', projectName: 'Design project for Bruce', billingMethod: 'Based on Task Hours', rate: 45, status: 'active', loggedHours: '35:28', budget: 3000, startDate: '2024-02-01', endDate: '2024-07-15', description: 'Redesign of corporate website', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '3', customerName: 'Aaron Brown', projectName: 'Design project for MR.X', billingMethod: 'Based on Task Hours', rate: 45, status: 'active', loggedHours: '138:00', budget: 8000, startDate: '2024-01-10', endDate: '2024-08-20', description: 'Mobile app design for MR.X', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '4', customerName: 'Aaron Brown', projectName: 'Design project - Z', billingMethod: 'Based on Task Hours', rate: null, status: 'active', loggedHours: '26:00', budget: 2500, startDate: '2024-03-01', endDate: '2024-09-01', description: 'Logo and branding design', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '5', customerName: 'Dinesh Ramamurthy', projectName: 'Designing project', billingMethod: 'Based on Project Hours', rate: 45, status: 'active', loggedHours: '32:04', budget: 2000, startDate: '2024-02-15', endDate: '2024-07-01', description: 'Web application interface design', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '6', customerName: 'Arthur K', projectName: 'Web app designing', billingMethod: 'Based on Task Hours', rate: 45, status: 'active', loggedHours: '65:00', budget: 4500, startDate: '2024-01-20', endDate: '2024-10-15', description: 'E-commerce platform design', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '7', customerName: 'Aaron Brown', projectName: 'Web Designing', billingMethod: 'Based on Task Hours', rate: 45, status: 'completed', loggedHours: '52:35', budget: 3500, startDate: '2023-12-01', endDate: '2024-05-30', description: 'Corporate website redesign', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '8', customerName: 'Aaron Brown', projectName: 'Web designing', billingMethod: 'Based on Task Hours', rate: 45, status: 'inactive', loggedHours: '00:00', budget: 1000, startDate: '2024-04-01', endDate: '2024-12-31', description: 'Portfolio website design', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 }
+//   ]);
+
+//   useEffect(() => {
+//     try {
+//       const savedTimers = localStorage.getItem('projectTimers');
+//       if (savedTimers) {
+//         const timerData = JSON.parse(savedTimers);
+//         setProjects(prev => prev.map(project => ({
+//           ...project,
+//           timerRunning: timerData[project.id]?.running || false,
+//           timerSeconds: timerData[project.id]?.seconds || 0
+//         })));
+//       }
+//     } catch (error) {
+//       console.error('Failed to load timer data:', error);
+//     }
+//   }, []);
+
+//   useEffect(() => {
+//     try {
+//       const timerData: Record<string, { running: boolean; seconds: number }> = {};
+//       projects.forEach(project => {
+//         timerData[project.id] = {
+//           running: project.timerRunning || false,
+//           seconds: project.timerSeconds || 0
+//         };
+//       });
+//       localStorage.setItem('projectTimers', JSON.stringify(timerData));
+//     } catch (error) {
+//       console.error('Failed to save timer data:', error);
+//     }
+//   }, [projects]);
+
+//   useEffect(() => {
+//     return () => {
+//       Object.values(timerRefs.current).forEach(clearInterval);
+//     };
+//   }, []);
+
+//   const handleStartTimer = (projectId: string) => {
+//     if (timerRefs.current[projectId]) {
+//       clearInterval(timerRefs.current[projectId]);
+//       delete timerRefs.current[projectId];
+//     }
+
+//     timerRefs.current[projectId] = setInterval(() => {
+//       setProjects(prev => prev.map(p => 
+//         p.id === projectId ? { ...p, timerSeconds: (p.timerSeconds || 0) + 1 } : p
+//       ));
+//     }, 1000);
+
+//     setProjects(prev => prev.map(p => 
+//       p.id === projectId ? { ...p, timerRunning: true } : p
+//     ));
+//   };
+
+//   const handleStopTimer = (projectId: string) => {
+//     if (timerRefs.current[projectId]) {
+//       clearInterval(timerRefs.current[projectId]);
+//       delete timerRefs.current[projectId];
+//     }
+//     setProjects(prev => prev.map(p => 
+//       p.id === projectId ? { ...p, timerRunning: false } : p
+//     ));
+//   };
+
+//   const handleCompleteProject = (projectId: string) => {
+//     if (timerRefs.current[projectId]) {
+//       clearInterval(timerRefs.current[projectId]);
+//       delete timerRefs.current[projectId];
+//     }
+
+//     setProjects(prev => prev.map(p => {
+//       if (p.id === projectId) {
+//         const timerSeconds = p.timerSeconds || 0;
+//         const hoursToAdd = timerSeconds / 3600;
+//         const currentHours = parseFloat(p.loggedHours) || 0;
+//         const newHours = (currentHours + hoursToAdd).toFixed(2);
+//         return { 
+//           ...p, 
+//           status: 'completed',
+//           loggedHours: newHours,
+//           timerRunning: false,
+//           timerSeconds: 0
+//         };
+//       }
+//       return p;
+//     }));
+
+//     if (timerRefs.current[projectId]) {
+//       delete timerRefs.current[projectId];
+//     }
+//   };
+
+//   const handleDeleteProject = (id: string) => {
+//     if (window.confirm('Delete this project?')) {
+//       if (timerRefs.current[id]) {
+//         clearInterval(timerRefs.current[id]);
+//         delete timerRefs.current[id];
+//       }
+//       setProjects((prev: Project[]) => prev.filter((p: Project) => p.id !== id));
+//     }
+//   };
+
+//   const handleProjectClick = (projectId: string) => {
+//     setSelectedProjectId(projectId);
+//     setView('detail');
+//   };
+
+//   const handleBackToList = () => {
+//     setSelectedProjectId(null);
+//     setView('list');
+//     setEditProjectData(null);
+//     setShowLogTimePage(false);
+//   };
+
+//   const handleEditClick = (project: Project) => {
+//     setEditProjectData(project);
+//     setView('edit');
+//   };
+
+//   const handleEditSave = (updatedData: any) => {
+//     const existingProject = projects.find(p => p.id === updatedData.id);
+//     if (!existingProject) return;
+
+//     const updatedProjects = projects.map((p: Project) => {
+//       if (p.id === updatedData.id) {
+//         return {
+//           ...p,
+//           projectName: updatedData.name,
+//           description: updatedData.description,
+//           billingMethod: updatedData.billingMethod as Project['billingMethod'],
+//           rate: updatedData.rate,
+//           budget: updatedData.budget,
+//           status: updatedData.status as Project['status'],
+//           startDate: updatedData.startDate,
+//           endDate: updatedData.endDate,
+//           customerName: updatedData.customerName,
+//           updatedAt: new Date().toISOString()
+//         };
+//       }
+//       return p;
+//     });
+
+//     setProjects(updatedProjects);
+//     setTimeout(() => {
+//       setView('list');
+//       setEditProjectData(null);
+//     }, 100);
+//   };
+
+//   const handleCreateProject = (projectData: any) => {
+//     const newProject: Project = {
+//       id: String(Date.now()),
+//       customerName: projectData.customerName,
+//       projectName: projectData.projectName,
+//       billingMethod: projectData.billingMethod as Project['billingMethod'],
+//       rate: projectData.rate || null,
+//       status: projectData.status as Project['status'],
+//       loggedHours: '00:00',
+//       budget: projectData.budget || null,
+//       startDate: projectData.startDate || '',
+//       endDate: projectData.endDate || '',
+//       description: projectData.description || '',
+//       createdAt: new Date().toISOString(),
+//       updatedAt: new Date().toISOString(),
+//       timerRunning: false,
+//       timerSeconds: 0
+//     };
+//     setProjects([newProject, ...projects]);
+//     setView('list');
+//   };
+
+//   const handleStartTimerHeader = () => {
+//     setTimerProjectName('');
+//     setActiveTab('timetracker');
+//   };
+
+//   const handleLogTimeClick = (projectName: string) => {
+//     setLogTimeProject(projectName);
+//     setShowLogTimePage(true);
+//   };
+
+//   const handleLogTimeSave = (data: any) => {
+//     console.log('Time logged:', data);
+//     setShowLogTimePage(false);
+//     alert(`Time logged successfully!\nProject: ${data.project}\nTime: ${data.timeSpent}`);
+//   };
+
+//   if (view === 'create') {
+//     return <CreateProjectPage onBack={handleBackToList} onSave={handleCreateProject} />;
+//   }
+
+//   if (view === 'edit' && editProjectData) {
+//     const editData = {
+//       id: editProjectData.id,
+//       name: editProjectData.projectName,
+//       description: editProjectData.description,
+//       billingMethod: editProjectData.billingMethod,
+//       rate: editProjectData.rate || 0,
+//       budget: editProjectData.budget || 0,
+//       status: editProjectData.status,
+//       startDate: editProjectData.startDate,
+//       endDate: editProjectData.endDate,
+//       customerName: editProjectData.customerName,
+//       assignedUsers: []
+//     };
+//     return (
+//       <ProjectEdit 
+//         projectId={editProjectData.id}
+//         projectName={editProjectData.projectName}
+//         onBack={handleBackToList}
+//         onSave={handleEditSave}
+//         initialData={editData}
+//       />
+//     );
+//   }
+
+//   if (view === 'detail' && selectedProjectId) {
+//     return <ProjectDetail projectId={selectedProjectId} onBack={handleBackToList} />;
+//   }
+
+//   if (showLogTimePage) {
+//     return (
+//       <LogTimePage 
+//         onBack={() => setShowLogTimePage(false)} 
+//         onSave={handleLogTimeSave}
+//         preselectedProject={logTimeProject}
+//       />
+//     );
+//   }
+
+//   const renderTabContent = () => {
+//     switch(activeTab) {
+//       case 'projects':
+//         return (
+//           <ProjectsTab
+//             viewMode={viewMode}
+//             setViewMode={setViewMode}
+//             viewBy={viewBy}
+//             setViewBy={setViewBy}
+//             searchTerm={searchTerm}
+//             setSearchTerm={setSearchTerm}
+//             projects={projects}
+//             setProjects={setProjects}
+//             selectedProjects={selectedProjects}
+//             setSelectedProjects={setSelectedProjects}
+//             currentPage={currentPage}
+//             setCurrentPage={setCurrentPage}
+//             itemsPerPage={itemsPerPage}
+//             handleDeleteProject={handleDeleteProject}
+//             onProjectClick={handleProjectClick}
+//             onEditClick={handleEditClick}
+//             onStartTimer={handleStartTimer}
+//             onStopTimer={handleStopTimer}
+//             onCompleteProject={handleCompleteProject}
+//             onLogTime={handleLogTimeClick}
+//           />
+//         );
+//       case 'taskboard':
+//         return <TaskBoard />;
+//       case 'timetracker':
+//         return <TimeTracker preselectedProject={timerProjectName} />;
+//       default:
+//         return null;
+//     }
+//   };
+
+//   const handleHeaderStart = () => {
+//     setTimerProjectName('');
+//     setActiveTab('timetracker');
+//   };
+
+//   const handleHeaderLogTime = () => {
+//     setLogTimeProject('');
+//     setShowLogTimePage(true);
+//   };
+
+//   return (
+//     <div className="p-3 sm:p-6 bg-gray-50 min-h-screen">
+//       {/* Projects Tab Header */}
+//       {activeTab === 'projects' && (
+//         <div className="flex flex-wrap items-start sm:items-center justify-between mb-3 sm:mb-4 gap-3">
+//           <div>
+//             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Projects</h1>
+//             <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">Manage all your projects from one place</p>
+//           </div>
+//           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+//             <button 
+//               onClick={() => setView('create')} 
+//               className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+//             >
+//               <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               <span className="hidden xs:inline">New Project</span>
+//               <span className="xs:hidden">New</span>
+//             </button>
+//             <button 
+//               onClick={handleHeaderStart}
+//               className="px-3 sm:px-4 py-1.5 sm:py-2 bg-green-600 text-white rounded-lg flex items-center hover:bg-green-700 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+//             >
+//               <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               <span className="hidden xs:inline">Start</span>
+//             </button>
+//             <button 
+//               onClick={handleHeaderLogTime}
+//               className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+//             >
+//               <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               <span className="hidden xs:inline">Log Time</span>
+//               <span className="xs:hidden">Log</span>
+//             </button>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Task Board Header */}
+//       {activeTab === 'taskboard' && (
+//         <div className="flex flex-wrap items-start sm:items-center justify-between mb-3 sm:mb-4 gap-3">
+//           <div>
+//             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Task Board</h1>
+//             <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">Manage and track tasks across your projects</p>
+//           </div>
+//           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+//             <button 
+//               className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+//             >
+//               <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               Edit
+//             </button>
+//             <button 
+//               className="px-3 sm:px-4 py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg flex items-center hover:bg-purple-700 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+//             >
+//               <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               <span className="hidden xs:inline">Add Task</span>
+//               <span className="xs:hidden">Add</span>
+//             </button>
+//             <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm text-gray-500 bg-white px-2 sm:px-4 py-1 sm:py-2 rounded-lg shadow-sm border border-gray-200">
+//               <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+//               <span>10 Total</span>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Time Tracker Header */}
+//       {activeTab === 'timetracker' && (
+//         <div className="flex flex-wrap items-start sm:items-center justify-between mb-3 sm:mb-4 gap-3">
+//           <div>
+//             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Time Tracker</h1>
+//             <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">Track and log time for your projects</p>
+//           </div>
+//           <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm text-gray-500 bg-white px-2 sm:px-4 py-1 sm:py-2 rounded-lg shadow-sm border border-gray-200">
+//             <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+//             <span>3 Entries</span>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Navigation Tabs - Responsive */}
+//       <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-2 sm:px-4 mb-4 sm:mb-6 overflow-x-auto">
+//         <nav className="flex space-x-3 sm:space-x-6 min-w-fit">
+//           <button 
+//             onClick={() => setActiveTab('projects')} 
+//             className={`py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-1 sm:space-x-2 whitespace-nowrap ${
+//               activeTab === 'projects' 
+//                 ? 'border-blue-600 text-blue-600' 
+//                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+//             }`}
+//           >
+//             <LayoutDashboard className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+//             <span>Projects</span>
+//           </button>
+//           <button 
+//             onClick={() => setActiveTab('taskboard')} 
+//             className={`py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-1 sm:space-x-2 whitespace-nowrap ${
+//               activeTab === 'taskboard' 
+//                 ? 'border-blue-600 text-blue-600' 
+//                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+//             }`}
+//           >
+//             <ClipboardList className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+//             <span>Task Board</span>
+//           </button>
+//           <button 
+//             onClick={() => setActiveTab('timetracker')} 
+//             className={`py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-1 sm:space-x-2 whitespace-nowrap ${
+//               activeTab === 'timetracker' 
+//                 ? 'border-blue-600 text-blue-600' 
+//                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+//             }`}
+//           >
+//             <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+//             <span>Time Tracker</span>
+//           </button>
+//         </nav>
+//       </div>
+
+//       {/* Content */}
+//       <div>
+//         {renderTabContent()}
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default ProjectList;
+// src/client/components/projects/ProjectList.tsx (UPDATED - ALL 9 COLUMNS VISIBLE ON ALL SCREENS)
+// import React, { useState, useEffect, useRef } from 'react';
+// import {
+//   Search,
+//   Plus,
+//   Filter,
+//   Clock,
+//   Edit,
+//   Trash2,
+//   Copy,
+//   Play,
+//   ChevronDown,
+//   CheckCircle,
+//   XCircle,
+//   AlertCircle,
+//   LayoutGrid,
+//   List,
+//   DollarSign,
+//   LayoutDashboard,
+//   ClipboardList,
+//   Timer,
+//   Save,
+//   X,
+//   Users,
+//   Pause,
+//   ArrowLeft
+// } from 'lucide-react';
+// import TimeTracker from './TimeTracker';
+// import TaskBoard from './TaskBoard';
+// import ProjectDetail from './ProjectDetail';
+// import ProjectEdit from './ProjectEdit';
+// import LogTimePage from './LogTimePage';
+
+// // ==================== TYPES ====================
+// interface Project {
+//   id: string;
+//   customerName: string;
+//   projectName: string;
+//   billingMethod: 'Based on Task Hours' | 'Based on Project Hours' | 'Fixed Cost for Project' | 'Based on Staff Hours';
+//   rate: number | null;
+//   status: 'active' | 'inactive' | 'completed';
+//   loggedHours: string;
+//   budget: number | null;
+//   startDate: string;
+//   endDate: string;
+//   description: string;
+//   createdAt: string;
+//   updatedAt: string;
+//   timerRunning?: boolean;
+//   timerSeconds?: number;
+//   timerStartTime?: string;
+// }
+
+// type ViewMode = 'list' | 'card';
+// type TabType = 'projects' | 'taskboard' | 'timetracker';
+// type ViewState = 'list' | 'detail' | 'edit' | 'create';
+
+// // ==================== CREATE PROJECT PAGE ====================
+// interface CreateProjectPageProps {
+//   onBack: () => void;
+//   onSave: (projectData: any) => void;
+// }
+
+// const CreateProjectPage: React.FC<CreateProjectPageProps> = ({ onBack, onSave }) => {
+//   const [formData, setFormData] = useState({
+//     projectName: '',
+//     customerName: '',
+//     billingMethod: 'Based on Task Hours',
+//     rate: 0,
+//     budget: 0,
+//     status: 'active' as 'active' | 'inactive' | 'completed',
+//     startDate: '',
+//     endDate: '',
+//     description: '',
+//   });
+
+//   const [errors, setErrors] = useState<Record<string, string>>({});
+//   const [isSaving, setIsSaving] = useState(false);
+
+//   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+//     const { name, value } = e.target;
+//     setFormData(prev => ({ ...prev, [name]: value }));
+//     if (errors[name]) {
+//       setErrors(prev => ({ ...prev, [name]: '' }));
+//     }
+//   };
+
+//   const handleSubmit = () => {
+//     const newErrors: Record<string, string> = {};
+//     if (!formData.projectName.trim()) newErrors.projectName = 'Project name is required';
+//     if (!formData.customerName.trim()) newErrors.customerName = 'Customer name is required';
+
+//     if (Object.keys(newErrors).length > 0) {
+//       setErrors(newErrors);
+//       return;
+//     }
+
+//     setIsSaving(true);
+
+//     setTimeout(() => {
+//       onSave({
+//         ...formData,
+//         loggedHours: '00:00',
+//         createdAt: new Date().toISOString(),
+//         updatedAt: new Date().toISOString()
+//       });
+//       setIsSaving(false);
+//     }, 500);
+//   };
+
+//   return (
+//     <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
+//       <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
+//         <div className="flex items-center gap-3">
+//           <button onClick={onBack} className="p-2 text-gray-600 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition">
+//             <ArrowLeft className="w-5 h-5" />
+//           </button>
+//           <div>
+//             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Create New Project</h1>
+//             <p className="text-sm text-gray-500">Fill in the details to create a new project</p>
+//           </div>
+//         </div>
+//         <div className="flex items-center gap-2">
+//           <button onClick={onBack} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm flex items-center">
+//             <X className="w-4 h-4 mr-1.5" /> Cancel
+//           </button>
+//           <button onClick={handleSubmit} disabled={isSaving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm flex items-center disabled:opacity-50 shadow-sm">
+//             <Save className="w-4 h-4 mr-1.5" />
+//             {isSaving ? 'Creating...' : 'Create Project'}
+//           </button>
+//         </div>
+//       </div>
+
+//       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 max-w-3xl mx-auto">
+//         <div className="space-y-5">
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Project Name <span className="text-red-500">*</span></label>
+//             <input type="text" name="projectName" value={formData.projectName} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 ${errors.projectName ? 'border-red-300' : 'border-gray-300'}`} placeholder="Enter project name" />
+//             {errors.projectName && <p className="text-xs text-red-500 mt-1">{errors.projectName}</p>}
+//           </div>
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Customer <span className="text-red-500">*</span></label>
+//             <input type="text" name="customerName" value={formData.customerName} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 ${errors.customerName ? 'border-red-300' : 'border-gray-300'}`} placeholder="Enter customer name" />
+//             {errors.customerName && <p className="text-xs text-red-500 mt-1">{errors.customerName}</p>}
+//           </div>
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Billing Method <span className="text-red-500">*</span></label>
+//             <select name="billingMethod" value={formData.billingMethod} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+//               <option value="Based on Task Hours">Based on Task Hours</option>
+//               <option value="Based on Project Hours">Based on Project Hours</option>
+//               <option value="Fixed Cost for Project">Fixed Cost for Project</option>
+//               <option value="Based on Staff Hours">Based on Staff Hours</option>
+//             </select>
+//           </div>
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Rate Per Hour</label>
+//               <div className="relative">
+//                 <span className="absolute left-3 top-2 text-gray-500">$</span>
+//                 <input type="number" name="rate" value={formData.rate} onChange={handleChange} className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="0.00" min="0" step="0.5" />
+//               </div>
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Budget</label>
+//               <div className="relative">
+//                 <span className="absolute left-3 top-2 text-gray-500">$</span>
+//                 <input type="number" name="budget" value={formData.budget} onChange={handleChange} className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="0.00" min="0" step="100" />
+//               </div>
+//             </div>
+//           </div>
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+//               <input type="date" name="startDate" value={formData.startDate} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+//               <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+//             </div>
+//           </div>
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+//             <select name="status" value={formData.status} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+//               <option value="active">Active</option>
+//               <option value="inactive">Inactive</option>
+//               <option value="completed">Completed</option>
+//             </select>
+//           </div>
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+//             <textarea name="description" value={formData.description} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" rows={3} placeholder="Max 2000 characters" maxLength={2000} />
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// // ==================== PROJECTS TAB ====================
+// interface ProjectsTabProps {
+//   viewMode: ViewMode;
+//   setViewMode: (mode: ViewMode) => void;
+//   viewBy: 'all' | 'active' | 'inactive' | 'completed';
+//   setViewBy: (view: 'all' | 'active' | 'inactive' | 'completed') => void;
+//   searchTerm: string;
+//   setSearchTerm: (term: string) => void;
+//   projects: Project[];
+//   setProjects: (projects: Project[] | ((prev: Project[]) => Project[])) => void;
+//   selectedProjects: string[];
+//   setSelectedProjects: (ids: string[] | ((prev: string[]) => string[])) => void;
+//   currentPage: number;
+//   setCurrentPage: (page: number) => void;
+//   itemsPerPage: number;
+//   handleDeleteProject: (id: string) => void;
+//   onProjectClick: (projectId: string) => void;
+//   onEditClick: (project: Project) => void;
+//   onStartTimer: (projectId: string) => void;
+//   onStopTimer: (projectId: string) => void;
+//   onCompleteProject: (projectId: string) => void;
+//   onLogTime: (projectName: string) => void;
+// }
+
+// const ProjectsTab: React.FC<ProjectsTabProps> = ({
+//   viewMode,
+//   setViewMode,
+//   viewBy,
+//   setViewBy,
+//   searchTerm,
+//   setSearchTerm,
+//   projects,
+//   setProjects,
+//   selectedProjects,
+//   setSelectedProjects,
+//   currentPage,
+//   setCurrentPage,
+//   itemsPerPage,
+//   handleDeleteProject,
+//   onProjectClick,
+//   onEditClick,
+//   onStartTimer,
+//   onStopTimer,
+//   onCompleteProject,
+//   onLogTime
+// }) => {
+//   const filteredProjects = projects.filter((project: Project) => {
+//     const matchesView = viewBy === 'all' || project.status === viewBy;
+//     const matchesSearch = project.projectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+//                          project.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+//     return matchesView && matchesSearch;
+//   });
+
+//   const paginatedProjects = filteredProjects.slice(
+//     (currentPage - 1) * itemsPerPage,
+//     currentPage * itemsPerPage
+//   );
+
+//   const totalPages = Math.ceil(filteredProjects.length / itemsPerPage);
+
+//   const toggleProjectSelection = (projectId: string) => {
+//     setSelectedProjects((prev: string[]) =>
+//       prev.includes(projectId)
+//         ? prev.filter((id: string) => id !== projectId)
+//         : [...prev, projectId]
+//     );
+//   };
+
+//   const toggleAllProjects = () => {
+//     if (selectedProjects.length === paginatedProjects.length && paginatedProjects.length > 0) {
+//       setSelectedProjects([]);
+//     } else {
+//       setSelectedProjects(paginatedProjects.map((p: Project) => p.id));
+//     }
+//   };
+
+//   const getStatusColor = (status: string) => {
+//     switch(status) {
+//       case 'active': return 'bg-green-100 text-green-800 border-green-200';
+//       case 'inactive': return 'bg-gray-100 text-gray-800 border-gray-200';
+//       case 'completed': return 'bg-blue-100 text-blue-800 border-blue-200';
+//       default: return 'bg-gray-100 text-gray-800 border-gray-200';
+//     }
+//   };
+
+//   const getStatusIcon = (status: string) => {
+//     switch(status) {
+//       case 'active': return <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-green-500" />;
+//       case 'inactive': return <XCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-500" />;
+//       case 'completed': return <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-500" />;
+//       default: return <AlertCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-500" />;
+//     }
+//   };
+
+//   const getBillingMethodBadgeColor = (method: string) => {
+//     switch(method) {
+//       case 'Based on Task Hours': return 'bg-purple-100 text-purple-800';
+//       case 'Based on Project Hours': return 'bg-blue-100 text-blue-800';
+//       case 'Fixed Cost for Project': return 'bg-green-100 text-green-800';
+//       case 'Based on Staff Hours': return 'bg-orange-100 text-orange-800';
+//       default: return 'bg-gray-100 text-gray-800';
+//     }
+//   };
+
+//   const handleBulkAction = (action: string) => {
+//     switch(action) {
+//       case 'active':
+//         setProjects((prev: Project[]) => prev.map((p: Project) => 
+//           selectedProjects.includes(p.id) ? { ...p, status: 'active' } : p
+//         ));
+//         break;
+//       case 'inactive':
+//         setProjects((prev: Project[]) => prev.map((p: Project) => 
+//           selectedProjects.includes(p.id) ? { ...p, status: 'inactive' } : p
+//         ));
+//         break;
+//       case 'delete':
+//         setProjects((prev: Project[]) => prev.filter((p: Project) => !selectedProjects.includes(p.id)));
+//         break;
+//     }
+//     setSelectedProjects([]);
+//   };
+
+//   // Format timer display
+//   const formatTimerDisplay = (seconds: number) => {
+//     const hrs = Math.floor(seconds / 3600);
+//     const mins = Math.floor((seconds % 3600) / 60);
+//     const secs = seconds % 60;
+//     return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+//   };
+
+//   // ✅ ALL 9 COLUMNS VISIBLE ON ALL SCREEN SIZES - NO HIDDEN COLUMNS
+//   const renderListView = () => (
+//     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+//       <div className="w-full overflow-x-auto">
+//         <table className="w-full min-w-[900px] table-auto text-[10px] sm:text-xs md:text-sm">
+//           <thead className="bg-gray-50">
+//             <tr>
+//               <th className="px-0.5 sm:px-1 py-1.5 text-left w-4 sm:w-5 md:w-6 lg:w-8">
+//                 <input 
+//                   type="checkbox" 
+//                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 lg:w-4 lg:h-4" 
+//                   checked={selectedProjects.length === paginatedProjects.length && paginatedProjects.length > 0} 
+//                   onChange={toggleAllProjects} 
+//                 />
+//               </th>
+//               <th className="px-0.5 sm:px-1 py-1.5 text-left text-[8px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 CUSTOMER
+//               </th>
+//               <th className="px-0.5 sm:px-1 py-1.5 text-left text-[8px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 PROJECT
+//               </th>
+//               <th className="px-0.5 sm:px-1 py-1.5 text-left text-[8px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 BILLING
+//               </th>
+//               <th className="px-0.5 sm:px-1 py-1.5 text-left text-[8px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 RATE
+//               </th>
+//               <th className="px-0.5 sm:px-1 py-1.5 text-left text-[8px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 STATUS
+//               </th>
+//               <th className="px-0.5 sm:px-1 py-1.5 text-left text-[8px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 TIMER
+//               </th>
+//               <th className="px-0.5 sm:px-1 py-1.5 text-left text-[8px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 HOURS
+//               </th>
+//               <th className="px-0.5 sm:px-1 py-1.5 text-left text-[8px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 BUDGET
+//               </th>
+//               <th className="px-0.5 sm:px-1 py-1.5 text-left text-[8px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 ACTIONS
+//               </th>
+//             </tr>
+//           </thead>
+//           <tbody className="bg-white divide-y divide-gray-200">
+//             {paginatedProjects.length === 0 ? (
+//               <tr><td colSpan={10} className="px-1 sm:px-4 py-3 sm:py-8 text-center text-gray-500 text-[8px] sm:text-sm">No projects found</td></tr>
+//             ) : (
+//               paginatedProjects.map((project: Project) => (
+//                 <tr key={project.id} className="hover:bg-gray-50 transition">
+//                   <td className="px-0.5 sm:px-1 py-0.5 sm:py-1">
+//                     <input 
+//                       type="checkbox" 
+//                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 lg:w-4 lg:h-4" 
+//                       checked={selectedProjects.includes(project.id)} 
+//                       onChange={() => toggleProjectSelection(project.id)} 
+//                     />
+//                   </td>
+//                   <td className="px-0.5 sm:px-1 py-0.5 sm:py-1">
+//                     <div 
+//                       className="text-[8px] sm:text-[10px] md:text-xs font-medium text-gray-700 hover:text-purple-600 cursor-pointer transition-colors duration-200 truncate max-w-[40px] sm:max-w-[60px] md:max-w-[80px] lg:max-w-[120px]"
+//                       onClick={() => onProjectClick(project.id)}
+//                       title={project.customerName}
+//                     >
+//                       {project.customerName}
+//                     </div>
+//                   </td>
+//                   <td className="px-0.5 sm:px-1 py-0.5 sm:py-1">
+//                     <div 
+//                       className="text-[8px] sm:text-[10px] md:text-xs font-medium text-gray-800 hover:text-purple-600 cursor-pointer transition-colors duration-200"
+//                       onClick={() => onProjectClick(project.id)}
+//                     >
+//                       <div className="truncate max-w-[50px] sm:max-w-[80px] md:max-w-[120px] lg:max-w-[160px]" title={project.projectName}>
+//                         {project.projectName}
+//                       </div>
+//                       <div className="text-[6px] sm:text-[8px] md:text-[9px] text-gray-500 truncate max-w-[50px] sm:max-w-[80px] md:max-w-[120px] lg:max-w-[160px]" title={project.description}>
+//                         {project.description}
+//                       </div>
+//                     </div>
+//                   </td>
+//                   <td className="px-0.5 sm:px-1 py-0.5 sm:py-1">
+//                     <span className={`px-0.5 sm:px-1 py-0.5 text-[7px] sm:text-[8px] md:text-[9px] font-medium rounded-full ${getBillingMethodBadgeColor(project.billingMethod)} truncate max-w-[50px] sm:max-w-[60px] md:max-w-[80px] inline-block`}>
+//                       {project.billingMethod.length > 8 ? project.billingMethod.substring(0, 8) + '…' : project.billingMethod}
+//                     </span>
+//                   </td>
+//                   <td className="px-0.5 sm:px-1 py-0.5 sm:py-1 text-[8px] sm:text-[10px] md:text-xs text-gray-600">
+//                     {project.rate ? `$${project.rate.toFixed(2)}` : '-'}
+//                   </td>
+//                   <td className="px-0.5 sm:px-1 py-0.5 sm:py-1">
+//                     <div className={`inline-flex items-center px-0.5 sm:px-1 py-0.5 text-[7px] sm:text-[8px] md:text-[9px] font-medium rounded-full border ${getStatusColor(project.status)}`}>
+//                       {getStatusIcon(project.status)}
+//                       <span className="ml-0.5">{project.status.charAt(0).toUpperCase() + project.status.slice(1)}</span>
+//                     </div>
+//                   </td>
+//                   <td className="px-0.5 sm:px-1 py-0.5 sm:py-1">
+//                     {project.status === 'completed' ? (
+//                       <span className="text-[8px] sm:text-[10px] md:text-xs text-green-600 font-medium">✅ Done</span>
+//                     ) : (
+//                       <div className="flex items-center gap-0.5">
+//                         <div className="flex items-center gap-0.5 bg-gray-100 rounded px-0.5 py-0.5">
+//                           <Clock className={`w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 ${project.timerRunning ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
+//                           <span className={`text-[7px] sm:text-[8px] md:text-[9px] font-mono font-medium ${project.timerRunning ? 'text-green-600' : 'text-gray-600'}`}>
+//                             {formatTimerDisplay(project.timerSeconds || 0)}
+//                           </span>
+//                         </div>
+//                         <div className="flex items-center gap-0.5">
+//                           {!project.timerRunning ? (
+//                             <button onClick={() => onStartTimer(project.id)} className="p-0.5 text-green-600 hover:bg-green-50 rounded transition" title="Start Timer">
+//                               <Play className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3" />
+//                             </button>
+//                           ) : (
+//                             <button onClick={() => onStopTimer(project.id)} className="p-0.5 text-yellow-600 hover:bg-yellow-50 rounded transition" title="Pause Timer">
+//                               <Pause className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3" />
+//                             </button>
+//                           )}
+//                         </div>
+//                       </div>
+//                     )}
+//                   </td>
+//                   <td className="px-0.5 sm:px-1 py-0.5 sm:py-1">
+//                     <div className="flex items-center text-[8px] sm:text-[10px] md:text-xs text-gray-600">
+//                       <Clock className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 mr-0.5 text-gray-400" />
+//                       <span className="font-mono">{project.loggedHours}</span>
+//                     </div>
+//                   </td>
+//                   <td className="px-0.5 sm:px-1 py-0.5 sm:py-1 text-[8px] sm:text-[10px] md:text-xs text-gray-600">
+//                     {project.budget ? `$${project.budget.toFixed(2)}` : '-'}
+//                   </td>
+//                   <td className="px-0.5 sm:px-1 py-0.5 sm:py-1">
+//                     <div className="flex items-center gap-0.5">
+//                       <button onClick={() => onEditClick(project)} className="p-0.5 sm:p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition" title="Edit">
+//                         <Edit className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3" />
+//                       </button>
+//                       <button onClick={() => onLogTime(project.projectName)} className="p-0.5 sm:p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition" title="Log Time">
+//                         <Clock className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3" />
+//                       </button>
+//                       <button onClick={() => { const np = { ...project, id: String(Date.now()), projectName: `${project.projectName} (Copy)`, loggedHours: '00:00', timerSeconds: 0, timerRunning: false }; setProjects((prev: Project[]) => [...prev, np]); }} className="p-0.5 sm:p-1 text-gray-400 hover:text-purple-600 rounded hover:bg-purple-50 transition" title="Clone">
+//                         <Copy className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3" />
+//                       </button>
+//                       <button onClick={() => onCompleteProject(project.id)} className="p-0.5 sm:p-1 text-blue-600 hover:bg-blue-50 rounded transition" title="Complete">
+//                         <CheckCircle className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3" />
+//                       </button>
+//                       <button onClick={() => handleDeleteProject(project.id)} className="p-0.5 sm:p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 transition" title="Delete">
+//                         <Trash2 className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3" />
+//                       </button>
+//                     </div>
+//                   </td>
+//                 </tr>
+//               ))
+//             )}
+//           </tbody>
+//         </table>
+//       </div>
+//       {filteredProjects.length > 0 && (
+//         <div className="px-1 sm:px-3 py-0.5 sm:py-2 bg-gray-50 border-t border-gray-200 flex flex-wrap items-center justify-between gap-1">
+//           <div className="text-[8px] sm:text-[10px] md:text-xs text-gray-700">
+//             {`${(currentPage - 1) * itemsPerPage + 1}-${Math.min(currentPage * itemsPerPage, filteredProjects.length)} of ${filteredProjects.length}`}
+//           </div>
+//           <div className="flex items-center gap-0.5">
+//             <button onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))} disabled={currentPage === 1} className="px-1 sm:px-1.5 py-0.5 border border-gray-300 rounded text-[8px] sm:text-[10px] md:text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50">←</button>
+//             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p: number) => (
+//               <button key={p} onClick={() => setCurrentPage(p)} className={`px-1 sm:px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] md:text-xs ${currentPage === p ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>{p}</button>
+//             ))}
+//             {totalPages > 5 && <span className="text-[8px] sm:text-[10px] md:text-xs text-gray-500">…</span>}
+//             <button onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))} disabled={currentPage === totalPages} className="px-1 sm:px-1.5 py-0.5 border border-gray-300 rounded text-[8px] sm:text-[10px] md:text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50">→</button>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+
+//   const renderCardView = () => {
+//     const getInitials = (name: string) => name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+//     const getRandomColor = (name: string) => {
+//       const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500', 'bg-red-500'];
+//       return colors[name.length % colors.length];
+//     };
+//     return (
+//       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+//         {paginatedProjects.map((project: Project) => (
+//           <div key={project.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition p-3 sm:p-4 cursor-pointer" onClick={() => onProjectClick(project.id)}>
+//             <div className="flex items-start justify-between mb-3">
+//               <div className="flex items-center space-x-2">
+//                 <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full ${getRandomColor(project.customerName)} text-white flex items-center justify-center text-[10px] sm:text-xs font-medium flex-shrink-0`}>
+//                   {getInitials(project.customerName)}
+//                 </div>
+//                 <div>
+//                   <div className="text-sm font-semibold text-gray-700 hover:text-purple-600 cursor-pointer transition-colors duration-200" onClick={() => onProjectClick(project.id)}>
+//                     {project.customerName}
+//                   </div>
+//                   <p className="text-xs text-gray-500">{project.projectName}</p>
+//                 </div>
+//               </div>
+//               <span className={`px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded-full ${getStatusColor(project.status)}`}>
+//                 {project.status}
+//               </span>
+//             </div>
+//             <p className="text-xs text-gray-600 line-clamp-2 mb-3">{project.description}</p>
+//             <div className="grid grid-cols-2 gap-2 mb-3">
+//               <div className="bg-gray-50 rounded p-1.5 sm:p-2">
+//                 <div className="text-[10px] text-gray-500">Billing</div>
+//                 <div className="text-[10px] sm:text-xs font-medium text-gray-700 truncate">{project.billingMethod}</div>
+//               </div>
+//               <div className="bg-gray-50 rounded p-1.5 sm:p-2">
+//                 <div className="text-[10px] text-gray-500">Rate</div>
+//                 <div className="text-[10px] sm:text-xs font-medium text-gray-700">{project.rate ? `$${project.rate.toFixed(2)}/hr` : '-'}</div>
+//               </div>
+//             </div>
+//             <div className="flex items-center justify-between text-xs sm:text-sm">
+//               <div className="flex items-center space-x-1">
+//                 <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+//                 <span className="font-mono">{project.loggedHours}</span>
+//               </div>
+//               <div className="flex items-center space-x-1">
+//                 <DollarSign className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+//                 <span>${project.budget?.toFixed(2) || '0'}</span>
+//               </div>
+//             </div>
+            
+//             {project.status !== 'completed' && (
+//               <div className="mt-2 sm:mt-3 flex items-center justify-between bg-gray-50 rounded-lg p-1.5 sm:p-2">
+//                 <div className="flex items-center gap-1 sm:gap-1.5">
+//                   <Clock className={`w-3 h-3 sm:w-4 sm:h-4 ${project.timerRunning ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
+//                   <span className={`text-[10px] sm:text-xs font-mono font-medium ${project.timerRunning ? 'text-green-600' : 'text-gray-600'}`}>
+//                     {formatTimerDisplay(project.timerSeconds || 0)}
+//                   </span>
+//                 </div>
+//                 <div className="flex items-center gap-0.5 sm:gap-1">
+//                   {!project.timerRunning ? (
+//                     <button onClick={() => onStartTimer(project.id)} className="p-0.5 sm:p-1 text-green-600 hover:bg-green-50 rounded transition">
+//                       <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                     </button>
+//                   ) : (
+//                     <button onClick={() => onStopTimer(project.id)} className="p-0.5 sm:p-1 text-yellow-600 hover:bg-yellow-50 rounded transition">
+//                       <Pause className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                     </button>
+//                   )}
+//                   <button onClick={() => onCompleteProject(project.id)} className="p-0.5 sm:p-1 text-blue-600 hover:bg-blue-50 rounded transition">
+//                     <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                   </button>
+//                 </div>
+//               </div>
+//             )}
+            
+//             <div className="mt-2 sm:mt-3 flex items-center justify-between">
+//               <button className="text-[10px] sm:text-xs text-blue-600 hover:text-blue-700">Create Expense</button>
+//               <button onClick={() => onLogTime(project.projectName)} className="text-[10px] sm:text-xs text-blue-600 hover:text-blue-700 flex items-center gap-0.5 sm:gap-1">
+//                 <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Log Time
+//               </button>
+//             </div>
+//           </div>
+//         ))}
+//       </div>
+//     );
+//   };
+
+//   return (
+//     <>
+//       <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 mb-4 sm:mb-6 border border-gray-200">
+//         <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-3 sm:gap-4">
+//           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+//             <div className="relative flex-1 sm:flex-none">
+//               <select className="appearance-none bg-gray-50 border border-gray-300 rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 pr-7 sm:pr-8 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 w-full" value={viewBy} onChange={(e) => setViewBy(e.target.value as any)}>
+//                 <option value="all">All Projects</option>
+//                 <option value="active">Active</option>
+//                 <option value="inactive">Inactive</option>
+//                 <option value="completed">Completed</option>
+//               </select>
+//               <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4 absolute right-2 sm:right-3 top-2 sm:top-2.5 text-gray-500 pointer-events-none" />
+//             </div>
+//             <div className="relative flex-1 sm:flex-none">
+//               <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 absolute left-2.5 sm:left-3 top-1.5 sm:top-2.5 text-gray-400" />
+//               <input type="text" placeholder="Search projects..." className="pl-8 sm:pl-9 pr-3 sm:pr-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 w-full sm:w-40 md:w-56" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+//             </div>
+//           </div>
+//           <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+//             <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+//               <button onClick={() => setViewMode('list')} className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition flex items-center space-x-1 ${viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+//                 <List className="w-3.5 h-3.5 sm:w-4 sm:h-4" /><span className="hidden xs:inline">List</span>
+//               </button>
+//               <button onClick={() => setViewMode('card')} className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition flex items-center space-x-1 ${viewMode === 'card' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+//                 <LayoutGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4" /><span className="hidden xs:inline">Card</span>
+//               </button>
+//             </div>
+//             <button className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center">
+//               <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />Filter
+//             </button>
+//           </div>
+//         </div>
+//       </div>
+
+//       {selectedProjects.length > 0 && (
+//         <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4 flex flex-wrap items-center justify-between gap-2">
+//           <span className="text-xs sm:text-sm text-blue-700 font-medium">{selectedProjects.length} selected</span>
+//           <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+//             <button onClick={() => handleBulkAction('active')} className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm bg-green-600 text-white rounded hover:bg-green-700">Active</button>
+//             <button onClick={() => handleBulkAction('inactive')} className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm bg-gray-600 text-white rounded hover:bg-gray-700">Inactive</button>
+//             <button onClick={() => handleBulkAction('delete')} className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm bg-red-600 text-white rounded hover:bg-red-700">Delete</button>
+//             <button onClick={() => setSelectedProjects([])} className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm text-gray-600 hover:text-gray-800">Clear</button>
+//           </div>
+//         </div>
+//       )}
+
+//       {viewMode === 'list' ? renderListView() : renderCardView()}
+
+//       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mt-4 sm:mt-6">
+//         <div className="bg-white rounded-lg shadow-sm p-2 sm:p-4 border border-gray-200">
+//           <div className="text-[10px] sm:text-sm text-gray-500">Total</div>
+//           <div className="text-base sm:text-2xl font-bold text-gray-900">{projects.length}</div>
+//         </div>
+//         <div className="bg-white rounded-lg shadow-sm p-2 sm:p-4 border border-gray-200">
+//           <div className="text-[10px] sm:text-sm text-gray-500">Active</div>
+//           <div className="text-base sm:text-2xl font-bold text-green-600">{projects.filter((p: Project) => p.status === 'active').length}</div>
+//         </div>
+//         <div className="bg-white rounded-lg shadow-sm p-2 sm:p-4 border border-gray-200">
+//           <div className="text-[10px] sm:text-sm text-gray-500">Hours</div>
+//           <div className="text-base sm:text-2xl font-bold text-blue-600">455:48</div>
+//         </div>
+//         <div className="bg-white rounded-lg shadow-sm p-2 sm:p-4 border border-gray-200">
+//           <div className="text-[10px] sm:text-sm text-gray-500">Revenue</div>
+//           <div className="text-base sm:text-2xl font-bold text-purple-600">$29,500</div>
+//         </div>
+//       </div>
+//     </>
+//   );
+// };
+
+// // ==================== MAIN COMPONENT ====================
+// const ProjectList: React.FC = () => {
+//   const [activeTab, setActiveTab] = useState<TabType>('projects');
+//   const [viewMode, setViewMode] = useState<ViewMode>('list');
+//   const [viewBy, setViewBy] = useState<'all' | 'active' | 'inactive' | 'completed'>('all');
+//   const [searchTerm, setSearchTerm] = useState('');
+//   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+//   const [currentPage, setCurrentPage] = useState(1);
+//   const [itemsPerPage] = useState(6);
+//   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+//   const [view, setView] = useState<ViewState>('list');
+//   const [editProjectData, setEditProjectData] = useState<Project | null>(null);
+//   const [timerProjectName, setTimerProjectName] = useState<string>('');
+//   const [showLogTimePage, setShowLogTimePage] = useState(false);
+//   const [logTimeProject, setLogTimeProject] = useState('');
+
+//   const timerRefs = useRef<Record<string, NodeJS.Timeout>>({});
+
+//   const [projects, setProjects] = useState<Project[]>([
+//     { id: '1', customerName: 'Bruce Wayne', projectName: 'Design contract for Mr. Bruce', billingMethod: 'Based on Task Hours', rate: 45, status: 'active', loggedHours: '106:41', budget: 5000, startDate: '2024-01-15', endDate: '2024-06-30', description: 'Complete UI/UX design for Wayne Enterprises', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '2', customerName: 'Bruce Wayne', projectName: 'Design project for Bruce', billingMethod: 'Based on Task Hours', rate: 45, status: 'active', loggedHours: '35:28', budget: 3000, startDate: '2024-02-01', endDate: '2024-07-15', description: 'Redesign of corporate website', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '3', customerName: 'Aaron Brown', projectName: 'Design project for MR.X', billingMethod: 'Based on Task Hours', rate: 45, status: 'active', loggedHours: '138:00', budget: 8000, startDate: '2024-01-10', endDate: '2024-08-20', description: 'Mobile app design for MR.X', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '4', customerName: 'Aaron Brown', projectName: 'Design project - Z', billingMethod: 'Based on Task Hours', rate: null, status: 'active', loggedHours: '26:00', budget: 2500, startDate: '2024-03-01', endDate: '2024-09-01', description: 'Logo and branding design', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '5', customerName: 'Dinesh Ramamurthy', projectName: 'Designing project', billingMethod: 'Based on Project Hours', rate: 45, status: 'active', loggedHours: '32:04', budget: 2000, startDate: '2024-02-15', endDate: '2024-07-01', description: 'Web application interface design', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '6', customerName: 'Arthur K', projectName: 'Web app designing', billingMethod: 'Based on Task Hours', rate: 45, status: 'active', loggedHours: '65:00', budget: 4500, startDate: '2024-01-20', endDate: '2024-10-15', description: 'E-commerce platform design', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '7', customerName: 'Aaron Brown', projectName: 'Web Designing', billingMethod: 'Based on Task Hours', rate: 45, status: 'completed', loggedHours: '52:35', budget: 3500, startDate: '2023-12-01', endDate: '2024-05-30', description: 'Corporate website redesign', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '8', customerName: 'Aaron Brown', projectName: 'Web designing', billingMethod: 'Based on Task Hours', rate: 45, status: 'inactive', loggedHours: '00:00', budget: 1000, startDate: '2024-04-01', endDate: '2024-12-31', description: 'Portfolio website design', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 }
+//   ]);
+
+//   useEffect(() => {
+//     try {
+//       const savedTimers = localStorage.getItem('projectTimers');
+//       if (savedTimers) {
+//         const timerData = JSON.parse(savedTimers);
+//         setProjects(prev => prev.map(project => ({
+//           ...project,
+//           timerRunning: timerData[project.id]?.running || false,
+//           timerSeconds: timerData[project.id]?.seconds || 0
+//         })));
+//       }
+//     } catch (error) {
+//       console.error('Failed to load timer data:', error);
+//     }
+//   }, []);
+
+//   useEffect(() => {
+//     try {
+//       const timerData: Record<string, { running: boolean; seconds: number }> = {};
+//       projects.forEach(project => {
+//         timerData[project.id] = {
+//           running: project.timerRunning || false,
+//           seconds: project.timerSeconds || 0
+//         };
+//       });
+//       localStorage.setItem('projectTimers', JSON.stringify(timerData));
+//     } catch (error) {
+//       console.error('Failed to save timer data:', error);
+//     }
+//   }, [projects]);
+
+//   useEffect(() => {
+//     return () => {
+//       Object.values(timerRefs.current).forEach(clearInterval);
+//     };
+//   }, []);
+
+//   const handleStartTimer = (projectId: string) => {
+//     if (timerRefs.current[projectId]) {
+//       clearInterval(timerRefs.current[projectId]);
+//       delete timerRefs.current[projectId];
+//     }
+
+//     timerRefs.current[projectId] = setInterval(() => {
+//       setProjects(prev => prev.map(p => 
+//         p.id === projectId ? { ...p, timerSeconds: (p.timerSeconds || 0) + 1 } : p
+//       ));
+//     }, 1000);
+
+//     setProjects(prev => prev.map(p => 
+//       p.id === projectId ? { ...p, timerRunning: true } : p
+//     ));
+//   };
+
+//   const handleStopTimer = (projectId: string) => {
+//     if (timerRefs.current[projectId]) {
+//       clearInterval(timerRefs.current[projectId]);
+//       delete timerRefs.current[projectId];
+//     }
+//     setProjects(prev => prev.map(p => 
+//       p.id === projectId ? { ...p, timerRunning: false } : p
+//     ));
+//   };
+
+//   const handleCompleteProject = (projectId: string) => {
+//     if (timerRefs.current[projectId]) {
+//       clearInterval(timerRefs.current[projectId]);
+//       delete timerRefs.current[projectId];
+//     }
+
+//     setProjects(prev => prev.map(p => {
+//       if (p.id === projectId) {
+//         const timerSeconds = p.timerSeconds || 0;
+//         const hoursToAdd = timerSeconds / 3600;
+//         const currentHours = parseFloat(p.loggedHours) || 0;
+//         const newHours = (currentHours + hoursToAdd).toFixed(2);
+//         return { 
+//           ...p, 
+//           status: 'completed',
+//           loggedHours: newHours,
+//           timerRunning: false,
+//           timerSeconds: 0
+//         };
+//       }
+//       return p;
+//     }));
+
+//     if (timerRefs.current[projectId]) {
+//       delete timerRefs.current[projectId];
+//     }
+//   };
+
+//   const handleDeleteProject = (id: string) => {
+//     if (window.confirm('Delete this project?')) {
+//       if (timerRefs.current[id]) {
+//         clearInterval(timerRefs.current[id]);
+//         delete timerRefs.current[id];
+//       }
+//       setProjects((prev: Project[]) => prev.filter((p: Project) => p.id !== id));
+//     }
+//   };
+
+//   const handleProjectClick = (projectId: string) => {
+//     setSelectedProjectId(projectId);
+//     setView('detail');
+//   };
+
+//   const handleBackToList = () => {
+//     setSelectedProjectId(null);
+//     setView('list');
+//     setEditProjectData(null);
+//     setShowLogTimePage(false);
+//   };
+
+//   const handleEditClick = (project: Project) => {
+//     setEditProjectData(project);
+//     setView('edit');
+//   };
+
+//   const handleEditSave = (updatedData: any) => {
+//     const existingProject = projects.find(p => p.id === updatedData.id);
+//     if (!existingProject) return;
+
+//     const updatedProjects = projects.map((p: Project) => {
+//       if (p.id === updatedData.id) {
+//         return {
+//           ...p,
+//           projectName: updatedData.name,
+//           description: updatedData.description,
+//           billingMethod: updatedData.billingMethod as Project['billingMethod'],
+//           rate: updatedData.rate,
+//           budget: updatedData.budget,
+//           status: updatedData.status as Project['status'],
+//           startDate: updatedData.startDate,
+//           endDate: updatedData.endDate,
+//           customerName: updatedData.customerName,
+//           updatedAt: new Date().toISOString()
+//         };
+//       }
+//       return p;
+//     });
+
+//     setProjects(updatedProjects);
+//     setTimeout(() => {
+//       setView('list');
+//       setEditProjectData(null);
+//     }, 100);
+//   };
+
+//   const handleCreateProject = (projectData: any) => {
+//     const newProject: Project = {
+//       id: String(Date.now()),
+//       customerName: projectData.customerName,
+//       projectName: projectData.projectName,
+//       billingMethod: projectData.billingMethod as Project['billingMethod'],
+//       rate: projectData.rate || null,
+//       status: projectData.status as Project['status'],
+//       loggedHours: '00:00',
+//       budget: projectData.budget || null,
+//       startDate: projectData.startDate || '',
+//       endDate: projectData.endDate || '',
+//       description: projectData.description || '',
+//       createdAt: new Date().toISOString(),
+//       updatedAt: new Date().toISOString(),
+//       timerRunning: false,
+//       timerSeconds: 0
+//     };
+//     setProjects([newProject, ...projects]);
+//     setView('list');
+//   };
+
+//   const handleStartTimerHeader = () => {
+//     setTimerProjectName('');
+//     setActiveTab('timetracker');
+//   };
+
+//   const handleLogTimeClick = (projectName: string) => {
+//     setLogTimeProject(projectName);
+//     setShowLogTimePage(true);
+//   };
+
+//   const handleLogTimeSave = (data: any) => {
+//     console.log('Time logged:', data);
+//     setShowLogTimePage(false);
+//     alert(`Time logged successfully!\nProject: ${data.project}\nTime: ${data.timeSpent}`);
+//   };
+
+//   if (view === 'create') {
+//     return <CreateProjectPage onBack={handleBackToList} onSave={handleCreateProject} />;
+//   }
+
+//   if (view === 'edit' && editProjectData) {
+//     const editData = {
+//       id: editProjectData.id,
+//       name: editProjectData.projectName,
+//       description: editProjectData.description,
+//       billingMethod: editProjectData.billingMethod,
+//       rate: editProjectData.rate || 0,
+//       budget: editProjectData.budget || 0,
+//       status: editProjectData.status,
+//       startDate: editProjectData.startDate,
+//       endDate: editProjectData.endDate,
+//       customerName: editProjectData.customerName,
+//       assignedUsers: []
+//     };
+//     return (
+//       <ProjectEdit 
+//         projectId={editProjectData.id}
+//         projectName={editProjectData.projectName}
+//         onBack={handleBackToList}
+//         onSave={handleEditSave}
+//         initialData={editData}
+//       />
+//     );
+//   }
+
+//   if (view === 'detail' && selectedProjectId) {
+//     return <ProjectDetail projectId={selectedProjectId} onBack={handleBackToList} />;
+//   }
+
+//   if (showLogTimePage) {
+//     return (
+//       <LogTimePage 
+//         onBack={() => setShowLogTimePage(false)} 
+//         onSave={handleLogTimeSave}
+//         preselectedProject={logTimeProject}
+//       />
+//     );
+//   }
+
+//   const renderTabContent = () => {
+//     switch(activeTab) {
+//       case 'projects':
+//         return (
+//           <ProjectsTab
+//             viewMode={viewMode}
+//             setViewMode={setViewMode}
+//             viewBy={viewBy}
+//             setViewBy={setViewBy}
+//             searchTerm={searchTerm}
+//             setSearchTerm={setSearchTerm}
+//             projects={projects}
+//             setProjects={setProjects}
+//             selectedProjects={selectedProjects}
+//             setSelectedProjects={setSelectedProjects}
+//             currentPage={currentPage}
+//             setCurrentPage={setCurrentPage}
+//             itemsPerPage={itemsPerPage}
+//             handleDeleteProject={handleDeleteProject}
+//             onProjectClick={handleProjectClick}
+//             onEditClick={handleEditClick}
+//             onStartTimer={handleStartTimer}
+//             onStopTimer={handleStopTimer}
+//             onCompleteProject={handleCompleteProject}
+//             onLogTime={handleLogTimeClick}
+//           />
+//         );
+//       case 'taskboard':
+//         return <TaskBoard />;
+//       case 'timetracker':
+//         return <TimeTracker preselectedProject={timerProjectName} />;
+//       default:
+//         return null;
+//     }
+//   };
+
+//   const handleHeaderStart = () => {
+//     setTimerProjectName('');
+//     setActiveTab('timetracker');
+//   };
+
+//   const handleHeaderLogTime = () => {
+//     setLogTimeProject('');
+//     setShowLogTimePage(true);
+//   };
+
+//   return (
+//     <div className="p-3 sm:p-6 bg-gray-50 min-h-screen">
+//       {activeTab === 'projects' && (
+//         <div className="flex flex-wrap items-start sm:items-center justify-between mb-3 sm:mb-4 gap-3">
+//           <div>
+//             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Projects</h1>
+//             <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">Manage all your projects from one place</p>
+//           </div>
+//           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+//             <button onClick={() => setView('create')} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 text-xs sm:text-sm shadow-sm whitespace-nowrap">
+//               <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               <span className="hidden xs:inline">New Project</span>
+//               <span className="xs:hidden">New</span>
+//             </button>
+//             <button onClick={handleHeaderStart} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-green-600 text-white rounded-lg flex items-center hover:bg-green-700 text-xs sm:text-sm shadow-sm whitespace-nowrap">
+//               <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               <span className="hidden xs:inline">Start</span>
+//             </button>
+//             <button onClick={handleHeaderLogTime} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 text-xs sm:text-sm shadow-sm whitespace-nowrap">
+//               <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               <span className="hidden xs:inline">Log Time</span>
+//               <span className="xs:hidden">Log</span>
+//             </button>
+//           </div>
+//         </div>
+//       )}
+
+//       {activeTab === 'taskboard' && (
+//         <div className="flex flex-wrap items-start sm:items-center justify-between mb-3 sm:mb-4 gap-3">
+//           <div>
+//             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Task Board</h1>
+//             <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">Manage and track tasks across your projects</p>
+//           </div>
+//           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+//             <button className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 text-xs sm:text-sm shadow-sm whitespace-nowrap">
+//               <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               Edit
+//             </button>
+//             <button className="px-3 sm:px-4 py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg flex items-center hover:bg-purple-700 text-xs sm:text-sm shadow-sm whitespace-nowrap">
+//               <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               <span className="hidden xs:inline">Add Task</span>
+//               <span className="xs:hidden">Add</span>
+//             </button>
+//             <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm text-gray-500 bg-white px-2 sm:px-4 py-1 sm:py-2 rounded-lg shadow-sm border border-gray-200">
+//               <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+//               <span>10 Total</span>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+
+//       {activeTab === 'timetracker' && (
+//         <div className="flex flex-wrap items-start sm:items-center justify-between mb-3 sm:mb-4 gap-3">
+//           <div>
+//             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Time Tracker</h1>
+//             <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">Track and log time for your projects</p>
+//           </div>
+//           <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm text-gray-500 bg-white px-2 sm:px-4 py-1 sm:py-2 rounded-lg shadow-sm border border-gray-200">
+//             <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+//             <span>3 Entries</span>
+//           </div>
+//         </div>
+//       )}
+
+//       <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-2 sm:px-4 mb-4 sm:mb-6 overflow-x-auto">
+//         <nav className="flex space-x-3 sm:space-x-6 min-w-fit">
+//           <button onClick={() => setActiveTab('projects')} className={`py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-1 sm:space-x-2 whitespace-nowrap ${activeTab === 'projects' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
+//             <LayoutDashboard className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+//             <span>Projects</span>
+//           </button>
+//           <button onClick={() => setActiveTab('taskboard')} className={`py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-1 sm:space-x-2 whitespace-nowrap ${activeTab === 'taskboard' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
+//             <ClipboardList className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+//             <span>Task Board</span>
+//           </button>
+//           <button onClick={() => setActiveTab('timetracker')} className={`py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-1 sm:space-x-2 whitespace-nowrap ${activeTab === 'timetracker' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
+//             <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+//             <span>Time Tracker</span>
+//           </button>
+//         </nav>
+//       </div>
+
+//       <div>
+//         {renderTabContent()}
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default ProjectList;
+// src/client/components/projects/ProjectList.tsx
+// import React, { useState, useEffect, useRef } from 'react';
+// import {
+//   Search,
+//   Plus,
+//   Filter,
+//   Clock,
+//   Edit,
+//   Trash2,
+//   Copy,
+//   Play,
+//   ChevronDown,
+//   CheckCircle,
+//   XCircle,
+//   AlertCircle,
+//   LayoutGrid,
+//   List,
+//   DollarSign,
+//   LayoutDashboard,
+//   ClipboardList,
+//   Timer,
+//   Save,
+//   X,
+//   Users,
+//   Pause,
+//   ArrowLeft
+// } from 'lucide-react';
+// import TimeTracker from './TimeTracker';
+// import TaskBoard from './TaskBoard';
+// import ProjectDetail from './ProjectDetail';
+// import ProjectEdit from './ProjectEdit';
+// import LogTimePage from './LogTimePage';
+
+// // ==================== TYPES ====================
+// interface Project {
+//   id: string;
+//   customerName: string;
+//   projectName: string;
+//   billingMethod: 'Based on Task Hours' | 'Based on Project Hours' | 'Fixed Cost for Project' | 'Based on Staff Hours';
+//   rate: number | null;
+//   status: 'active' | 'inactive' | 'completed';
+//   loggedHours: string;
+//   budget: number | null;
+//   startDate: string;
+//   endDate: string;
+//   description: string;
+//   createdAt: string;
+//   updatedAt: string;
+//   timerRunning?: boolean;
+//   timerSeconds?: number;
+//   timerStartTime?: string;
+// }
+
+// type ViewMode = 'list' | 'card';
+// type TabType = 'projects' | 'taskboard' | 'timetracker';
+// type ViewState = 'list' | 'detail' | 'edit' | 'create';
+
+// // ==================== CREATE PROJECT PAGE ====================
+// interface CreateProjectPageProps {
+//   onBack: () => void;
+//   onSave: (projectData: any) => void;
+// }
+
+// const CreateProjectPage: React.FC<CreateProjectPageProps> = ({ onBack, onSave }) => {
+//   const [formData, setFormData] = useState({
+//     projectName: '',
+//     customerName: '',
+//     billingMethod: 'Based on Task Hours',
+//     rate: 0,
+//     budget: 0,
+//     status: 'active' as 'active' | 'inactive' | 'completed',
+//     startDate: '',
+//     endDate: '',
+//     description: '',
+//   });
+
+//   const [errors, setErrors] = useState<Record<string, string>>({});
+//   const [isSaving, setIsSaving] = useState(false);
+
+//   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+//     const { name, value } = e.target;
+//     setFormData(prev => ({ ...prev, [name]: value }));
+//     if (errors[name]) {
+//       setErrors(prev => ({ ...prev, [name]: '' }));
+//     }
+//   };
+
+//   const handleSubmit = () => {
+//     const newErrors: Record<string, string> = {};
+//     if (!formData.projectName.trim()) newErrors.projectName = 'Project name is required';
+//     if (!formData.customerName.trim()) newErrors.customerName = 'Customer name is required';
+
+//     if (Object.keys(newErrors).length > 0) {
+//       setErrors(newErrors);
+//       return;
+//     }
+
+//     setIsSaving(true);
+
+//     setTimeout(() => {
+//       onSave({
+//         ...formData,
+//         loggedHours: '00:00',
+//         createdAt: new Date().toISOString(),
+//         updatedAt: new Date().toISOString()
+//       });
+//       setIsSaving(false);
+//     }, 500);
+//   };
+
+//   return (
+//     <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
+//       <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
+//         <div className="flex items-center gap-3">
+//           <button onClick={onBack} className="p-2 text-gray-600 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition">
+//             <ArrowLeft className="w-5 h-5" />
+//           </button>
+//           <div>
+//             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Create New Project</h1>
+//             <p className="text-sm text-gray-500">Fill in the details to create a new project</p>
+//           </div>
+//         </div>
+//         <div className="flex items-center gap-2">
+//           <button onClick={onBack} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm flex items-center">
+//             <X className="w-4 h-4 mr-1.5" /> Cancel
+//           </button>
+//           <button onClick={handleSubmit} disabled={isSaving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm flex items-center disabled:opacity-50 shadow-sm">
+//             <Save className="w-4 h-4 mr-1.5" />
+//             {isSaving ? 'Creating...' : 'Create Project'}
+//           </button>
+//         </div>
+//       </div>
+
+//       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 max-w-3xl mx-auto">
+//         <div className="space-y-5">
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Project Name <span className="text-red-500">*</span></label>
+//             <input type="text" name="projectName" value={formData.projectName} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 ${errors.projectName ? 'border-red-300' : 'border-gray-300'}`} placeholder="Enter project name" />
+//             {errors.projectName && <p className="text-xs text-red-500 mt-1">{errors.projectName}</p>}
+//           </div>
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Customer <span className="text-red-500">*</span></label>
+//             <input type="text" name="customerName" value={formData.customerName} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 ${errors.customerName ? 'border-red-300' : 'border-gray-300'}`} placeholder="Enter customer name" />
+//             {errors.customerName && <p className="text-xs text-red-500 mt-1">{errors.customerName}</p>}
+//           </div>
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Billing Method <span className="text-red-500">*</span></label>
+//             <select name="billingMethod" value={formData.billingMethod} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+//               <option value="Based on Task Hours">Based on Task Hours</option>
+//               <option value="Based on Project Hours">Based on Project Hours</option>
+//               <option value="Fixed Cost for Project">Fixed Cost for Project</option>
+//               <option value="Based on Staff Hours">Based on Staff Hours</option>
+//             </select>
+//           </div>
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Rate Per Hour</label>
+//               <div className="relative">
+//                 <span className="absolute left-3 top-2 text-gray-500">$</span>
+//                 <input type="number" name="rate" value={formData.rate} onChange={handleChange} className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="0.00" min="0" step="0.5" />
+//               </div>
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Budget</label>
+//               <div className="relative">
+//                 <span className="absolute left-3 top-2 text-gray-500">$</span>
+//                 <input type="number" name="budget" value={formData.budget} onChange={handleChange} className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="0.00" min="0" step="100" />
+//               </div>
+//             </div>
+//           </div>
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+//               <input type="date" name="startDate" value={formData.startDate} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+//               <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+//             </div>
+//           </div>
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+//             <select name="status" value={formData.status} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+//               <option value="active">Active</option>
+//               <option value="inactive">Inactive</option>
+//               <option value="completed">Completed</option>
+//             </select>
+//           </div>
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+//             <textarea name="description" value={formData.description} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" rows={3} placeholder="Max 2000 characters" maxLength={2000} />
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// // ==================== PROJECTS TAB ====================
+// interface ProjectsTabProps {
+//   viewMode: ViewMode;
+//   setViewMode: (mode: ViewMode) => void;
+//   viewBy: 'all' | 'active' | 'inactive' | 'completed';
+//   setViewBy: (view: 'all' | 'active' | 'inactive' | 'completed') => void;
+//   searchTerm: string;
+//   setSearchTerm: (term: string) => void;
+//   projects: Project[];
+//   setProjects: (projects: Project[] | ((prev: Project[]) => Project[])) => void;
+//   selectedProjects: string[];
+//   setSelectedProjects: (ids: string[] | ((prev: string[]) => string[])) => void;
+//   currentPage: number;
+//   setCurrentPage: (page: number) => void;
+//   itemsPerPage: number;
+//   handleDeleteProject: (id: string) => void;
+//   onProjectClick: (projectId: string) => void;
+//   onEditClick: (project: Project) => void;
+//   onStartTimer: (projectId: string) => void;
+//   onStopTimer: (projectId: string) => void;
+//   onCompleteProject: (projectId: string) => void;
+//   onLogTime: (projectName: string) => void;
+// }
+
+// const ProjectsTab: React.FC<ProjectsTabProps> = ({
+//   viewMode,
+//   setViewMode,
+//   viewBy,
+//   setViewBy,
+//   searchTerm,
+//   setSearchTerm,
+//   projects,
+//   setProjects,
+//   selectedProjects,
+//   setSelectedProjects,
+//   currentPage,
+//   setCurrentPage,
+//   itemsPerPage,
+//   handleDeleteProject,
+//   onProjectClick,
+//   onEditClick,
+//   onStartTimer,
+//   onStopTimer,
+//   onCompleteProject,
+//   onLogTime
+// }) => {
+//   const filteredProjects = projects.filter((project: Project) => {
+//     const matchesView = viewBy === 'all' || project.status === viewBy;
+//     const matchesSearch = project.projectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+//                          project.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+//     return matchesView && matchesSearch;
+//   });
+
+//   const paginatedProjects = filteredProjects.slice(
+//     (currentPage - 1) * itemsPerPage,
+//     currentPage * itemsPerPage
+//   );
+
+//   const totalPages = Math.ceil(filteredProjects.length / itemsPerPage);
+
+//   const toggleProjectSelection = (projectId: string) => {
+//     setSelectedProjects((prev: string[]) =>
+//       prev.includes(projectId)
+//         ? prev.filter((id: string) => id !== projectId)
+//         : [...prev, projectId]
+//     );
+//   };
+
+//   const toggleAllProjects = () => {
+//     if (selectedProjects.length === paginatedProjects.length && paginatedProjects.length > 0) {
+//       setSelectedProjects([]);
+//     } else {
+//       setSelectedProjects(paginatedProjects.map((p: Project) => p.id));
+//     }
+//   };
+
+//   const getStatusColor = (status: string) => {
+//     switch(status) {
+//       case 'active': return 'bg-green-100 text-green-800 border-green-200';
+//       case 'inactive': return 'bg-gray-100 text-gray-800 border-gray-200';
+//       case 'completed': return 'bg-blue-100 text-blue-800 border-blue-200';
+//       default: return 'bg-gray-100 text-gray-800 border-gray-200';
+//     }
+//   };
+
+//   const getStatusIcon = (status: string) => {
+//     switch(status) {
+//       case 'active': return <CheckCircle className="w-3 h-3 text-green-500" />;
+//       case 'inactive': return <XCircle className="w-3 h-3 text-gray-500" />;
+//       case 'completed': return <CheckCircle className="w-3 h-3 text-blue-500" />;
+//       default: return <AlertCircle className="w-3 h-3 text-gray-500" />;
+//     }
+//   };
+
+//   const getBillingMethodBadgeColor = (method: string) => {
+//     switch(method) {
+//       case 'Based on Task Hours': return 'bg-purple-100 text-purple-800';
+//       case 'Based on Project Hours': return 'bg-blue-100 text-blue-800';
+//       case 'Fixed Cost for Project': return 'bg-green-100 text-green-800';
+//       case 'Based on Staff Hours': return 'bg-orange-100 text-orange-800';
+//       default: return 'bg-gray-100 text-gray-800';
+//     }
+//   };
+
+//   const handleBulkAction = (action: string) => {
+//     switch(action) {
+//       case 'active':
+//         setProjects((prev: Project[]) => prev.map((p: Project) => 
+//           selectedProjects.includes(p.id) ? { ...p, status: 'active' } : p
+//         ));
+//         break;
+//       case 'inactive':
+//         setProjects((prev: Project[]) => prev.map((p: Project) => 
+//           selectedProjects.includes(p.id) ? { ...p, status: 'inactive' } : p
+//         ));
+//         break;
+//       case 'delete':
+//         setProjects((prev: Project[]) => prev.filter((p: Project) => !selectedProjects.includes(p.id)));
+//         break;
+//     }
+//     setSelectedProjects([]);
+//   };
+
+//   // Format timer display
+//   const formatTimerDisplay = (seconds: number) => {
+//     const hrs = Math.floor(seconds / 3600);
+//     const mins = Math.floor((seconds % 3600) / 60);
+//     const secs = seconds % 60;
+//     return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+//   };
+
+//   // ✅ ALL 9 COLUMNS - Responsive without horizontal scroll
+//   const renderListView = () => (
+//     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+//       <div className="w-full overflow-x-auto">
+//         <table className="w-full table-auto text-[10px] sm:text-xs md:text-sm">
+//           <thead className="bg-gray-50">
+//             <tr>
+//               <th className="px-1 sm:px-2 py-1.5 text-left w-6 sm:w-8">
+//                 <input 
+//                   type="checkbox" 
+//                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3 h-3 sm:w-4 sm:h-4" 
+//                   checked={selectedProjects.length === paginatedProjects.length && paginatedProjects.length > 0} 
+//                   onChange={toggleAllProjects} 
+//                 />
+//               </th>
+//               <th className="px-1 sm:px-2 py-1.5 text-left text-[8px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 CUSTOMER
+//               </th>
+//               <th className="px-1 sm:px-2 py-1.5 text-left text-[8px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 PROJECT
+//               </th>
+//               <th className="px-1 sm:px-2 py-1.5 text-left text-[8px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 BILLING
+//               </th>
+//               <th className="px-1 sm:px-2 py-1.5 text-left text-[8px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 RATE
+//               </th>
+//               <th className="px-1 sm:px-2 py-1.5 text-left text-[8px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 STATUS
+//               </th>
+//               <th className="px-1 sm:px-2 py-1.5 text-left text-[8px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 TIMER
+//               </th>
+//               <th className="px-1 sm:px-2 py-1.5 text-left text-[8px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 HOURS
+//               </th>
+//               <th className="px-1 sm:px-2 py-1.5 text-left text-[8px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 BUDGET
+//               </th>
+//               <th className="px-1 sm:px-2 py-1.5 text-left text-[8px] sm:text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+//                 ACTIONS
+//               </th>
+//             </tr>
+//           </thead>
+//           <tbody className="bg-white divide-y divide-gray-200">
+//             {paginatedProjects.length === 0 ? (
+//               <tr><td colSpan={10} className="px-2 sm:px-4 py-4 sm:py-8 text-center text-gray-500 text-[8px] sm:text-sm">No projects found</td></tr>
+//             ) : (
+//               paginatedProjects.map((project: Project) => (
+//                 <tr key={project.id} className="hover:bg-gray-50 transition">
+//                   <td className="px-1 sm:px-2 py-1">
+//                     <input 
+//                       type="checkbox" 
+//                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3 h-3 sm:w-4 sm:h-4" 
+//                       checked={selectedProjects.includes(project.id)} 
+//                       onChange={() => toggleProjectSelection(project.id)} 
+//                     />
+//                   </td>
+//                   <td className="px-1 sm:px-2 py-1">
+//                     <div 
+//                       className="text-[8px] sm:text-[10px] md:text-xs font-medium text-gray-700 hover:text-purple-600 cursor-pointer truncate max-w-[30px] sm:max-w-[50px] md:max-w-[80px] lg:max-w-[100px]"
+//                       onClick={() => onProjectClick(project.id)}
+//                       title={project.customerName}
+//                     >
+//                       {project.customerName}
+//                     </div>
+//                   </td>
+//                   <td className="px-1 sm:px-2 py-1">
+//                     <div 
+//                       className="text-[8px] sm:text-[10px] md:text-xs font-medium text-gray-800 hover:text-purple-600 cursor-pointer"
+//                       onClick={() => onProjectClick(project.id)}
+//                     >
+//                       <div className="truncate max-w-[40px] sm:max-w-[60px] md:max-w-[100px] lg:max-w-[140px]" title={project.projectName}>
+//                         {project.projectName}
+//                       </div>
+//                       <div className="text-[6px] sm:text-[8px] md:text-[9px] text-gray-500 truncate max-w-[40px] sm:max-w-[60px] md:max-w-[100px] lg:max-w-[140px]" title={project.description}>
+//                         {project.description}
+//                       </div>
+//                     </div>
+//                   </td>
+//                   <td className="px-1 sm:px-2 py-1">
+//                     <span className={`px-1 py-0.5 text-[7px] sm:text-[8px] md:text-[9px] font-medium rounded-full ${getBillingMethodBadgeColor(project.billingMethod)} truncate max-w-[40px] sm:max-w-[60px] md:max-w-[80px] inline-block`}>
+//                       {project.billingMethod.length > 6 ? project.billingMethod.substring(0, 6) + '…' : project.billingMethod}
+//                     </span>
+//                   </td>
+//                   <td className="px-1 sm:px-2 py-1 text-[8px] sm:text-[10px] md:text-xs text-gray-600 whitespace-nowrap">
+//                     {project.rate ? `$${project.rate.toFixed(2)}` : '-'}
+//                   </td>
+//                   <td className="px-1 sm:px-2 py-1">
+//                     <div className={`inline-flex items-center px-1 py-0.5 text-[7px] sm:text-[8px] md:text-[9px] font-medium rounded-full border ${getStatusColor(project.status)} whitespace-nowrap`}>
+//                       {getStatusIcon(project.status)}
+//                       <span className="ml-0.5">{project.status.charAt(0).toUpperCase() + project.status.slice(1)}</span>
+//                     </div>
+//                   </td>
+//                   <td className="px-1 sm:px-2 py-1">
+//                     {project.status === 'completed' ? (
+//                       <span className="text-[8px] sm:text-[10px] md:text-xs text-green-600 font-medium whitespace-nowrap">✅ Done</span>
+//                     ) : (
+//                       <div className="flex items-center gap-0.5 sm:gap-1 whitespace-nowrap">
+//                         <div className="flex items-center gap-0.5 bg-gray-100 rounded px-1 py-0.5">
+//                           <Clock className={`w-2 h-2 sm:w-3 sm:h-3 ${project.timerRunning ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
+//                           <span className={`text-[7px] sm:text-[8px] md:text-[9px] font-mono font-medium ${project.timerRunning ? 'text-green-600' : 'text-gray-600'}`}>
+//                             {formatTimerDisplay(project.timerSeconds || 0)}
+//                           </span>
+//                         </div>
+//                         <div className="flex items-center gap-0.5">
+//                           {!project.timerRunning ? (
+//                             <button onClick={() => onStartTimer(project.id)} className="p-0.5 text-green-600 hover:bg-green-50 rounded transition" title="Start Timer">
+//                               <Play className="w-2 h-2 sm:w-3 sm:h-3" />
+//                             </button>
+//                           ) : (
+//                             <button onClick={() => onStopTimer(project.id)} className="p-0.5 text-yellow-600 hover:bg-yellow-50 rounded transition" title="Pause Timer">
+//                               <Pause className="w-2 h-2 sm:w-3 sm:h-3" />
+//                             </button>
+//                           )}
+//                           <button onClick={() => onCompleteProject(project.id)} className="p-0.5 text-blue-600 hover:bg-blue-50 rounded transition" title="Complete">
+//                             <CheckCircle className="w-2 h-2 sm:w-3 sm:h-3" />
+//                           </button>
+//                         </div>
+//                       </div>
+//                     )}
+//                   </td>
+//                   <td className="px-1 sm:px-2 py-1">
+//                     <div className="flex items-center text-[8px] sm:text-[10px] md:text-xs text-gray-600 whitespace-nowrap">
+//                       <Clock className="w-2 h-2 sm:w-3 sm:h-3 mr-0.5 text-gray-400" />
+//                       <span className="font-mono">{project.loggedHours}</span>
+//                     </div>
+//                   </td>
+//                   <td className="px-1 sm:px-2 py-1 text-[8px] sm:text-[10px] md:text-xs text-gray-600 whitespace-nowrap">
+//                     {project.budget ? `$${project.budget.toFixed(2)}` : '-'}
+//                   </td>
+//                   <td className="px-1 sm:px-2 py-1">
+//                     <div className="flex items-center gap-0.5 sm:gap-1 whitespace-nowrap">
+//                       <button onClick={() => onEditClick(project)} className="p-0.5 sm:p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition" title="Edit">
+//                         <Edit className="w-2 h-2 sm:w-3 sm:h-3" />
+//                       </button>
+//                       <button onClick={() => onLogTime(project.projectName)} className="p-0.5 sm:p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition" title="Log Time">
+//                         <Clock className="w-2 h-2 sm:w-3 sm:h-3" />
+//                       </button>
+//                       <button onClick={() => { const np = { ...project, id: String(Date.now()), projectName: `${project.projectName} (Copy)`, loggedHours: '00:00', timerSeconds: 0, timerRunning: false }; setProjects((prev: Project[]) => [...prev, np]); }} className="p-0.5 sm:p-1 text-gray-400 hover:text-purple-600 rounded hover:bg-purple-50 transition" title="Clone">
+//                         <Copy className="w-2 h-2 sm:w-3 sm:h-3" />
+//                       </button>
+//                       <button onClick={() => onCompleteProject(project.id)} className="p-0.5 sm:p-1 text-blue-600 hover:bg-blue-50 rounded transition" title="Complete">
+//                         <CheckCircle className="w-2 h-2 sm:w-3 sm:h-3" />
+//                       </button>
+//                       <button onClick={() => handleDeleteProject(project.id)} className="p-0.5 sm:p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 transition" title="Delete">
+//                         <Trash2 className="w-2 h-2 sm:w-3 sm:h-3" />
+//                       </button>
+//                     </div>
+//                   </td>
+//                 </tr>
+//               ))
+//             )}
+//           </tbody>
+//         </table>
+//       </div>
+//       {filteredProjects.length > 0 && (
+//         <div className="px-2 sm:px-3 py-1 sm:py-2 bg-gray-50 border-t border-gray-200 flex flex-wrap items-center justify-between gap-1">
+//           <div className="text-[8px] sm:text-[10px] md:text-xs text-gray-700">
+//             {`${(currentPage - 1) * itemsPerPage + 1}-${Math.min(currentPage * itemsPerPage, filteredProjects.length)} of ${filteredProjects.length}`}
+//           </div>
+//           <div className="flex items-center gap-0.5">
+//             <button onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))} disabled={currentPage === 1} className="px-1.5 py-0.5 border border-gray-300 rounded text-[8px] sm:text-[10px] md:text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50">←</button>
+//             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p: number) => (
+//               <button key={p} onClick={() => setCurrentPage(p)} className={`px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] md:text-xs ${currentPage === p ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>{p}</button>
+//             ))}
+//             {totalPages > 5 && <span className="text-[8px] sm:text-[10px] md:text-xs text-gray-500">…</span>}
+//             <button onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))} disabled={currentPage === totalPages} className="px-1.5 py-0.5 border border-gray-300 rounded text-[8px] sm:text-[10px] md:text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50">→</button>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+
+//   const renderCardView = () => {
+//     const getInitials = (name: string) => name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+//     const getRandomColor = (name: string) => {
+//       const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500', 'bg-red-500'];
+//       return colors[name.length % colors.length];
+//     };
+//     return (
+//       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+//         {paginatedProjects.map((project: Project) => (
+//           <div key={project.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition p-3 sm:p-4 cursor-pointer" onClick={() => onProjectClick(project.id)}>
+//             <div className="flex items-start justify-between mb-3">
+//               <div className="flex items-center space-x-2">
+//                 <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full ${getRandomColor(project.customerName)} text-white flex items-center justify-center text-[10px] sm:text-xs font-medium flex-shrink-0`}>
+//                   {getInitials(project.customerName)}
+//                 </div>
+//                 <div>
+//                   <div className="text-sm font-semibold text-gray-700 hover:text-purple-600 cursor-pointer transition-colors duration-200" onClick={() => onProjectClick(project.id)}>
+//                     {project.customerName}
+//                   </div>
+//                   <p className="text-xs text-gray-500">{project.projectName}</p>
+//                 </div>
+//               </div>
+//               <span className={`px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded-full ${getStatusColor(project.status)}`}>
+//                 {project.status}
+//               </span>
+//             </div>
+//             <p className="text-xs text-gray-600 line-clamp-2 mb-3">{project.description}</p>
+//             <div className="grid grid-cols-2 gap-2 mb-3">
+//               <div className="bg-gray-50 rounded p-1.5 sm:p-2">
+//                 <div className="text-[10px] text-gray-500">Billing</div>
+//                 <div className="text-[10px] sm:text-xs font-medium text-gray-700 truncate">{project.billingMethod}</div>
+//               </div>
+//               <div className="bg-gray-50 rounded p-1.5 sm:p-2">
+//                 <div className="text-[10px] text-gray-500">Rate</div>
+//                 <div className="text-[10px] sm:text-xs font-medium text-gray-700">{project.rate ? `$${project.rate.toFixed(2)}/hr` : '-'}</div>
+//               </div>
+//             </div>
+//             <div className="flex items-center justify-between text-xs sm:text-sm">
+//               <div className="flex items-center space-x-1">
+//                 <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+//                 <span className="font-mono">{project.loggedHours}</span>
+//               </div>
+//               <div className="flex items-center space-x-1">
+//                 <DollarSign className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+//                 <span>${project.budget?.toFixed(2) || '0'}</span>
+//               </div>
+//             </div>
+            
+//             {project.status !== 'completed' && (
+//               <div className="mt-2 sm:mt-3 flex items-center justify-between bg-gray-50 rounded-lg p-1.5 sm:p-2">
+//                 <div className="flex items-center gap-1 sm:gap-1.5">
+//                   <Clock className={`w-3 h-3 sm:w-4 sm:h-4 ${project.timerRunning ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
+//                   <span className={`text-[10px] sm:text-xs font-mono font-medium ${project.timerRunning ? 'text-green-600' : 'text-gray-600'}`}>
+//                     {formatTimerDisplay(project.timerSeconds || 0)}
+//                   </span>
+//                 </div>
+//                 <div className="flex items-center gap-0.5 sm:gap-1">
+//                   {!project.timerRunning ? (
+//                     <button onClick={() => onStartTimer(project.id)} className="p-0.5 sm:p-1 text-green-600 hover:bg-green-50 rounded transition">
+//                       <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                     </button>
+//                   ) : (
+//                     <button onClick={() => onStopTimer(project.id)} className="p-0.5 sm:p-1 text-yellow-600 hover:bg-yellow-50 rounded transition">
+//                       <Pause className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                     </button>
+//                   )}
+//                   <button onClick={() => onCompleteProject(project.id)} className="p-0.5 sm:p-1 text-blue-600 hover:bg-blue-50 rounded transition">
+//                     <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                   </button>
+//                 </div>
+//               </div>
+//             )}
+            
+//             <div className="mt-2 sm:mt-3 flex items-center justify-between">
+//               <button className="text-[10px] sm:text-xs text-blue-600 hover:text-blue-700">Create Expense</button>
+//               <button onClick={() => onLogTime(project.projectName)} className="text-[10px] sm:text-xs text-blue-600 hover:text-blue-700 flex items-center gap-0.5 sm:gap-1">
+//                 <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Log Time
+//               </button>
+//             </div>
+//           </div>
+//         ))}
+//       </div>
+//     );
+//   };
+
+//   return (
+//     <>
+//       <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 mb-4 sm:mb-6 border border-gray-200">
+//         <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-3 sm:gap-4">
+//           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+//             <div className="relative flex-1 sm:flex-none">
+//               <select className="appearance-none bg-gray-50 border border-gray-300 rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 pr-7 sm:pr-8 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 w-full" value={viewBy} onChange={(e) => setViewBy(e.target.value as any)}>
+//                 <option value="all">All Projects</option>
+//                 <option value="active">Active</option>
+//                 <option value="inactive">Inactive</option>
+//                 <option value="completed">Completed</option>
+//               </select>
+//               <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4 absolute right-2 sm:right-3 top-2 sm:top-2.5 text-gray-500 pointer-events-none" />
+//             </div>
+//             <div className="relative flex-1 sm:flex-none">
+//               <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 absolute left-2.5 sm:left-3 top-1.5 sm:top-2.5 text-gray-400" />
+//               <input type="text" placeholder="Search projects..." className="pl-8 sm:pl-9 pr-3 sm:pr-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 w-full sm:w-40 md:w-56" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+//             </div>
+//           </div>
+//           <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+//             <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+//               <button onClick={() => setViewMode('list')} className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition flex items-center space-x-1 ${viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+//                 <List className="w-3.5 h-3.5 sm:w-4 sm:h-4" /><span className="hidden xs:inline">List</span>
+//               </button>
+//               <button onClick={() => setViewMode('card')} className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition flex items-center space-x-1 ${viewMode === 'card' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+//                 <LayoutGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4" /><span className="hidden xs:inline">Card</span>
+//               </button>
+//             </div>
+//             <button className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center">
+//               <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />Filter
+//             </button>
+//           </div>
+//         </div>
+//       </div>
+
+//       {selectedProjects.length > 0 && (
+//         <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4 flex flex-wrap items-center justify-between gap-2">
+//           <span className="text-xs sm:text-sm text-blue-700 font-medium">{selectedProjects.length} selected</span>
+//           <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+//             <button onClick={() => handleBulkAction('active')} className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm bg-green-600 text-white rounded hover:bg-green-700">Active</button>
+//             <button onClick={() => handleBulkAction('inactive')} className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm bg-gray-600 text-white rounded hover:bg-gray-700">Inactive</button>
+//             <button onClick={() => handleBulkAction('delete')} className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm bg-red-600 text-white rounded hover:bg-red-700">Delete</button>
+//             <button onClick={() => setSelectedProjects([])} className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm text-gray-600 hover:text-gray-800">Clear</button>
+//           </div>
+//         </div>
+//       )}
+
+//       {viewMode === 'list' ? renderListView() : renderCardView()}
+
+//       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mt-4 sm:mt-6">
+//         <div className="bg-white rounded-lg shadow-sm p-2 sm:p-4 border border-gray-200">
+//           <div className="text-[10px] sm:text-sm text-gray-500">Total</div>
+//           <div className="text-base sm:text-2xl font-bold text-gray-900">{projects.length}</div>
+//         </div>
+//         <div className="bg-white rounded-lg shadow-sm p-2 sm:p-4 border border-gray-200">
+//           <div className="text-[10px] sm:text-sm text-gray-500">Active</div>
+//           <div className="text-base sm:text-2xl font-bold text-green-600">{projects.filter((p: Project) => p.status === 'active').length}</div>
+//         </div>
+//         <div className="bg-white rounded-lg shadow-sm p-2 sm:p-4 border border-gray-200">
+//           <div className="text-[10px] sm:text-sm text-gray-500">Hours</div>
+//           <div className="text-base sm:text-2xl font-bold text-blue-600">455:48</div>
+//         </div>
+//         <div className="bg-white rounded-lg shadow-sm p-2 sm:p-4 border border-gray-200">
+//           <div className="text-[10px] sm:text-sm text-gray-500">Revenue</div>
+//           <div className="text-base sm:text-2xl font-bold text-purple-600">$29,500</div>
+//         </div>
+//       </div>
+//     </>
+//   );
+// };
+
+// // ==================== MAIN COMPONENT ====================
+// const ProjectList: React.FC = () => {
+//   const [activeTab, setActiveTab] = useState<TabType>('projects');
+//   const [viewMode, setViewMode] = useState<ViewMode>('list');
+//   const [viewBy, setViewBy] = useState<'all' | 'active' | 'inactive' | 'completed'>('all');
+//   const [searchTerm, setSearchTerm] = useState('');
+//   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+//   const [currentPage, setCurrentPage] = useState(1);
+//   const [itemsPerPage] = useState(6);
+//   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+//   const [view, setView] = useState<ViewState>('list');
+//   const [editProjectData, setEditProjectData] = useState<Project | null>(null);
+//   const [timerProjectName, setTimerProjectName] = useState<string>('');
+//   const [showLogTimePage, setShowLogTimePage] = useState(false);
+//   const [logTimeProject, setLogTimeProject] = useState('');
+
+//   const timerRefs = useRef<Record<string, NodeJS.Timeout>>({});
+
+//   const [projects, setProjects] = useState<Project[]>([
+//     { id: '1', customerName: 'Bruce Wayne', projectName: 'Design contract for Mr. Bruce', billingMethod: 'Based on Task Hours', rate: 45, status: 'active', loggedHours: '106:41', budget: 5000, startDate: '2024-01-15', endDate: '2024-06-30', description: 'Complete UI/UX design for Wayne Enterprises', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '2', customerName: 'Bruce Wayne', projectName: 'Design project for Bruce', billingMethod: 'Based on Task Hours', rate: 45, status: 'active', loggedHours: '35:28', budget: 3000, startDate: '2024-02-01', endDate: '2024-07-15', description: 'Redesign of corporate website', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '3', customerName: 'Aaron Brown', projectName: 'Design project for MR.X', billingMethod: 'Based on Task Hours', rate: 45, status: 'active', loggedHours: '138:00', budget: 8000, startDate: '2024-01-10', endDate: '2024-08-20', description: 'Mobile app design for MR.X', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '4', customerName: 'Aaron Brown', projectName: 'Design project - Z', billingMethod: 'Based on Task Hours', rate: null, status: 'active', loggedHours: '26:00', budget: 2500, startDate: '2024-03-01', endDate: '2024-09-01', description: 'Logo and branding design', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '5', customerName: 'Dinesh Ramamurthy', projectName: 'Designing project', billingMethod: 'Based on Project Hours', rate: 45, status: 'active', loggedHours: '32:04', budget: 2000, startDate: '2024-02-15', endDate: '2024-07-01', description: 'Web application interface design', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '6', customerName: 'Arthur K', projectName: 'Web app designing', billingMethod: 'Based on Task Hours', rate: 45, status: 'active', loggedHours: '65:00', budget: 4500, startDate: '2024-01-20', endDate: '2024-10-15', description: 'E-commerce platform design', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '7', customerName: 'Aaron Brown', projectName: 'Web Designing', billingMethod: 'Based on Task Hours', rate: 45, status: 'completed', loggedHours: '52:35', budget: 3500, startDate: '2023-12-01', endDate: '2024-05-30', description: 'Corporate website redesign', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 },
+//     { id: '8', customerName: 'Aaron Brown', projectName: 'Web designing', billingMethod: 'Based on Task Hours', rate: 45, status: 'inactive', loggedHours: '00:00', budget: 1000, startDate: '2024-04-01', endDate: '2024-12-31', description: 'Portfolio website design', createdAt: '', updatedAt: '', timerRunning: false, timerSeconds: 0 }
+//   ]);
+
+//   useEffect(() => {
+//     try {
+//       const savedTimers = localStorage.getItem('projectTimers');
+//       if (savedTimers) {
+//         const timerData = JSON.parse(savedTimers);
+//         setProjects(prev => prev.map(project => ({
+//           ...project,
+//           timerRunning: timerData[project.id]?.running || false,
+//           timerSeconds: timerData[project.id]?.seconds || 0
+//         })));
+//       }
+//     } catch (error) {
+//       console.error('Failed to load timer data:', error);
+//     }
+//   }, []);
+
+//   useEffect(() => {
+//     try {
+//       const timerData: Record<string, { running: boolean; seconds: number }> = {};
+//       projects.forEach(project => {
+//         timerData[project.id] = {
+//           running: project.timerRunning || false,
+//           seconds: project.timerSeconds || 0
+//         };
+//       });
+//       localStorage.setItem('projectTimers', JSON.stringify(timerData));
+//     } catch (error) {
+//       console.error('Failed to save timer data:', error);
+//     }
+//   }, [projects]);
+
+//   useEffect(() => {
+//     return () => {
+//       Object.values(timerRefs.current).forEach(clearInterval);
+//     };
+//   }, []);
+
+//   const handleStartTimer = (projectId: string) => {
+//     if (timerRefs.current[projectId]) {
+//       clearInterval(timerRefs.current[projectId]);
+//       delete timerRefs.current[projectId];
+//     }
+
+//     timerRefs.current[projectId] = setInterval(() => {
+//       setProjects(prev => prev.map(p => 
+//         p.id === projectId ? { ...p, timerSeconds: (p.timerSeconds || 0) + 1 } : p
+//       ));
+//     }, 1000);
+
+//     setProjects(prev => prev.map(p => 
+//       p.id === projectId ? { ...p, timerRunning: true } : p
+//     ));
+//   };
+
+//   const handleStopTimer = (projectId: string) => {
+//     if (timerRefs.current[projectId]) {
+//       clearInterval(timerRefs.current[projectId]);
+//       delete timerRefs.current[projectId];
+//     }
+//     setProjects(prev => prev.map(p => 
+//       p.id === projectId ? { ...p, timerRunning: false } : p
+//     ));
+//   };
+
+//   const handleCompleteProject = (projectId: string) => {
+//     if (timerRefs.current[projectId]) {
+//       clearInterval(timerRefs.current[projectId]);
+//       delete timerRefs.current[projectId];
+//     }
+
+//     setProjects(prev => prev.map(p => {
+//       if (p.id === projectId) {
+//         const timerSeconds = p.timerSeconds || 0;
+//         const hoursToAdd = timerSeconds / 3600;
+//         const currentHours = parseFloat(p.loggedHours) || 0;
+//         const newHours = (currentHours + hoursToAdd).toFixed(2);
+//         return { 
+//           ...p, 
+//           status: 'completed',
+//           loggedHours: newHours,
+//           timerRunning: false,
+//           timerSeconds: 0
+//         };
+//       }
+//       return p;
+//     }));
+
+//     if (timerRefs.current[projectId]) {
+//       delete timerRefs.current[projectId];
+//     }
+//   };
+
+//   const handleDeleteProject = (id: string) => {
+//     if (window.confirm('Delete this project?')) {
+//       if (timerRefs.current[id]) {
+//         clearInterval(timerRefs.current[id]);
+//         delete timerRefs.current[id];
+//       }
+//       setProjects((prev: Project[]) => prev.filter((p: Project) => p.id !== id));
+//     }
+//   };
+
+//   const handleProjectClick = (projectId: string) => {
+//     setSelectedProjectId(projectId);
+//     setView('detail');
+//   };
+
+//   const handleBackToList = () => {
+//     setSelectedProjectId(null);
+//     setView('list');
+//     setEditProjectData(null);
+//     setShowLogTimePage(false);
+//   };
+
+//   const handleEditClick = (project: Project) => {
+//     setEditProjectData(project);
+//     setView('edit');
+//   };
+
+//   const handleEditSave = (updatedData: any) => {
+//     const existingProject = projects.find(p => p.id === updatedData.id);
+//     if (!existingProject) return;
+
+//     const updatedProjects = projects.map((p: Project) => {
+//       if (p.id === updatedData.id) {
+//         return {
+//           ...p,
+//           projectName: updatedData.name,
+//           description: updatedData.description,
+//           billingMethod: updatedData.billingMethod as Project['billingMethod'],
+//           rate: updatedData.rate,
+//           budget: updatedData.budget,
+//           status: updatedData.status as Project['status'],
+//           startDate: updatedData.startDate,
+//           endDate: updatedData.endDate,
+//           customerName: updatedData.customerName,
+//           updatedAt: new Date().toISOString()
+//         };
+//       }
+//       return p;
+//     });
+
+//     setProjects(updatedProjects);
+//     setTimeout(() => {
+//       setView('list');
+//       setEditProjectData(null);
+//     }, 100);
+//   };
+
+//   const handleCreateProject = (projectData: any) => {
+//     const newProject: Project = {
+//       id: String(Date.now()),
+//       customerName: projectData.customerName,
+//       projectName: projectData.projectName,
+//       billingMethod: projectData.billingMethod as Project['billingMethod'],
+//       rate: projectData.rate || null,
+//       status: projectData.status as Project['status'],
+//       loggedHours: '00:00',
+//       budget: projectData.budget || null,
+//       startDate: projectData.startDate || '',
+//       endDate: projectData.endDate || '',
+//       description: projectData.description || '',
+//       createdAt: new Date().toISOString(),
+//       updatedAt: new Date().toISOString(),
+//       timerRunning: false,
+//       timerSeconds: 0
+//     };
+//     setProjects([newProject, ...projects]);
+//     setView('list');
+//   };
+
+//   const handleStartTimerHeader = () => {
+//     setTimerProjectName('');
+//     setActiveTab('timetracker');
+//   };
+
+//   const handleLogTimeClick = (projectName: string) => {
+//     setLogTimeProject(projectName);
+//     setShowLogTimePage(true);
+//   };
+
+//   const handleLogTimeSave = (data: any) => {
+//     console.log('Time logged:', data);
+//     setShowLogTimePage(false);
+//     alert(`Time logged successfully!\nProject: ${data.project}\nTime: ${data.timeSpent}`);
+//   };
+
+//   if (view === 'create') {
+//     return <CreateProjectPage onBack={handleBackToList} onSave={handleCreateProject} />;
+//   }
+
+//   if (view === 'edit' && editProjectData) {
+//     const editData = {
+//       id: editProjectData.id,
+//       name: editProjectData.projectName,
+//       description: editProjectData.description,
+//       billingMethod: editProjectData.billingMethod,
+//       rate: editProjectData.rate || 0,
+//       budget: editProjectData.budget || 0,
+//       status: editProjectData.status,
+//       startDate: editProjectData.startDate,
+//       endDate: editProjectData.endDate,
+//       customerName: editProjectData.customerName,
+//       assignedUsers: []
+//     };
+//     return (
+//       <ProjectEdit 
+//         projectId={editProjectData.id}
+//         projectName={editProjectData.projectName}
+//         onBack={handleBackToList}
+//         onSave={handleEditSave}
+//         initialData={editData}
+//       />
+//     );
+//   }
+
+//   if (view === 'detail' && selectedProjectId) {
+//     return <ProjectDetail projectId={selectedProjectId} onBack={handleBackToList} />;
+//   }
+
+//   if (showLogTimePage) {
+//     return (
+//       <LogTimePage 
+//         onBack={() => setShowLogTimePage(false)} 
+//         onSave={handleLogTimeSave}
+//         preselectedProject={logTimeProject}
+//       />
+//     );
+//   }
+
+//   const renderTabContent = () => {
+//     switch(activeTab) {
+//       case 'projects':
+//         return (
+//           <ProjectsTab
+//             viewMode={viewMode}
+//             setViewMode={setViewMode}
+//             viewBy={viewBy}
+//             setViewBy={setViewBy}
+//             searchTerm={searchTerm}
+//             setSearchTerm={setSearchTerm}
+//             projects={projects}
+//             setProjects={setProjects}
+//             selectedProjects={selectedProjects}
+//             setSelectedProjects={setSelectedProjects}
+//             currentPage={currentPage}
+//             setCurrentPage={setCurrentPage}
+//             itemsPerPage={itemsPerPage}
+//             handleDeleteProject={handleDeleteProject}
+//             onProjectClick={handleProjectClick}
+//             onEditClick={handleEditClick}
+//             onStartTimer={handleStartTimer}
+//             onStopTimer={handleStopTimer}
+//             onCompleteProject={handleCompleteProject}
+//             onLogTime={handleLogTimeClick}
+//           />
+//         );
+//       case 'taskboard':
+//         return <TaskBoard />;
+//       case 'timetracker':
+//         return <TimeTracker preselectedProject={timerProjectName} />;
+//       default:
+//         return null;
+//     }
+//   };
+
+//   const handleHeaderStart = () => {
+//     setTimerProjectName('');
+//     setActiveTab('timetracker');
+//   };
+
+//   const handleHeaderLogTime = () => {
+//     setLogTimeProject('');
+//     setShowLogTimePage(true);
+//   };
+
+//   return (
+//     <div className="p-3 sm:p-6 bg-gray-50 min-h-screen">
+//       {activeTab === 'projects' && (
+//         <div className="flex flex-wrap items-start sm:items-center justify-between mb-3 sm:mb-4 gap-3">
+//           <div>
+//             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Projects</h1>
+//             <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">Manage all your projects from one place</p>
+//           </div>
+//           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+//             <button onClick={() => setView('create')} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 text-xs sm:text-sm shadow-sm whitespace-nowrap">
+//               <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               <span className="hidden xs:inline">New Project</span>
+//               <span className="xs:hidden">New</span>
+//             </button>
+//             <button onClick={handleHeaderStart} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-green-600 text-white rounded-lg flex items-center hover:bg-green-700 text-xs sm:text-sm shadow-sm whitespace-nowrap">
+//               <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               <span className="hidden xs:inline">Start</span>
+//             </button>
+//             <button onClick={handleHeaderLogTime} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 text-xs sm:text-sm shadow-sm whitespace-nowrap">
+//               <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               <span className="hidden xs:inline">Log Time</span>
+//               <span className="xs:hidden">Log</span>
+//             </button>
+//           </div>
+//         </div>
+//       )}
+
+//       {activeTab === 'taskboard' && (
+//         <div className="flex flex-wrap items-start sm:items-center justify-between mb-3 sm:mb-4 gap-3">
+//           <div>
+//             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Task Board</h1>
+//             <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">Manage and track tasks across your projects</p>
+//           </div>
+//           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+//             <button className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 text-xs sm:text-sm shadow-sm whitespace-nowrap">
+//               <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               Edit
+//             </button>
+//             <button className="px-3 sm:px-4 py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg flex items-center hover:bg-purple-700 text-xs sm:text-sm shadow-sm whitespace-nowrap">
+//               <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               <span className="hidden xs:inline">Add Task</span>
+//               <span className="xs:hidden">Add</span>
+//             </button>
+//             <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm text-gray-500 bg-white px-2 sm:px-4 py-1 sm:py-2 rounded-lg shadow-sm border border-gray-200">
+//               <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+//               <span>10 Total</span>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+
+//       {activeTab === 'timetracker' && (
+//         <div className="flex flex-wrap items-start sm:items-center justify-between mb-3 sm:mb-4 gap-3">
+//           <div>
+//             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Time Tracker</h1>
+//             <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">Track and log time for your projects</p>
+//           </div>
+//           <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm text-gray-500 bg-white px-2 sm:px-4 py-1 sm:py-2 rounded-lg shadow-sm border border-gray-200">
+//             <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+//             <span>3 Entries</span>
+//           </div>
+//         </div>
+//       )}
+
+//       <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-2 sm:px-4 mb-4 sm:mb-6 overflow-x-auto">
+//         <nav className="flex space-x-3 sm:space-x-6 min-w-fit">
+//           <button onClick={() => setActiveTab('projects')} className={`py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-1 sm:space-x-2 whitespace-nowrap ${activeTab === 'projects' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
+//             <LayoutDashboard className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+//             <span>Projects</span>
+//           </button>
+//           <button onClick={() => setActiveTab('taskboard')} className={`py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-1 sm:space-x-2 whitespace-nowrap ${activeTab === 'taskboard' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
+//             <ClipboardList className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+//             <span>Task Board</span>
+//           </button>
+//           <button onClick={() => setActiveTab('timetracker')} className={`py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-1 sm:space-x-2 whitespace-nowrap ${activeTab === 'timetracker' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
+//             <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+//             <span>Time Tracker</span>
+//           </button>
+//         </nav>
+//       </div>
+
+//       <div>
+//         {renderTabContent()}
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default ProjectList;
+// src/client/components/projects/ProjectList.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Search, 
-  Plus, 
-  Filter, 
-  Clock, 
-  MoreVertical, 
-  Edit, 
-  Trash2, 
+import {
+  Search,
+  Plus,
+  Filter,
+  Clock,
+  Edit,
+  Trash2,
   Copy,
-  FileText,
   Play,
   ChevronDown,
-  Download,
-  Upload,
-  RefreshCw,
   CheckCircle,
   XCircle,
   AlertCircle,
   LayoutGrid,
   List,
   DollarSign,
-  User,
-  Calendar,
-  Tag,
   LayoutDashboard,
   ClipboardList,
   Timer,
@@ -1619,11 +7164,7 @@ import {
   X,
   Users,
   Pause,
-  Square,
-  Circle,
-  ArrowLeft,
-  StopCircle,
-  Menu
+  ArrowLeft
 } from 'lucide-react';
 import TimeTracker from './TimeTracker';
 import TaskBoard from './TaskBoard';
@@ -1654,454 +7195,6 @@ interface Project {
 type ViewMode = 'list' | 'card';
 type TabType = 'projects' | 'taskboard' | 'timetracker';
 type ViewState = 'list' | 'detail' | 'edit' | 'create';
-
-// ==================== ADD TASK MODAL ====================
-interface AddTaskModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (taskData: any) => void;
-  projectName?: string;
-}
-
-const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onSave, projectName }) => {
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    status: 'todo' as 'todo' | 'in-progress' | 'review' | 'done',
-    priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
-    assignee: '',
-    dueDate: '',
-    estimatedHours: 0,
-    tags: '',
-    projectName: projectName || '',
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSaving, setIsSaving] = useState(false);
-
-  if (!isOpen) return null;
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const handleSubmit = () => {
-    const newErrors: Record<string, string> = {};
-    if (!formData.title.trim()) newErrors.title = 'Task title is required';
-    if (!formData.assignee) newErrors.assignee = 'Please select an assignee';
-    if (!formData.dueDate) newErrors.dueDate = 'Please select a due date';
-    if (formData.estimatedHours <= 0) newErrors.estimatedHours = 'Estimated hours must be greater than 0';
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    setIsSaving(true);
-    const tagsArray = formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
-
-    setTimeout(() => {
-      onSave({
-        ...formData,
-        tags: tagsArray,
-        loggedHours: 0,
-        comments: 0,
-        attachments: 0,
-        subtasks: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
-      setIsSaving(false);
-      onClose();
-    }, 500);
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">Add New Task</h3>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition">
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
-        </div>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Task Title <span className="text-red-500">*</span>
-            </label>
-            <input 
-              type="text" 
-              name="title" 
-              value={formData.title} 
-              onChange={handleChange} 
-              className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.title ? 'border-red-300' : 'border-gray-300'}`} 
-              placeholder="Enter task title" 
-            />
-            {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea 
-              name="description" 
-              value={formData.description} 
-              onChange={handleChange} 
-              rows={3} 
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
-              placeholder="Enter task description" 
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select 
-                name="status" 
-                value={formData.status} 
-                onChange={handleChange} 
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option value="todo">To Do</option>
-                <option value="in-progress">In Progress</option>
-                <option value="review">Review</option>
-                <option value="done">Done</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-              <select 
-                name="priority" 
-                value={formData.priority} 
-                onChange={handleChange} 
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Assignee <span className="text-red-500">*</span>
-              </label>
-              <select 
-                name="assignee" 
-                value={formData.assignee} 
-                onChange={handleChange} 
-                className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.assignee ? 'border-red-300' : 'border-gray-300'}`}
-              >
-                <option value="">Select Assignee</option>
-                <option value="Patricia Boyle">Patricia Boyle</option>
-                <option value="John Doe">John Doe</option>
-                <option value="Jane Smith">Jane Smith</option>
-                <option value="Michael Johnson">Michael Johnson</option>
-              </select>
-              {errors.assignee && <p className="text-xs text-red-500 mt-1">{errors.assignee}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Due Date <span className="text-red-500">*</span>
-              </label>
-              <input 
-                type="date" 
-                name="dueDate" 
-                value={formData.dueDate} 
-                onChange={handleChange} 
-                className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.dueDate ? 'border-red-300' : 'border-gray-300'}`} 
-              />
-              {errors.dueDate && <p className="text-xs text-red-500 mt-1">{errors.dueDate}</p>}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Estimated Hours <span className="text-red-500">*</span>
-              </label>
-              <input 
-                type="number" 
-                name="estimatedHours" 
-                value={formData.estimatedHours} 
-                onChange={handleChange} 
-                className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.estimatedHours ? 'border-red-300' : 'border-gray-300'}`} 
-                placeholder="0" 
-                min="0" 
-                step="0.5" 
-              />
-              {errors.estimatedHours && <p className="text-xs text-red-500 mt-1">{errors.estimatedHours}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
-              <input 
-                type="text" 
-                name="tags" 
-                value={formData.tags} 
-                onChange={handleChange} 
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
-                placeholder="Design, Backend (comma separated)" 
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
-          <button 
-            onClick={onClose} 
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
-          >
-            Cancel
-          </button>
-          <button 
-            onClick={handleSubmit} 
-            disabled={isSaving} 
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-2 disabled:opacity-50"
-          >
-            <Save className="w-4 h-4" />
-            {isSaving ? 'Adding...' : 'Add Task'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ==================== EDIT TASK MODAL ====================
-interface EditTaskModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (taskData: any) => void;
-  task: any;
-}
-
-const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, onSave, task }) => {
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    status: 'todo' as 'todo' | 'in-progress' | 'review' | 'done',
-    priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
-    assignee: '',
-    dueDate: '',
-    estimatedHours: 0,
-    tags: '',
-    projectName: '',
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSaving, setIsSaving] = useState(false);
-
-  React.useEffect(() => {
-    if (task) {
-      setFormData({
-        title: task.title || '',
-        description: task.description || '',
-        status: task.status || 'todo',
-        priority: task.priority || 'medium',
-        assignee: task.assignee || '',
-        dueDate: task.dueDate || '',
-        estimatedHours: task.estimatedHours || 0,
-        tags: task.tags ? task.tags.join(', ') : '',
-        projectName: task.projectName || '',
-      });
-    }
-  }, [task]);
-
-  if (!isOpen || !task) return null;
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const handleSubmit = () => {
-    const newErrors: Record<string, string> = {};
-    if (!formData.title.trim()) newErrors.title = 'Task title is required';
-    if (!formData.assignee) newErrors.assignee = 'Please select an assignee';
-    if (!formData.dueDate) newErrors.dueDate = 'Please select a due date';
-    if (formData.estimatedHours <= 0) newErrors.estimatedHours = 'Estimated hours must be greater than 0';
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    setIsSaving(true);
-    const tagsArray = formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
-
-    setTimeout(() => {
-      onSave({
-        ...formData,
-        id: task.id,
-        tags: tagsArray,
-      });
-      setIsSaving(false);
-      onClose();
-    }, 500);
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">Edit Task</h3>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition">
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
-        </div>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Task Title <span className="text-red-500">*</span>
-            </label>
-            <input 
-              type="text" 
-              name="title" 
-              value={formData.title} 
-              onChange={handleChange} 
-              className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.title ? 'border-red-300' : 'border-gray-300'}`} 
-              placeholder="Enter task title" 
-            />
-            {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea 
-              name="description" 
-              value={formData.description} 
-              onChange={handleChange} 
-              rows={3} 
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
-              placeholder="Enter task description" 
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select 
-                name="status" 
-                value={formData.status} 
-                onChange={handleChange} 
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option value="todo">To Do</option>
-                <option value="in-progress">In Progress</option>
-                <option value="review">Review</option>
-                <option value="done">Done</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-              <select 
-                name="priority" 
-                value={formData.priority} 
-                onChange={handleChange} 
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Assignee <span className="text-red-500">*</span>
-              </label>
-              <select 
-                name="assignee" 
-                value={formData.assignee} 
-                onChange={handleChange} 
-                className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.assignee ? 'border-red-300' : 'border-gray-300'}`}
-              >
-                <option value="">Select Assignee</option>
-                <option value="Patricia Boyle">Patricia Boyle</option>
-                <option value="John Doe">John Doe</option>
-                <option value="Jane Smith">Jane Smith</option>
-              </select>
-              {errors.assignee && <p className="text-xs text-red-500 mt-1">{errors.assignee}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Due Date <span className="text-red-500">*</span>
-              </label>
-              <input 
-                type="date" 
-                name="dueDate" 
-                value={formData.dueDate} 
-                onChange={handleChange} 
-                className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.dueDate ? 'border-red-300' : 'border-gray-300'}`} 
-              />
-              {errors.dueDate && <p className="text-xs text-red-500 mt-1">{errors.dueDate}</p>}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Estimated Hours <span className="text-red-500">*</span>
-              </label>
-              <input 
-                type="number" 
-                name="estimatedHours" 
-                value={formData.estimatedHours} 
-                onChange={handleChange} 
-                className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${errors.estimatedHours ? 'border-red-300' : 'border-gray-300'}`} 
-                placeholder="0" 
-                min="0" 
-                step="0.5" 
-              />
-              {errors.estimatedHours && <p className="text-xs text-red-500 mt-1">{errors.estimatedHours}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
-              <input 
-                type="text" 
-                name="tags" 
-                value={formData.tags} 
-                onChange={handleChange} 
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
-                placeholder="Design, Backend (comma separated)" 
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
-          <button 
-            onClick={onClose} 
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
-          >
-            Cancel
-          </button>
-          <button 
-            onClick={handleSubmit} 
-            disabled={isSaving} 
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-2 disabled:opacity-50"
-          >
-            <Save className="w-4 h-4" />
-            {isSaving ? 'Updating...' : 'Update Task'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // ==================== CREATE PROJECT PAGE ====================
 interface CreateProjectPageProps {
@@ -2160,10 +7253,7 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({ onBack, onSave })
     <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
       <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
         <div className="flex items-center gap-3">
-          <button 
-            onClick={onBack} 
-            className="p-2 text-gray-600 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition"
-          >
+          <button onClick={onBack} className="p-2 text-gray-600 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
@@ -2172,17 +7262,10 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({ onBack, onSave })
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button 
-            onClick={onBack} 
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm flex items-center"
-          >
+          <button onClick={onBack} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm flex items-center">
             <X className="w-4 h-4 mr-1.5" /> Cancel
           </button>
-          <button 
-            onClick={handleSubmit} 
-            disabled={isSaving} 
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm flex items-center disabled:opacity-50 shadow-sm"
-          >
+          <button onClick={handleSubmit} disabled={isSaving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm flex items-center disabled:opacity-50 shadow-sm">
             <Save className="w-4 h-4 mr-1.5" />
             {isSaving ? 'Creating...' : 'Create Project'}
           </button>
@@ -2192,135 +7275,61 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({ onBack, onSave })
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 max-w-3xl mx-auto">
         <div className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Project Name <span className="text-red-500">*</span>
-            </label>
-            <input 
-              type="text" 
-              name="projectName" 
-              value={formData.projectName} 
-              onChange={handleChange} 
-              className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 ${errors.projectName ? 'border-red-300' : 'border-gray-300'}`} 
-              placeholder="Enter project name" 
-            />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Project Name <span className="text-red-500">*</span></label>
+            <input type="text" name="projectName" value={formData.projectName} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 ${errors.projectName ? 'border-red-300' : 'border-gray-300'}`} placeholder="Enter project name" />
             {errors.projectName && <p className="text-xs text-red-500 mt-1">{errors.projectName}</p>}
           </div>
-
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Customer <span className="text-red-500">*</span>
-            </label>
-            <input 
-              type="text" 
-              name="customerName" 
-              value={formData.customerName} 
-              onChange={handleChange} 
-              className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 ${errors.customerName ? 'border-red-300' : 'border-gray-300'}`} 
-              placeholder="Enter customer name" 
-            />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Customer <span className="text-red-500">*</span></label>
+            <input type="text" name="customerName" value={formData.customerName} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 ${errors.customerName ? 'border-red-300' : 'border-gray-300'}`} placeholder="Enter customer name" />
             {errors.customerName && <p className="text-xs text-red-500 mt-1">{errors.customerName}</p>}
           </div>
-
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Billing Method <span className="text-red-500">*</span>
-            </label>
-            <select 
-              name="billingMethod" 
-              value={formData.billingMethod} 
-              onChange={handleChange} 
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-            >
+            <label className="block text-sm font-medium text-gray-700 mb-1">Billing Method <span className="text-red-500">*</span></label>
+            <select name="billingMethod" value={formData.billingMethod} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
               <option value="Based on Task Hours">Based on Task Hours</option>
               <option value="Based on Project Hours">Based on Project Hours</option>
               <option value="Fixed Cost for Project">Fixed Cost for Project</option>
               <option value="Based on Staff Hours">Based on Staff Hours</option>
             </select>
           </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Rate Per Hour</label>
               <div className="relative">
                 <span className="absolute left-3 top-2 text-gray-500">$</span>
-                <input 
-                  type="number" 
-                  name="rate" 
-                  value={formData.rate} 
-                  onChange={handleChange} 
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" 
-                  placeholder="0.00" 
-                  min="0" 
-                  step="0.5" 
-                />
+                <input type="number" name="rate" value={formData.rate} onChange={handleChange} className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="0.00" min="0" step="0.5" />
               </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Budget</label>
               <div className="relative">
                 <span className="absolute left-3 top-2 text-gray-500">$</span>
-                <input 
-                  type="number" 
-                  name="budget" 
-                  value={formData.budget} 
-                  onChange={handleChange} 
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" 
-                  placeholder="0.00" 
-                  min="0" 
-                  step="100" 
-                />
+                <input type="number" name="budget" value={formData.budget} onChange={handleChange} className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="0.00" min="0" step="100" />
               </div>
             </div>
           </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-              <input 
-                type="date" 
-                name="startDate" 
-                value={formData.startDate} 
-                onChange={handleChange} 
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" 
-              />
+              <input type="date" name="startDate" value={formData.startDate} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-              <input 
-                type="date" 
-                name="endDate" 
-                value={formData.endDate} 
-                onChange={handleChange} 
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" 
-              />
+              <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
             </div>
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <select 
-              name="status" 
-              value={formData.status} 
-              onChange={handleChange} 
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-            >
+            <select name="status" value={formData.status} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
               <option value="completed">Completed</option>
             </select>
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea 
-              name="description" 
-              value={formData.description} 
-              onChange={handleChange} 
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" 
-              rows={3} 
-              placeholder="Max 2000 characters" 
-              maxLength={2000} 
-            />
+            <textarea name="description" value={formData.description} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" rows={3} placeholder="Max 2000 characters" maxLength={2000} />
           </div>
         </div>
       </div>
@@ -2415,10 +7424,10 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
 
   const getStatusIcon = (status: string) => {
     switch(status) {
-      case 'active': return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'inactive': return <XCircle className="w-4 h-4 text-gray-500" />;
-      case 'completed': return <CheckCircle className="w-4 h-4 text-blue-500" />;
-      default: return <AlertCircle className="w-4 h-4 text-gray-500" />;
+      case 'active': return <CheckCircle className="w-3 h-3 text-green-500" />;
+      case 'inactive': return <XCircle className="w-3 h-3 text-gray-500" />;
+      case 'completed': return <CheckCircle className="w-3 h-3 text-blue-500" />;
+      default: return <AlertCircle className="w-3 h-3 text-gray-500" />;
     }
   };
 
@@ -2459,182 +7468,154 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
     return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
-  // ✅ FULLY RESPONSIVE TABLE - No horizontal scroll needed
+  // ✅ ALL 9 COLUMNS - NO HORIZONTAL SCROLL, FITS ON ALL SCREENS
   const renderListView = () => (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[700px] md:min-w-full">
+      <div className="w-full overflow-x-visible">
+        <table className="w-full table-auto text-[8px] sm:text-[9px] md:text-xs lg:text-sm">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-2 py-2 text-left w-8">
+              <th className="px-0.5 sm:px-1 py-1 text-left w-5 sm:w-6">
                 <input 
                   type="checkbox" 
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5" 
                   checked={selectedProjects.length === paginatedProjects.length && paginatedProjects.length > 0} 
                   onChange={toggleAllProjects} 
                 />
               </th>
-              <th className="px-2 py-2 text-left text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                Customer
+              <th className="px-0.5 sm:px-1 py-1 text-left text-[7px] sm:text-[8px] md:text-[9px] font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                CUSTOMER
               </th>
-              <th className="px-2 py-2 text-left text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                Project
+              <th className="px-0.5 sm:px-1 py-1 text-left text-[7px] sm:text-[8px] md:text-[9px] font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                PROJECT
               </th>
-              <th className="px-2 py-2 text-left text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden sm:table-cell">
-                Billing
+              <th className="px-0.5 sm:px-1 py-1 text-left text-[7px] sm:text-[8px] md:text-[9px] font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                BILLING
               </th>
-              <th className="px-2 py-2 text-left text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden lg:table-cell">
-                Rate
+              <th className="px-0.5 sm:px-1 py-1 text-left text-[7px] sm:text-[8px] md:text-[9px] font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                RATE
               </th>
-              <th className="px-2 py-2 text-left text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden sm:table-cell">
-                Status
+              <th className="px-0.5 sm:px-1 py-1 text-left text-[7px] sm:text-[8px] md:text-[9px] font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                STATUS
               </th>
-              <th className="px-2 py-2 text-left text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden md:table-cell">
-                Timer
+              <th className="px-0.5 sm:px-1 py-1 text-left text-[7px] sm:text-[8px] md:text-[9px] font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                TIMER
               </th>
-              <th className="px-2 py-2 text-left text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden xl:table-cell">
-                Hours
+              <th className="px-0.5 sm:px-1 py-1 text-left text-[7px] sm:text-[8px] md:text-[9px] font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                HOURS
               </th>
-              <th className="px-2 py-2 text-left text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden xl:table-cell">
-                Budget
+              <th className="px-0.5 sm:px-1 py-1 text-left text-[7px] sm:text-[8px] md:text-[9px] font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                BUDGET
               </th>
-              <th className="px-2 py-2 text-left text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                Actions
+              <th className="px-0.5 sm:px-1 py-1 text-left text-[7px] sm:text-[8px] md:text-[9px] font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                ACTIONS
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {paginatedProjects.length === 0 ? (
-              <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-500">No projects found</td></tr>
+              <tr><td colSpan={10} className="px-2 py-4 sm:py-8 text-center text-gray-500 text-[8px] sm:text-sm">No projects found</td></tr>
             ) : (
               paginatedProjects.map((project: Project) => (
                 <tr key={project.id} className="hover:bg-gray-50 transition">
-                  <td className="px-2 py-2">
+                  <td className="px-0.5 sm:px-1 py-0.5 sm:py-1">
                     <input 
                       type="checkbox" 
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5" 
                       checked={selectedProjects.includes(project.id)} 
                       onChange={() => toggleProjectSelection(project.id)} 
                     />
                   </td>
-                  <td className="px-2 py-2">
+                  <td className="px-0.5 sm:px-1 py-0.5 sm:py-1">
                     <div 
-                      className="text-xs md:text-sm font-medium text-gray-700 hover:text-purple-600 cursor-pointer transition-colors duration-200 truncate max-w-[60px] sm:max-w-[80px] md:max-w-[120px] lg:max-w-[150px]"
+                      className="text-[7px] sm:text-[8px] md:text-[9px] lg:text-xs font-medium text-gray-700 hover:text-purple-600 cursor-pointer truncate max-w-[25px] sm:max-w-[40px] md:max-w-[60px] lg:max-w-[80px]"
                       onClick={() => onProjectClick(project.id)}
                       title={project.customerName}
                     >
                       {project.customerName}
                     </div>
                   </td>
-                  <td className="px-2 py-2">
+                  <td className="px-0.5 sm:px-1 py-0.5 sm:py-1">
                     <div 
-                      className="text-xs md:text-sm font-medium text-gray-800 hover:text-purple-600 cursor-pointer transition-colors duration-200"
+                      className="text-[7px] sm:text-[8px] md:text-[9px] lg:text-xs font-medium text-gray-800 hover:text-purple-600 cursor-pointer"
                       onClick={() => onProjectClick(project.id)}
                     >
-                      <div className="truncate max-w-[80px] sm:max-w-[120px] md:max-w-[150px] lg:max-w-[200px]" title={project.projectName}>
+                      <div className="truncate max-w-[30px] sm:max-w-[50px] md:max-w-[80px] lg:max-w-[120px]" title={project.projectName}>
                         {project.projectName}
                       </div>
-                      <div className="text-[9px] md:text-xs text-gray-500 truncate max-w-[80px] sm:max-w-[120px] md:max-w-[150px] lg:max-w-[200px]" title={project.description}>
+                      <div className="text-[6px] sm:text-[7px] md:text-[8px] text-gray-500 truncate max-w-[30px] sm:max-w-[50px] md:max-w-[80px] lg:max-w-[120px]" title={project.description}>
                         {project.description}
                       </div>
                     </div>
                   </td>
-                  <td className="px-2 py-2 hidden sm:table-cell">
-                    <span className={`px-1.5 py-0.5 text-[9px] md:text-[10px] font-medium rounded-full ${getBillingMethodBadgeColor(project.billingMethod)} truncate max-w-[70px] md:max-w-[100px] inline-block`}>
-                      {project.billingMethod.length > 10 ? project.billingMethod.substring(0, 10) + '...' : project.billingMethod}
+                  <td className="px-0.5 sm:px-1 py-0.5 sm:py-1">
+                    <span className={`px-0.5 sm:px-1 py-0.5 text-[6px] sm:text-[7px] md:text-[8px] font-medium rounded-full ${getBillingMethodBadgeColor(project.billingMethod)} truncate max-w-[35px] sm:max-w-[50px] md:max-w-[70px] inline-block`}>
+                      {project.billingMethod.length > 5 ? project.billingMethod.substring(0, 5) + '…' : project.billingMethod}
                     </span>
                   </td>
-                  <td className="px-2 py-2 text-[10px] md:text-sm text-gray-600 hidden lg:table-cell">
-                    {project.rate ? `$${project.rate.toFixed(2)}/hr` : '-'}
+                  <td className="px-0.5 sm:px-1 py-0.5 sm:py-1 text-[7px] sm:text-[8px] md:text-[9px] lg:text-xs text-gray-600 whitespace-nowrap">
+                    {project.rate ? `$${project.rate.toFixed(2)}` : '-'}
                   </td>
-                  <td className="px-2 py-2 hidden sm:table-cell">
-                    <div className={`inline-flex items-center px-1.5 py-0.5 text-[9px] md:text-[10px] font-medium rounded-full border ${getStatusColor(project.status)}`}>
+                  <td className="px-0.5 sm:px-1 py-0.5 sm:py-1">
+                    <div className={`inline-flex items-center px-0.5 sm:px-1 py-0.5 text-[6px] sm:text-[7px] md:text-[8px] font-medium rounded-full border ${getStatusColor(project.status)} whitespace-nowrap`}>
                       {getStatusIcon(project.status)}
-                      <span className="ml-0.5 hidden sm:inline">{project.status.charAt(0).toUpperCase() + project.status.slice(1)}</span>
-                      <span className="ml-0.5 sm:hidden">{project.status.charAt(0).toUpperCase()}</span>
+                      <span className="ml-0.5 hidden 2xs:inline">{project.status.charAt(0).toUpperCase() + project.status.slice(1)}</span>
+                      <span className="ml-0.5 2xs:hidden">{project.status.charAt(0).toUpperCase()}</span>
                     </div>
                   </td>
-                  <td className="px-2 py-2 hidden md:table-cell">
+                  <td className="px-0.5 sm:px-1 py-0.5 sm:py-1">
                     {project.status === 'completed' ? (
-                      <span className="text-[10px] md:text-xs text-green-600 font-medium">✅ Done</span>
+                      <span className="text-[7px] sm:text-[8px] md:text-[9px] lg:text-xs text-green-600 font-medium whitespace-nowrap">✅</span>
                     ) : (
-                      <div className="flex items-center gap-0.5">
-                        <div className="flex items-center gap-0.5 bg-gray-100 rounded px-1 py-0.5">
-                          <Clock className={`w-2.5 h-2.5 md:w-3 md:h-3 ${project.timerRunning ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
-                          <span className={`text-[8px] md:text-[10px] font-mono font-medium ${project.timerRunning ? 'text-green-600' : 'text-gray-600'}`}>
+                      <div className="flex items-center gap-0.5 whitespace-nowrap">
+                        <div className="flex items-center gap-0.5 bg-gray-100 rounded px-0.5 py-0.5">
+                          <Clock className={`w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-2.5 md:h-2.5 ${project.timerRunning ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
+                          <span className={`text-[6px] sm:text-[7px] md:text-[8px] font-mono font-medium ${project.timerRunning ? 'text-green-600' : 'text-gray-600'}`}>
                             {formatTimerDisplay(project.timerSeconds || 0)}
                           </span>
                         </div>
                         <div className="flex items-center gap-0.5">
                           {!project.timerRunning ? (
-                            <button
-                              onClick={() => onStartTimer(project.id)}
-                              className="p-0.5 text-green-600 hover:bg-green-50 rounded transition"
-                              title="Start Timer"
-                            >
-                              <Play className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                            <button onClick={() => onStartTimer(project.id)} className="p-0.5 text-green-600 hover:bg-green-50 rounded transition" title="Start Timer">
+                              <Play className="w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-2.5 md:h-2.5" />
                             </button>
                           ) : (
-                            <button
-                              onClick={() => onStopTimer(project.id)}
-                              className="p-0.5 text-yellow-600 hover:bg-yellow-50 rounded transition"
-                              title="Pause Timer"
-                            >
-                              <Pause className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                            <button onClick={() => onStopTimer(project.id)} className="p-0.5 text-yellow-600 hover:bg-yellow-50 rounded transition" title="Pause Timer">
+                              <Pause className="w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-2.5 md:h-2.5" />
                             </button>
                           )}
-                          <button
-                            onClick={() => onCompleteProject(project.id)}
-                            className="p-0.5 text-blue-600 hover:bg-blue-50 rounded transition"
-                            title="Complete Project"
-                          >
-                            <CheckCircle className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                          <button onClick={() => onCompleteProject(project.id)} className="p-0.5 text-blue-600 hover:bg-blue-50 rounded transition" title="Complete">
+                            <CheckCircle className="w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-2.5 md:h-2.5" />
                           </button>
                         </div>
                       </div>
                     )}
                   </td>
-                  <td className="px-2 py-2 hidden xl:table-cell">
-                    <div className="flex items-center text-[10px] md:text-xs text-gray-600">
-                      <Clock className="w-2.5 h-2.5 md:w-3 md:h-3 mr-0.5 text-gray-400" />
+                  <td className="px-0.5 sm:px-1 py-0.5 sm:py-1">
+                    <div className="flex items-center text-[7px] sm:text-[8px] md:text-[9px] lg:text-xs text-gray-600 whitespace-nowrap">
+                      <Clock className="w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-2.5 md:h-2.5 mr-0.5 text-gray-400" />
                       <span className="font-mono">{project.loggedHours}</span>
                     </div>
                   </td>
-                  <td className="px-2 py-2 hidden xl:table-cell text-[10px] md:text-xs text-gray-600">
+                  <td className="px-0.5 sm:px-1 py-0.5 sm:py-1 text-[7px] sm:text-[8px] md:text-[9px] lg:text-xs text-gray-600 whitespace-nowrap">
                     {project.budget ? `$${project.budget.toFixed(2)}` : '-'}
                   </td>
-                  <td className="px-2 py-2">
-                    <div className="flex items-center gap-0.5">
-                      <button 
-                        onClick={() => onEditClick(project)} 
-                        className="p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition"
-                        title="Edit"
-                      >
-                        <Edit className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                  <td className="px-0.5 sm:px-1 py-0.5 sm:py-1">
+                    <div className="flex items-center gap-0.5 whitespace-nowrap">
+                      <button onClick={() => onEditClick(project)} className="p-0.5 sm:p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition" title="Edit">
+                        <Edit className="w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-2.5 md:h-2.5" />
                       </button>
-                      <button 
-                        onClick={() => onLogTime(project.projectName)} 
-                        className="p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition"
-                        title="Log Time"
-                      >
-                        <Clock className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                      <button onClick={() => onLogTime(project.projectName)} className="p-0.5 sm:p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition" title="Log Time">
+                        <Clock className="w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-2.5 md:h-2.5" />
                       </button>
-                      <button 
-                        onClick={() => { 
-                          const np = { ...project, id: String(Date.now()), projectName: `${project.projectName} (Copy)`, loggedHours: '00:00', timerSeconds: 0, timerRunning: false }; 
-                          setProjects((prev: Project[]) => [...prev, np]); 
-                        }} 
-                        className="p-1 text-gray-400 hover:text-purple-600 rounded hover:bg-purple-50 transition"
-                        title="Clone"
-                      >
-                        <Copy className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                      <button onClick={() => { const np = { ...project, id: String(Date.now()), projectName: `${project.projectName} (Copy)`, loggedHours: '00:00', timerSeconds: 0, timerRunning: false }; setProjects((prev: Project[]) => [...prev, np]); }} className="p-0.5 sm:p-1 text-gray-400 hover:text-purple-600 rounded hover:bg-purple-50 transition" title="Clone">
+                        <Copy className="w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-2.5 md:h-2.5" />
                       </button>
-                      <button 
-                        onClick={() => handleDeleteProject(project.id)} 
-                        className="p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 transition"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                      <button onClick={() => onCompleteProject(project.id)} className="p-0.5 sm:p-1 text-blue-600 hover:bg-blue-50 rounded transition" title="Complete">
+                        <CheckCircle className="w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-2.5 md:h-2.5" />
+                      </button>
+                      <button onClick={() => handleDeleteProject(project.id)} className="p-0.5 sm:p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 transition" title="Delete">
+                        <Trash2 className="w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-2.5 md:h-2.5" />
                       </button>
                     </div>
                   </td>
@@ -2645,35 +7626,17 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
         </table>
       </div>
       {filteredProjects.length > 0 && (
-        <div className="px-3 py-2 bg-gray-50 border-t border-gray-200 flex flex-wrap items-center justify-between gap-2">
-          <div className="text-[10px] md:text-sm text-gray-700">
-            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredProjects.length)} of {filteredProjects.length} results
+        <div className="px-2 sm:px-3 py-1 sm:py-2 bg-gray-50 border-t border-gray-200 flex flex-wrap items-center justify-between gap-1">
+          <div className="text-[7px] sm:text-[8px] md:text-[9px] lg:text-xs text-gray-700">
+            {`${(currentPage - 1) * itemsPerPage + 1}-${Math.min(currentPage * itemsPerPage, filteredProjects.length)} of ${filteredProjects.length}`}
           </div>
-          <div className="flex items-center gap-1">
-            <button 
-              onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))} 
-              disabled={currentPage === 1} 
-              className="px-2 py-0.5 border border-gray-300 rounded text-[10px] md:text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-            >
-              Prev
-            </button>
+          <div className="flex items-center gap-0.5">
+            <button onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))} disabled={currentPage === 1} className="px-1 sm:px-1.5 py-0.5 border border-gray-300 rounded text-[7px] sm:text-[8px] md:text-[9px] lg:text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50">←</button>
             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p: number) => (
-              <button 
-                key={p} 
-                onClick={() => setCurrentPage(p)} 
-                className={`px-2 py-0.5 rounded text-[10px] md:text-sm ${currentPage === p ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-              >
-                {p}
-              </button>
+              <button key={p} onClick={() => setCurrentPage(p)} className={`px-1 sm:px-1.5 py-0.5 rounded text-[7px] sm:text-[8px] md:text-[9px] lg:text-xs ${currentPage === p ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>{p}</button>
             ))}
-            {totalPages > 5 && <span className="text-[10px] md:text-sm text-gray-500">...</span>}
-            <button 
-              onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))} 
-              disabled={currentPage === totalPages} 
-              className="px-2 py-0.5 border border-gray-300 rounded text-[10px] md:text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-            >
-              Next
-            </button>
+            {totalPages > 5 && <span className="text-[7px] sm:text-[8px] md:text-[9px] lg:text-xs text-gray-500">…</span>}
+            <button onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))} disabled={currentPage === totalPages} className="px-1 sm:px-1.5 py-0.5 border border-gray-300 rounded text-[7px] sm:text-[8px] md:text-[9px] lg:text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50">→</button>
           </div>
         </div>
       )}
@@ -2689,21 +7652,14 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
         {paginatedProjects.map((project: Project) => (
-          <div 
-            key={project.id} 
-            className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition p-3 sm:p-4 cursor-pointer"
-            onClick={() => onProjectClick(project.id)}
-          >
+          <div key={project.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition p-3 sm:p-4 cursor-pointer" onClick={() => onProjectClick(project.id)}>
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center space-x-2">
                 <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full ${getRandomColor(project.customerName)} text-white flex items-center justify-center text-[10px] sm:text-xs font-medium flex-shrink-0`}>
                   {getInitials(project.customerName)}
                 </div>
                 <div>
-                  <div 
-                    className="text-sm font-semibold text-gray-700 hover:text-purple-600 cursor-pointer transition-colors duration-200"
-                    onClick={() => onProjectClick(project.id)}
-                  >
+                  <div className="text-sm font-semibold text-gray-700 hover:text-purple-600 cursor-pointer transition-colors duration-200" onClick={() => onProjectClick(project.id)}>
                     {project.customerName}
                   </div>
                   <p className="text-xs text-gray-500">{project.projectName}</p>
@@ -2745,24 +7701,15 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
                 </div>
                 <div className="flex items-center gap-0.5 sm:gap-1">
                   {!project.timerRunning ? (
-                    <button
-                      onClick={() => onStartTimer(project.id)}
-                      className="p-0.5 sm:p-1 text-green-600 hover:bg-green-50 rounded transition"
-                    >
+                    <button onClick={() => onStartTimer(project.id)} className="p-0.5 sm:p-1 text-green-600 hover:bg-green-50 rounded transition">
                       <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     </button>
                   ) : (
-                    <button
-                      onClick={() => onStopTimer(project.id)}
-                      className="p-0.5 sm:p-1 text-yellow-600 hover:bg-yellow-50 rounded transition"
-                    >
+                    <button onClick={() => onStopTimer(project.id)} className="p-0.5 sm:p-1 text-yellow-600 hover:bg-yellow-50 rounded transition">
                       <Pause className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     </button>
                   )}
-                  <button
-                    onClick={() => onCompleteProject(project.id)}
-                    className="p-0.5 sm:p-1 text-blue-600 hover:bg-blue-50 rounded transition"
-                  >
+                  <button onClick={() => onCompleteProject(project.id)} className="p-0.5 sm:p-1 text-blue-600 hover:bg-blue-50 rounded transition">
                     <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   </button>
                 </div>
@@ -2771,10 +7718,7 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
             
             <div className="mt-2 sm:mt-3 flex items-center justify-between">
               <button className="text-[10px] sm:text-xs text-blue-600 hover:text-blue-700">Create Expense</button>
-              <button 
-                onClick={() => onLogTime(project.projectName)} 
-                className="text-[10px] sm:text-xs text-blue-600 hover:text-blue-700 flex items-center gap-0.5 sm:gap-1"
-              >
+              <button onClick={() => onLogTime(project.projectName)} className="text-[10px] sm:text-xs text-blue-600 hover:text-blue-700 flex items-center gap-0.5 sm:gap-1">
                 <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Log Time
               </button>
             </div>
@@ -2786,16 +7730,11 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
 
   return (
     <>
-      {/* Filters - Responsive */}
       <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 mb-4 sm:mb-6 border border-gray-200">
         <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-3 sm:gap-4">
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <div className="relative flex-1 sm:flex-none">
-              <select 
-                className="appearance-none bg-gray-50 border border-gray-300 rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 pr-7 sm:pr-8 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 w-full" 
-                value={viewBy} 
-                onChange={(e) => setViewBy(e.target.value as any)}
-              >
+              <select className="appearance-none bg-gray-50 border border-gray-300 rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 pr-7 sm:pr-8 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 w-full" value={viewBy} onChange={(e) => setViewBy(e.target.value as any)}>
                 <option value="all">All Projects</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -2805,41 +7744,25 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
             </div>
             <div className="relative flex-1 sm:flex-none">
               <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 absolute left-2.5 sm:left-3 top-1.5 sm:top-2.5 text-gray-400" />
-              <input 
-                type="text" 
-                placeholder="Search projects..." 
-                className="pl-8 sm:pl-9 pr-3 sm:pr-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 w-full sm:w-40 md:w-56" 
-                value={searchTerm} 
-                onChange={(e) => setSearchTerm(e.target.value)} 
-              />
+              <input type="text" placeholder="Search projects..." className="pl-8 sm:pl-9 pr-3 sm:pr-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 w-full sm:w-40 md:w-56" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
             <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
-              <button 
-                onClick={() => setViewMode('list')} 
-                className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition flex items-center space-x-1 ${viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-              >
+              <button onClick={() => setViewMode('list')} className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition flex items-center space-x-1 ${viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
                 <List className="w-3.5 h-3.5 sm:w-4 sm:h-4" /><span className="hidden xs:inline">List</span>
               </button>
-              <button 
-                onClick={() => setViewMode('card')} 
-                className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition flex items-center space-x-1 ${viewMode === 'card' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-              >
+              <button onClick={() => setViewMode('card')} className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition flex items-center space-x-1 ${viewMode === 'card' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
                 <LayoutGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4" /><span className="hidden xs:inline">Card</span>
               </button>
             </div>
             <button className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center">
               <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />Filter
             </button>
-            <button className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center hidden sm:flex">
-              <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />Export
-            </button>
           </div>
         </div>
       </div>
 
-      {/* Bulk Update */}
       {selectedProjects.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4 flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs sm:text-sm text-blue-700 font-medium">{selectedProjects.length} selected</span>
@@ -2852,10 +7775,8 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
         </div>
       )}
 
-      {/* Content */}
       {viewMode === 'list' ? renderListView() : renderCardView()}
 
-      {/* Stats - Responsive grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mt-4 sm:mt-6">
         <div className="bg-white rounded-lg shadow-sm p-2 sm:p-4 border border-gray-200">
           <div className="text-[10px] sm:text-sm text-gray-500">Total</div>
@@ -3185,7 +8106,6 @@ const ProjectList: React.FC = () => {
 
   return (
     <div className="p-3 sm:p-6 bg-gray-50 min-h-screen">
-      {/* Projects Tab Header */}
       {activeTab === 'projects' && (
         <div className="flex flex-wrap items-start sm:items-center justify-between mb-3 sm:mb-4 gap-3">
           <div>
@@ -3193,25 +8113,16 @@ const ProjectList: React.FC = () => {
             <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">Manage all your projects from one place</p>
           </div>
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-            <button 
-              onClick={() => setView('create')} 
-              className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 text-xs sm:text-sm shadow-sm whitespace-nowrap"
-            >
+            <button onClick={() => setView('create')} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 text-xs sm:text-sm shadow-sm whitespace-nowrap">
               <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden xs:inline">New Project</span>
               <span className="xs:hidden">New</span>
             </button>
-            <button 
-              onClick={handleHeaderStart}
-              className="px-3 sm:px-4 py-1.5 sm:py-2 bg-green-600 text-white rounded-lg flex items-center hover:bg-green-700 text-xs sm:text-sm shadow-sm whitespace-nowrap"
-            >
+            <button onClick={handleHeaderStart} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-green-600 text-white rounded-lg flex items-center hover:bg-green-700 text-xs sm:text-sm shadow-sm whitespace-nowrap">
               <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden xs:inline">Start</span>
             </button>
-            <button 
-              onClick={handleHeaderLogTime}
-              className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 text-xs sm:text-sm shadow-sm whitespace-nowrap"
-            >
+            <button onClick={handleHeaderLogTime} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 text-xs sm:text-sm shadow-sm whitespace-nowrap">
               <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden xs:inline">Log Time</span>
               <span className="xs:hidden">Log</span>
@@ -3220,7 +8131,6 @@ const ProjectList: React.FC = () => {
         </div>
       )}
 
-      {/* Task Board Header */}
       {activeTab === 'taskboard' && (
         <div className="flex flex-wrap items-start sm:items-center justify-between mb-3 sm:mb-4 gap-3">
           <div>
@@ -3228,15 +8138,11 @@ const ProjectList: React.FC = () => {
             <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">Manage and track tasks across your projects</p>
           </div>
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-            <button 
-              className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 text-xs sm:text-sm shadow-sm whitespace-nowrap"
-            >
+            <button className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 text-xs sm:text-sm shadow-sm whitespace-nowrap">
               <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               Edit
             </button>
-            <button 
-              className="px-3 sm:px-4 py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg flex items-center hover:bg-purple-700 text-xs sm:text-sm shadow-sm whitespace-nowrap"
-            >
+            <button className="px-3 sm:px-4 py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg flex items-center hover:bg-purple-700 text-xs sm:text-sm shadow-sm whitespace-nowrap">
               <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden xs:inline">Add Task</span>
               <span className="xs:hidden">Add</span>
@@ -3249,7 +8155,6 @@ const ProjectList: React.FC = () => {
         </div>
       )}
 
-      {/* Time Tracker Header */}
       {activeTab === 'timetracker' && (
         <div className="flex flex-wrap items-start sm:items-center justify-between mb-3 sm:mb-4 gap-3">
           <div>
@@ -3263,46 +8168,23 @@ const ProjectList: React.FC = () => {
         </div>
       )}
 
-      {/* Navigation Tabs - Responsive */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-2 sm:px-4 mb-4 sm:mb-6 overflow-x-auto">
         <nav className="flex space-x-3 sm:space-x-6 min-w-fit">
-          <button 
-            onClick={() => setActiveTab('projects')} 
-            className={`py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-1 sm:space-x-2 whitespace-nowrap ${
-              activeTab === 'projects' 
-                ? 'border-blue-600 text-blue-600' 
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
+          <button onClick={() => setActiveTab('projects')} className={`py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-1 sm:space-x-2 whitespace-nowrap ${activeTab === 'projects' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
             <LayoutDashboard className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span>Projects</span>
           </button>
-          <button 
-            onClick={() => setActiveTab('taskboard')} 
-            className={`py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-1 sm:space-x-2 whitespace-nowrap ${
-              activeTab === 'taskboard' 
-                ? 'border-blue-600 text-blue-600' 
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
+          <button onClick={() => setActiveTab('taskboard')} className={`py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-1 sm:space-x-2 whitespace-nowrap ${activeTab === 'taskboard' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
             <ClipboardList className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span>Task Board</span>
           </button>
-          <button 
-            onClick={() => setActiveTab('timetracker')} 
-            className={`py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-1 sm:space-x-2 whitespace-nowrap ${
-              activeTab === 'timetracker' 
-                ? 'border-blue-600 text-blue-600' 
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
+          <button onClick={() => setActiveTab('timetracker')} className={`py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-1 sm:space-x-2 whitespace-nowrap ${activeTab === 'timetracker' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
             <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span>Time Tracker</span>
           </button>
         </nav>
       </div>
 
-      {/* Content */}
       <div>
         {renderTabContent()}
       </div>
