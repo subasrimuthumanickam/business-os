@@ -17,6 +17,8 @@ import estimateRoutes from "./routes/estimate.routes.js";
 import projectRoutes from './routes/project.routes.js';
 import taxRateRoutes from './routes/taxRate.routes.js';
 import priceListRoutes from './routes/priceList.routes.js';
+import employeeRoutes from './routes/employee.routes.js';
+import attendanceRoutes from './routes/attendance.routes.js';
 
 const app = express();
 const PORT = 5000;
@@ -39,6 +41,8 @@ app.use("/api/estimates", estimateRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/tax-rates', taxRateRoutes);
 app.use('/api/price-lists', priceListRoutes);
+app.use("/api/hrms/employees", employeeRoutes);
+app.use("/api/hrms/attendance", attendanceRoutes);
 
 // Interfaces for incoming requests
 interface RegisterBody {

@@ -8,7 +8,7 @@ interface Invoice {
   amount: number;
   date: string;
   dueDate: string;
-  status: 'paid' | 'pending' | 'overdue' | 'failed';
+  status: 'paid' | 'pending' | 'overdue' | 'failed' | 'draft';
   plan: string;
   clientEmail?: string;
   items?: Array<{
@@ -22,20 +22,28 @@ interface Invoice {
 interface InvoiceListProps {
   invoices?: Invoice[];
   onInvoiceUpdate?: (invoices: Invoice[]) => void;
+  // NEW — lets the parent (BillingView) switch to the CreateInvoice form
+  // when "+ New" is clicked, same way ItemDetailPane's onBack pattern
+  // hands control back up to its parent.
+  onNewInvoice?: () => void;
 }
 
-const InvoiceList: React.FC<InvoiceListProps> = ({ 
-  invoices: propInvoices, 
-  onInvoiceUpdate 
+const InvoiceList: React.FC<InvoiceListProps> = ({
+  invoices: propInvoices,
+  onInvoiceUpdate,
+  onNewInvoice,
 }) => {
   const [invoices, setInvoices] = useState<Invoice[]>(propInvoices || []);
-  const [searchTerm, setSearchTerm] = useState('');
   // const [loading, setLoading] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   // const [showViewModal, setShowViewModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  
+
+  // Send Invoice / Mark as Sent — both hit the same backend endpoint
+  // already used in CustomerDetails.tsx (handleSendInvoice).
+  const [sendingInvoice, setSendingInvoice] = useState(false);
+  const [sendBannerMessage, setSendBannerMessage] = useState<string | null>(null);
 
   // Simulate API fetch
   useEffect(() => {
@@ -54,18 +62,6 @@ const fetchInvoices = async () => {
 
     const data = response.data.data;
 
-    // const formattedInvoices = data.map((inv: any) => ({
-    //   id: inv.id,
-    //   invoiceNumber: inv.invoice_number,
-    //   clientName: inv.customer_name,
-    //   clientEmail: inv.customer_email,
-    //   amount: inv.total,
-    //   date: inv.invoice_date,
-    //   dueDate: inv.due_date,
-    //   status: inv.status,
-    //   items: inv.items || [],
-    //   plan: ""
-    // }));
     const formattedInvoices = data.map((inv: any) => ({
   id: inv.id,
   invoiceNumber: inv.invoice_number,
@@ -101,6 +97,8 @@ const fetchInvoices = async () => {
         return 'text-red-700 bg-red-50 border-red-200';
       case 'failed':
         return 'text-red-700 bg-red-50 border-red-200';
+      case 'draft':
+        return 'text-gray-600 bg-gray-100 border-gray-200';
       default:
         return 'text-gray-700 bg-gray-50 border-gray-200';
     }
@@ -143,10 +141,8 @@ const fetchInvoices = async () => {
   };
 
   const filteredInvoices = invoices.filter((invoice: Invoice) => {
-    const matchesSearch = invoice.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.invoiceNumber.includes(searchTerm);
     const matchesStatus = filterStatus === 'all' || invoice.status === filterStatus;
-    return matchesSearch && matchesStatus;
+    return matchesStatus;
   });
 
   const totalRevenue = invoices.reduce((sum: number, inv: Invoice) => sum + inv.amount, 0);
@@ -157,7 +153,6 @@ const fetchInvoices = async () => {
 
   const handleDelete = async (id: string) => {
     try {
-      // Simulate API delete
       await new Promise(resolve => setTimeout(resolve, 300));
       const updatedInvoices = invoices.filter(inv => inv.id !== id);
       setInvoices(updatedInvoices);
@@ -180,331 +175,353 @@ const fetchInvoices = async () => {
     }
   };
 
-  // if (loading) {
-  //   return (
-  //     <div className="flex items-center justify-center py-12">
-  //       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-  //     </div>
-  //   );
-  // }
+  // Shared by both "Send Invoice" and "Mark as Sent" — same backend route
+  // as CustomerDetails.tsx's handleSendInvoice. After a successful send,
+  // optimistically bump the invoice out of "draft" into "pending" so the
+  // banner disappears without needing a full refetch.
+  const handleSendInvoice = async () => {
+    if (!selectedInvoice) return;
+
+    setSendingInvoice(true);
+    setSendBannerMessage(null);
+
+    try {
+      const res = await fetch('http://localhost:5000/api/invoices/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          invoiceId: selectedInvoice.id,
+          email: selectedInvoice.clientEmail,
+          invNumber: selectedInvoice.invoiceNumber,
+        }),
+      });
+
+      if (res.ok) {
+        const updatedInvoices = invoices.map((inv) =>
+          inv.id === selectedInvoice.id ? { ...inv, status: 'pending' as const } : inv
+        );
+        setInvoices(updatedInvoices);
+        setSelectedInvoice({ ...selectedInvoice, status: 'pending' });
+        if (onInvoiceUpdate) onInvoiceUpdate(updatedInvoices);
+      } else {
+        setSendBannerMessage('Failed to send invoice. Please try again.');
+      }
+    } catch (error) {
+      console.error('Send invoice error:', error);
+      setSendBannerMessage('Failed to send invoice. Please try again.');
+    } finally {
+      setSendingInvoice(false);
+    }
+  };
 
   return (
-    <div>
-      
-{/* Search and Actions */}
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search invoices..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none w-64 text-sm"
-            />
-            <svg
-              className="absolute left-3 top-2.5 w-4 h-4 text-gray-400"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </div>
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-          >
-            <option value="all">All Status</option>
-            <option value="paid">Paid</option>
-            <option value="pending">Pending</option>
-            <option value="overdue">Overdue</option>
-            <option value="failed">Failed</option>
-          </select>
-        </div>
-        <button className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          New Invoice
+  <div className="h-screen bg-white flex flex-col">
+
+    {/* Top toolbar — "All Invoices" label + Status filter + "+ New" button, all one row (Zoho-style) */}
+    <div className="border-b px-5 py-3 bg-white flex items-center justify-between">
+      <h2 className="text-lg font-semibold text-gray-800">All Invoices</h2>
+      <div className="flex items-center gap-2">
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="border rounded-md px-3 py-2 text-sm outline-none"
+        >
+          <option value="all">All Status</option>
+          <option value="paid">Paid</option>
+          <option value="pending">Pending</option>
+          <option value="overdue">Overdue</option>
+          <option value="failed">Failed</option>
+          <option value="draft">Draft</option>
+        </select>
+        <button
+          onClick={onNewInvoice}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm "
+        >
+          + New
         </button>
       </div>
+    </div>
 
-      <div className="flex h-[80vh] border rounded-xl overflow-hidden bg-white">
 
-  {/* LEFT SIDE */}
+    <div className="flex flex-1 min-h-0">
 
-  <div className="w-[32%] border-r overflow-y-auto">
+      {/* LEFT PANEL */}
 
-    {filteredInvoices.map((invoice) => (
+      <div className="w-[28%] border-r overflow-y-auto bg-white">
 
-      <div
-        key={invoice.id}
-        onClick={() => setSelectedInvoice(invoice)}
-        className={`p-4 border-b cursor-pointer transition-all
-        ${
-          selectedInvoice?.id === invoice.id
-            ? "bg-blue-50 border-l-4 border-blue-600"
-            : "hover:bg-gray-50"
-        }`}
-      >
+        {filteredInvoices.map((invoice) => (
 
-        <div className="flex justify-between items-start">
+          <div
+            key={invoice.id}
+            onClick={() => {
+              setSelectedInvoice(invoice);
+              setSendBannerMessage(null);
+            }}
+            className={`p-4 border-b cursor-pointer transition-all
+            ${
+              selectedInvoice?.id === invoice.id
+                ? "bg-gray-100 border-l-4 border-blue-500"
+                : "hover:bg-gray-50"
+            }`}
+          >
 
-          <div>
+            <div className="flex justify-between items-start">
 
-            <h3 className="font-semibold text-gray-800">
-              {invoice.clientName}
-            </h3>
+  <div className="flex gap-3">
 
-            <p className="text-blue-600 text-sm mt-1">
-              {invoice.invoiceNumber}
-            </p>
+    <input
+      type="checkbox"
+      className="mt-1 h-4 w-4"
+    />
 
-            <p className="text-xs text-gray-500 mt-1">
-              {new Date(invoice.date).toLocaleDateString()}
-            </p>
+    <div>
+      <h3 className="font-medium text-gray-800">
+        {invoice.clientName}
+      </h3>
 
-          </div>
+      <p className="text-sm text-blue-600 mt-1">
+        {invoice.invoiceNumber}
+      </p>
 
-          <div className="text-right">
-
-            <h4 className="font-semibold">
-              ${Number(invoice.amount).toFixed(2)}
-            </h4>
-
-            <span
-              className={`inline-flex mt-2 px-2 py-1 rounded-full text-xs border ${getStatusColor(
-                invoice.status
-              )}`}
-            >
-              {invoice.status.toUpperCase()}
-            </span>
-
-          </div>
-
-        </div>
-
-      </div>
-
-    ))}
+      <p className="text-xs text-gray-500">
+        {new Date(invoice.date).toLocaleDateString()}
+      </p>
+    </div>
 
   </div>
 
-
-
-  {/* RIGHT SIDE */}
-
-  <div className="flex-1 overflow-y-auto bg-gray-100 p-8">
-
-    {selectedInvoice ? (
-
-      <div className="bg-white shadow rounded-lg p-10 max-w-4xl mx-auto">
-
-        {/* Header */}
-
-        <div className="flex justify-between mb-10">
-
-          <div>
-            <h1 className="text-5xl font-light text-red-600">
-              INVOICE
-            </h1>
-
-            <p className="text-gray-500 mt-2">
-              {selectedInvoice.invoiceNumber}
-            </p>
-          </div>
-
-          <div className="text-right">
-
-            <h3 className="font-bold text-xl">
-              {selectedInvoice.clientName}
-            </h3>
-
-            <p className="text-gray-600">
-              {selectedInvoice.clientEmail}
-            </p>
-
-          </div>
-
-        </div>
-
-
-        {/* Dates */}
-
-        <div className="grid grid-cols-3 gap-10 mb-10">
-
-          <div>
-            <p className="text-gray-500 text-sm">
-              Invoice Date
-            </p>
-
-            <h4 className="font-semibold mt-2">
-              {new Date(
-                selectedInvoice.date
-              ).toLocaleDateString()}
-            </h4>
-          </div>
-
-          <div>
-            <p className="text-gray-500 text-sm">
-              Due Date
-            </p>
-
-            <h4 className="font-semibold mt-2">
-              {new Date(
-                selectedInvoice.dueDate
-              ).toLocaleDateString()}
-            </h4>
-          </div>
-
-          <div>
-
-            <p className="text-gray-500 text-sm">
-              Balance Due
-            </p>
-
-            <h2 className="text-3xl text-red-600 font-bold mt-2">
-              ${Number(selectedInvoice.amount).toFixed(2)}
-            </h2>
-
-          </div>
-
-        </div>
-
-
-
-        {/* Items Table */}
-
-        <table className="w-full border">
-
-          <thead className="bg-gray-50">
-
-            <tr>
-
-              <th className="text-left px-4 py-3">
-                Description
-              </th>
-
-              <th className="px-4 py-3">
-                Qty
-              </th>
-
-              <th className="px-4 py-3">
-                Rate
-              </th>
-
-              <th className="px-4 py-3 text-right">
-                Amount
-              </th>
-
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            {selectedInvoice.items?.map((item, index) => (
-
-              <tr key={index} className="border-t">
-
-                <td className="px-4 py-4">
-                  {item.description}
-                </td>
-
-                <td className="text-center">
-                  {item.quantity}
-                </td>
-
-                <td className="text-center">
-                    ${Number(item.amount).toFixed(2)}
-
-                </td>
-
-                <td className="text-right px-4">
-                    ${Number(item.amount).toFixed(2)}
-
-                </td>
-
-              </tr>
-
-            ))}
-
-          </tbody>
-
-        </table>
-
-
-        {/* Total */}
-
-        <div className="mt-10 flex justify-end">
-
-          <div className="w-72">
-
-            <div className="flex justify-between py-3 border-t">
-
-              <span className="font-semibold">
-                Total
-              </span>
-
-              <span className="font-bold text-xl">
-                ${Number(selectedInvoice.amount).toFixed(2)}
-              </span>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-    ) : (
-
-      <div className="flex justify-center items-center h-full text-gray-500">
-        Select an Invoice
-      </div>
-
-    )}
-
+  <div className="text-right">
+    <p className="font-semibold">
+      ₹{Number(invoice.amount).toFixed(2)}
+    </p>
+
+    <span
+      className={`inline-flex mt-2 px-2 py-1 rounded-full text-xs border ${getStatusColor(
+        invoice.status
+      )}`}
+    >
+      {invoice.status.toUpperCase()}
+    </span>
   </div>
 
 </div>
-
-      {/* Delete Modal */}
-      {showDeleteModal && selectedInvoice && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">Delete Invoice</h3>
-            <p className="text-gray-600 mb-4">
-              Are you sure you want to delete invoice {selectedInvoice.invoiceNumber} for {selectedInvoice.clientName}?
-              This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDelete(selectedInvoice.id)}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700"
-              >
-                Delete
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        ))}
+      </div>
+      {/* RIGHT PANEL */}
+      <div className="flex-1 bg-[#f7f7f7] overflow-y-auto">
+        {selectedInvoice ? (
+          <>
+            {/* Toolbar */}
+            <div className="bg-white border-b px-6 py-3 flex justify-between items-center">
+              <h2 className="text-xl font-medium text-gray-700">
+                {selectedInvoice.invoiceNumber}
+              </h2>
+              <div className="flex gap-2 flex-wrap">
+                <button className="border px-3 py-2 rounded text-sm hover:bg-gray-50">
+                  Edit
+                </button>
+                <button className="border px-3 py-2 rounded text-sm hover:bg-gray-50">
+                  PDF
+                </button>
+                <button className="border px-3 py-2 rounded text-sm hover:bg-gray-50">
+                  Print
+                </button>
+                <button className="bg-blue-600 text-white px-4 py-2 rounded text-sm">
+                  Record Payment
+                </button>
+              </div>
+            </div>
+            {/* Tabs */}
+            <div className="bg-white border-b px-6">
+              <div className="flex gap-8">
+                <button className="py-3 text-sm border-b-2 border-blue-600 text-blue-600 font-medium">
+                  WHAT'S NEXT
+                </button>
+                <button className="py-3 text-sm text-gray-500">
+                  COMMENTS & HISTORY
+                </button>
+                <button className="py-3 text-sm text-gray-500">
+                  PAYMENTS
+                </button>
+              </div>
+            </div>
 
-      
+            {/* Send Invoice banner — Draft invoices only, Zoho-style */}
+            {selectedInvoice.status === 'draft' && (
+              <div className="mx-6 mt-6 bg-blue-50 border border-blue-100 rounded-lg p-4 flex items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
+                    <svg className="w-4 h-4 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M22 6l-10 7L2 6" />
+                      <path d="M2 6h20v12H2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">Send the invoice</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Invoice has been created. You can email it to your customer or mark it as sent.
+                    </p>
+                    {sendBannerMessage && (
+                      <p className="text-xs text-red-600 mt-1">{sendBannerMessage}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={handleSendInvoice}
+                    disabled={sendingInvoice}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-60"
+                  >
+                    {sendingInvoice ? 'Sending...' : 'Send Invoice'}
+                  </button>
+                  <button
+                    onClick={handleSendInvoice}
+                    disabled={sendingInvoice}
+                    className="border border-gray-300 bg-white text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-60"
+                  >
+                    Mark as Sent
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Invoice Preview */}
+            <div className="p-8">
+              <div className="relative bg-white border shadow-sm p-12 max-w-4xl mx-auto overflow-hidden">
+
+                {/* Diagonal "Draft" ribbon — top-left corner, Zoho-style */}
+                {selectedInvoice.status === 'draft' && (
+                  <div className="absolute top-0 left-0 w-32 h-32 overflow-hidden pointer-events-none">
+                    <div className="absolute top-[18px] left-[-38px] w-[160px] -rotate-45 bg-slate-400 text-white text-[11px] font-semibold tracking-wide text-center py-1 shadow-sm">
+                      Draft
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-between mb-12">
+                  <div>
+                    <h3 className="font-bold text-lg text-gray-800">BusinessOS</h3>
+                    <p className="text-gray-500 text-sm mt-1">Business Management Software</p>
+                  </div>
+                  <div className="text-right">
+                    <h1 className="text-4xl font-light text-gray-800">
+                      INVOICE
+                    </h1>
+                    <p className="text-gray-500 mt-2">
+                      # {selectedInvoice.invoiceNumber}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mb-10">
+                  <p className="text-sm text-gray-500 mb-1">Bill To</p>
+                  <h3 className="font-semibold text-lg text-blue-700">
+                    {selectedInvoice.clientName}
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    {selectedInvoice.clientEmail}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-10 mb-10">
+                  <div>
+                    <p className="text-sm text-gray-500">
+                      Invoice Date
+                    </p>
+                    <h4 className="font-semibold mt-2">
+                      {new Date(
+                        selectedInvoice.date
+                      ).toLocaleDateString()}
+                    </h4>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">
+                      Due Date
+                    </p>
+                    <h4 className="font-semibold mt-2">
+                      {new Date(
+                        selectedInvoice.dueDate
+                      ).toLocaleDateString()}
+                    </h4>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">
+                      Balance Due
+                    </p>
+                    <h2 className="text-3xl text-red-600 font-bold mt-2">
+                      ₹{Number(selectedInvoice.amount).toFixed(2)}
+                    </h2>
+                  </div>
+                </div>
+                {/* Items Table */}
+                <table className="w-full border">
+                <thead className="bg-gray-800 text-white">
+                    <tr>
+                      <th className="text-left px-4 py-3">
+                        Description
+                      </th>
+                      <th className="px-4 py-3">
+                        Qty
+                      </th>
+                      <th className="px-4 py-3">
+                        Rate
+                      </th>
+                  <th className="text-right px-4 py-3">
+                        Amount
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedInvoice.items?.map(
+                      (item, index) => (
+                        <tr
+                          key={index}
+                          className="border-t"
+                        >
+                          <td className="px-4 py-4">
+                            {item.description}
+                          </td>
+                          <td className="text-center">
+                            {item.quantity}
+                          </td>
+                          <td className="text-center">
+                            ₹{Number(item.rate).toFixed(2)}
+                          </td>
+                          <td className="text-right px-4">
+                            ₹{Number(item.amount).toFixed(2)}
+                          </td>
+                        </tr>
+                      )
+                    )}
+                  </tbody>
+                </table>
+                <div className="mt-10 flex justify-end">
+                  <div className="w-72">
+                    <div className="flex justify-between border-t py-4">
+                      <span className="font-semibold">
+                        Total
+                      </span>
+                      <span className="text-xl font-bold">
+                        ₹{Number(
+                          selectedInvoice.amount
+                        ).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="h-full flex items-center justify-center text-gray-500">
+            Select an Invoice
+          </div>
+        )}
+      </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default InvoiceList;

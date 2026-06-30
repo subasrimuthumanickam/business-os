@@ -1,4 +1,3 @@
-// components/hrms/EmployeeList.tsx
 import React, { useState, useEffect } from 'react';
 import { Employee } from '../../types/hrms';
 
@@ -53,94 +52,31 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
   }, []);
 
   const fetchEmployees = async () => {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const mockEmployees: Employee[] = [
-        {
-          id: '1',
-          name: 'Takiya Baksh',
-          code: 'EMP001',
-          role: 'UI/UX Designer',
-          email: 'takiyabaksh@gmail.com',
-          phone: '+302801431000',
-          department: 'Design',
-          joinDate: '2023-01-15',
-          salary: 75000,
-          status: 'active',
-          skills: ['React', 'TypeScript', 'UI/UX Design', 'Figma']
-        },
-        {
-          id: '2',
-          name: 'John Smith',
-          code: 'EMP002',
-          role: 'Frontend Developer',
-          email: 'john.smith@businessos.com',
-          phone: '+302801431001',
-          department: 'Engineering',
-          joinDate: '2023-02-01',
-          salary: 88000,
-          status: 'active',
-          skills: ['React', 'TypeScript', 'Node.js', 'GraphQL']
-        },
-        {
-          id: '3',
-          name: 'Sarah Johnson',
-          code: 'EMP003',
-          role: 'Product Manager',
-          email: 'sarah@businessos.com',
-          phone: '+302801431002',
-          department: 'Product',
-          joinDate: '2023-03-10',
-          salary: 92000,
-          status: 'active',
-          skills: ['Product Strategy', 'Agile', 'Communication', 'Leadership']
-        },
-        {
-          id: '4',
-          name: 'Michael Chen',
-          code: 'EMP004',
-          role: 'Backend Developer',
-          email: 'michael.chen@businessos.com',
-          phone: '+302801431003',
-          department: 'Engineering',
-          joinDate: '2023-04-01',
-          salary: 85000,
-          status: 'active',
-          skills: ['Node.js', 'Python', 'AWS', 'MongoDB']
-        },
-        {
-          id: '5',
-          name: 'Emily Rodriguez',
-          code: 'EMP005',
-          role: 'HR Specialist',
-          email: 'emily@businessos.com',
-          phone: '+302801431004',
-          department: 'HR',
-          joinDate: '2023-04-15',
-          salary: 65000,
-          status: 'on-leave',
-          skills: ['Recruitment', 'Employee Relations', 'Training', 'Payroll']
-        },
-        {
-          id: '6',
-          name: 'David Kim',
-          code: 'EMP006',
-          role: 'DevOps Engineer',
-          email: 'david.kim@businessos.com',
-          phone: '+302801431005',
-          department: 'Engineering',
-          joinDate: '2023-05-12',
-          salary: 92000,
-          status: 'active',
-          skills: ['AWS', 'Docker', 'Kubernetes', 'CI/CD']
-        }
-      ];
-      setEmployees(mockEmployees);
-      if (onEmployeeUpdate) onEmployeeUpdate(mockEmployees);
-    } catch (error) {
-      console.error('Error fetching employees:', error);
+  try {
+    const response = await fetch(
+      "http://localhost:5000/api/hrms/employees"
+    );
+
+    const data = await response.json();
+
+    setEmployees(data.data || []);
+if (selectedEmployee && data.data) {
+      const updatedSelectedEmployee = data.data.find(
+        (emp: Employee) => String(emp.id) === String(selectedEmployee.id)
+      );
+
+      if (updatedSelectedEmployee) {
+        setSelectedEmployee(updatedSelectedEmployee);
+      }
     }
-  };
+
+    if (onEmployeeUpdate) {
+      onEmployeeUpdate(data.data || []);
+    }
+  } catch (error) {
+    console.error("Error fetching employees:", error);
+  }
+};
 
   const getStatusColor = (status: string): string => {
     switch (status) {
@@ -156,17 +92,26 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
   };
 
   const handleDelete = async (id: string) => {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      const updatedEmployees = employees.filter(emp => emp.id !== id);
-      setEmployees(updatedEmployees);
-      if (onEmployeeUpdate) onEmployeeUpdate(updatedEmployees);
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/hrms/employees/${id}`,
+      {
+        method: "DELETE"
+      }
+    );
+
+    if (response.ok) {
+      fetchEmployees();
       setShowDeleteModal(null);
-      if (selectedEmployee?.id === id) setSelectedEmployee(null);
-    } catch (error) {
-      console.error('Error deleting employee:', error);
+
+      if (selectedEmployee?.id === id) {
+        setSelectedEmployee(null);
+      }
     }
-  };
+  } catch (error) {
+    console.error("Error deleting employee:", error);
+  }
+};
 
   const handleStatusChange = async (id: string, newStatus: Employee['status']) => {
     try {
@@ -200,44 +145,61 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
   };
 
   const handleAddEmployee = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const newEmployee = createEmployeeObject(formData);
-      const updatedEmployees = [...employees, newEmployee];
-      setEmployees(updatedEmployees);
-      if (onEmployeeUpdate) onEmployeeUpdate(updatedEmployees);
+  e.preventDefault();
+
+  try {
+    const response = await fetch(
+      "http://localhost:5000/api/hrms/employees/create",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(formData)
+      }
+    );
+
+    const data = await response.json();
+
+    if (response.ok) {
+      fetchEmployees();
       setShowAddModal(false);
       resetForm();
-    } catch (error) {
-      console.error('Error adding employee:', error);
     }
-  };
+  } catch (error) {
+    console.error("Error adding employee:", error);
+  }
+};
 
-  const handleUpdateEmployee = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      if (!editingEmployee) return;
-      
-      const updatedEmployee = createEmployeeObject(formData, editingEmployee);
-      
-      const updatedEmployees = employees.map(emp =>
-        emp.id === editingEmployee.id ? updatedEmployee : emp
-      );
-      
-      setEmployees(updatedEmployees);
-      if (onEmployeeUpdate) onEmployeeUpdate(updatedEmployees);
-      
-      if (selectedEmployee?.id === editingEmployee.id) {
-        setSelectedEmployee(updatedEmployee);
+  const handleUpdateEmployee = async (
+  e: React.FormEvent
+) => {
+  e.preventDefault();
+
+  if (!editingEmployee) return;
+
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/hrms/employees/${editingEmployee.id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(formData)
       }
-      
+    );
+
+    if (response.ok) {
+      fetchEmployees();
       setShowAddModal(false);
       setEditingEmployee(null);
       resetForm();
-    } catch (error) {
-      console.error('Error updating employee:', error);
     }
-  };
+  } catch (error) {
+    console.error("Error updating employee:", error);
+  }
+};
 
   const resetForm = () => {
     setFormData({
@@ -603,7 +565,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Department *</label>
                   <select
-                    required
+                    // required
                     value={formData.department || ''}
                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
