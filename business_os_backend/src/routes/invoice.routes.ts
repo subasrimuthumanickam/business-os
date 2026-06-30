@@ -1,6 +1,7 @@
 import { Router } from "express";
 
-import {createInvoiceController,getInvoiceByIdController,updateInvoiceController,deleteInvoiceController,downloadInvoicePdfController 
+import {createInvoiceController,getInvoiceByIdController,updateInvoiceController,
+  deleteInvoiceController,downloadInvoicePdfController,getAllInvoicesController
 }from "../controllers/invoice.controller.js";
 
 const router = Router();
@@ -10,9 +11,14 @@ router.post(
   createInvoiceController
 );
 router.get(
+  "/",
+  getAllInvoicesController
+);
+router.get(
   "/download/:id",
   downloadInvoicePdfController
 );
+
 router.get(
   "/:id",
   getInvoiceByIdController

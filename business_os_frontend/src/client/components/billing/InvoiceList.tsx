@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 interface Invoice {
   id: string;
@@ -43,95 +44,53 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
     }
   }, []);
 
-  const fetchInvoices = async () => {
-    // setLoading(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const mockInvoices: Invoice[] = [
-        {
-          id: '1',
-          invoiceNumber: '#011',
-          clientName: 'Tech Solutions Inc.',
-          clientEmail: 'tech@example.com',
-          amount: 25.00,
-          date: '2026-06-25',
-          dueDate: '2026-07-25',
-          status: 'paid',
-          plan: 'Basic',
-          items: [
-            { description: 'Monthly Subscription', quantity: 1, rate: 25, amount: 25 }
-          ]
-        },
-        {
-          id: '2',
-          invoiceNumber: '#010',
-          clientName: 'Design Studio LLC',
-          clientEmail: 'design@example.com',
-          amount: 35.00,
-          date: '2026-05-25',
-          dueDate: '2026-06-25',
-          status: 'paid',
-          plan: 'Pro',
-          items: [
-            { description: 'Pro Plan - Monthly', quantity: 1, rate: 35, amount: 35 }
-          ]
-        },
-        {
-          id: '3',
-          invoiceNumber: '#009',
-          clientName: 'Marketing Agency',
-          clientEmail: 'marketing@example.com',
-          amount: 40.00,
-          date: '2026-04-25',
-          dueDate: '2026-05-25',
-          status: 'failed',
-          plan: 'Premium',
-          items: [
-            { description: 'Premium Plan', quantity: 1, rate: 40, amount: 40 }
-          ]
-        },
-        {
-          id: '4',
-          invoiceNumber: '#008',
-          clientName: 'Consulting Group',
-          clientEmail: 'consulting@example.com',
-          amount: 30.00,
-          date: '2026-03-25',
-          dueDate: '2026-04-25',
-          status: 'overdue',
-          plan: 'Pro',
-          items: [
-            { description: 'Pro Plan - Quarterly', quantity: 1, rate: 30, amount: 30 }
-          ]
-        },
-        {
-          id: '5',
-          invoiceNumber: '#007',
-          clientName: 'Startup Labs',
-          clientEmail: 'startup@example.com',
-          amount: 20.00,
-          date: '2026-02-25',
-          dueDate: '2026-03-25',
-          status: 'pending',
-          plan: 'Basic',
-          items: [
-            { description: 'Basic Plan', quantity: 1, rate: 20, amount: 20 }
-          ]
-        },
-      ];
-      setInvoices(mockInvoices);
-      if (mockInvoices.length > 0) {
-  setSelectedInvoice(mockInvoices[0]);
-}
-      if (onInvoiceUpdate) onInvoiceUpdate(mockInvoices);
-    } catch (error) {
-      console.error('Error fetching invoices:', error);
-    } finally {
-      // setLoading(false);
-    }
-  };
+const fetchInvoices = async () => {
 
+  try {
+
+    const response = await axios.get(
+  "http://localhost:5000/api/invoices"
+);
+
+    const data = response.data.data;
+
+    // const formattedInvoices = data.map((inv: any) => ({
+    //   id: inv.id,
+    //   invoiceNumber: inv.invoice_number,
+    //   clientName: inv.customer_name,
+    //   clientEmail: inv.customer_email,
+    //   amount: inv.total,
+    //   date: inv.invoice_date,
+    //   dueDate: inv.due_date,
+    //   status: inv.status,
+    //   items: inv.items || [],
+    //   plan: ""
+    // }));
+    const formattedInvoices = data.map((inv: any) => ({
+  id: inv.id,
+  invoiceNumber: inv.invoice_number,
+  clientName: inv.customer_name,
+  clientEmail: inv.customer_email,
+  amount: Number(inv.total), // Change here
+  date: inv.invoice_date,
+  dueDate: inv.due_date,
+  status: inv.status,
+  items: inv.items || [],
+  plan: ""
+}));
+    setInvoices(formattedInvoices);
+
+    if (formattedInvoices.length > 0) {
+      setSelectedInvoice(formattedInvoices[0]);
+    }
+
+  } catch (error) {
+
+    console.log(error);
+
+  }
+
+};
   const getStatusColor = (status: string): string => {
     switch (status) {
       case 'paid':
@@ -315,7 +274,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
           <div className="text-right">
 
             <h4 className="font-semibold">
-              ${invoice.amount.toFixed(2)}
+              ${Number(invoice.amount).toFixed(2)}
             </h4>
 
             <span
@@ -410,7 +369,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
             </p>
 
             <h2 className="text-3xl text-red-600 font-bold mt-2">
-              ${selectedInvoice.amount.toFixed(2)}
+              ${Number(selectedInvoice.amount).toFixed(2)}
             </h2>
 
           </div>
@@ -462,11 +421,13 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
                 </td>
 
                 <td className="text-center">
-                  ${item.rate.toFixed(2)}
+                    ${Number(item.amount).toFixed(2)}
+
                 </td>
 
                 <td className="text-right px-4">
-                  ${item.amount.toFixed(2)}
+                    ${Number(item.amount).toFixed(2)}
+
                 </td>
 
               </tr>
@@ -491,7 +452,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
               </span>
 
               <span className="font-bold text-xl">
-                ${selectedInvoice.amount.toFixed(2)}
+                ${Number(selectedInvoice.amount).toFixed(2)}
               </span>
 
             </div>

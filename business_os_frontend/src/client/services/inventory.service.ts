@@ -1,4 +1,4 @@
-import { Product, CreateProductDTO, UpdateProductDTO, ProductTransaction } from '../types/Inventory.types';
+import { Product, CreateProductDTO, UpdateProductDTO, ProductTransaction, ProductHistoryEntry } from '../types/Inventory.types';
 import { apiService } from './api.service';
 
 export class InventoryService {
@@ -50,6 +50,10 @@ export class InventoryService {
   async bulkDeleteProduct(ids: string[]): Promise<void> {
     // No bulk-delete endpoint on the backend yet; delete one by one.
     await Promise.all(ids.map((id) => this.deleteProduct(id)));
+  }
+
+  async getProductHistory(id: string): Promise<ProductHistoryEntry[]> {
+    return apiService.get<ProductHistoryEntry[]>(`/stock-movements/product/${id}`);
   }
 
   async searchProducts(query: string): Promise<Product[]> {

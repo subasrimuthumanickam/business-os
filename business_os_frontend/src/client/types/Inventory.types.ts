@@ -74,6 +74,17 @@ export interface Product {
 //   status?: 'active' | 'inactive';
 // }
 
+export interface ProductHistoryEntry {
+  id: number;
+  product_id: number;
+  movement_type: 'IN' | 'OUT';
+  quantity: number;
+  reason: string | null;
+  reference_note: string | null;
+  created_by: number | null;
+  created_by_name?: string | null;
+  created_at: string;
+}
 export interface CreateProductDTO {
   name: string;
   sku: string;

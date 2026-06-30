@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import fs from "fs";
 import path from "path";
 
-import { createInvoice, getInvoiceById, updateInvoice, deleteInvoice } from "../services/invoice.service.js";
+import { createInvoice, getInvoiceById, updateInvoice, deleteInvoice, getAllInvoices } from "../services/invoice.service.js";
 import { createInvoicePDF } from "../utils/pdf.js";
 
 export const createInvoiceController = async (
@@ -149,4 +149,29 @@ export const downloadInvoicePdfController = async (req: Request, res: Response):
     message: err.message
   });
 }
+};
+
+export const getAllInvoicesController = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+
+  try {
+
+    const invoices = await getAllInvoices();
+
+    return res.status(200).json({
+      success: true,
+      data: invoices
+    });
+
+  } catch (error: any) {
+
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+
+  }
+
 };

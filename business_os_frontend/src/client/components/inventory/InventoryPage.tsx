@@ -670,7 +670,9 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
   // ============================================
   const renderCategoriesContent = () => {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      // <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white overflow-hidden">
+
         <div className="p-3 sm:p-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="relative flex-1 max-w-full sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
@@ -1267,58 +1269,38 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
 
     // Default - Main Inventory View (Two-pane Zoho-style layout)
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {/* Header inside card */}
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <h2 className="text-lg font-semibold text-gray-800">Items</h2>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={() => alert('Manage Stock')}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors"
-              >
-                <Package size={15} /> Manage Stock
-              </button>
-              <div className="h-5 w-px bg-gray-300"></div>
-              <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors">
-                Export
-              </button>
-              <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors">
-                Import
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs inside card */}
-        <div className="flex flex-wrap items-center gap-1 px-4 sm:px-6 py-2 border-b border-gray-200 bg-gray-50/50">
-          <button className="text-sm font-medium px-3 py-1.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
-            Inventory
-          </button>
-          <button 
-            onClick={handleOptionTypes}
-            className="text-sm font-medium px-3 py-1.5 rounded-md text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
-          >
-            Option Types
-          </button>
-          <button 
-            onClick={handleCollections}
-            className="text-sm font-medium px-3 py-1.5 rounded-md text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
-          >
-            Collections
-          </button>
-          <button 
-            onClick={handleProductSettings}
-            className="text-sm font-medium px-3 py-1.5 rounded-md text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
-          >
-            Product Settings
-          </button>
-        </div>
+      <div className="bg-white border-gray-200 overflow-hidden">
+{/* Merged header row: Active Items (left, matching the list pane's width) + Manage Stock/Export/Import (right) — Zoho-style single row */}
+      <div className="flex items-center border-b border-gray-200">
+        <div className="w-[280px] sm:w-[320px] shrink-0 flex items-center justify-between gap-2 px-3 py-2.5">
+        <span className="text-sm font-semibold text-gray-700">Active Items</span>
+    <button
+      onClick={handleNewProduct}
+      className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+    >
+      <Plus size={14} /> New
+    </button>
+  </div>
+  <div className="flex-1 flex justify-end items-center gap-2 px-4 sm:px-6 py-2">
+    <button
+      onClick={() => alert('Manage Stock')}
+      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors"
+    >
+      <Package size={15} /> Manage Stock
+    </button>
+    <div className="h-5 w-px bg-gray-300"></div>
+    <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors">
+      Export
+    </button>
+    <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors">
+      Import
+    </button>
+  </div>
+</div>
+      
 
         {/* Two-pane master-detail: item list (left) + item detail (right) */}
-        <div className="flex h-[calc(100vh-260px)] min-h-[480px]">
+        {/* <div className="flex h-[calc(100vh-260px)] min-h-[480px]">
           <div className="w-[280px] sm:w-[320px] shrink-0">
             <InventoryItemList
               products={products}
@@ -1349,8 +1331,42 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
               </div>
             )}
           </div>
-        </div>
+        </div> */}
+        <div className="flex h-[calc(100vh-260px)] min-h-[480px]">
+  {/* List pane — full width on mobile when nothing selected, hidden on mobile once an item is selected. Always visible + fixed width from md breakpoint up. */}
+  <div className={`${foundProduct ? 'hidden md:block' : 'block'} w-full md:w-[280px] lg:w-[320px] shrink-0`}>
+    <InventoryItemList
+      products={products}
+      selectedProductId={selectedProductId}
+      searchTerm={listSearchTerm}
+      onSearchChange={handleListSearchChange}
+      onSelectProduct={handleProductClick}
+      onNewItem={handleNewProduct}
+    />
+  </div>
 
+  {/* Detail pane — full width on mobile when an item IS selected, hidden on mobile otherwise. Always visible from md breakpoint up. */}
+  <div className={`${foundProduct ? 'block' : 'hidden md:block'} flex-1 min-w-0`}>
+    {foundProduct ? (
+      <ItemDetailPane
+        product={foundProduct}
+        onEdit={() => handleEdit(foundProduct.id)}
+        onDelete={() => handleDelete(foundProduct.id)}
+        onAddStock={() => handleAddStock(foundProduct.id)}
+        onRemoveStock={() => handleRemoveStock(foundProduct.id)}
+        onBack={handleBackToList}
+      />
+    ) : (
+      <div className="flex flex-col items-center justify-center h-full text-center px-6">
+        <Package size={40} className="text-gray-300 mb-3" />
+        <h3 className="text-base font-medium text-gray-600">Select an item</h3>
+        <p className="text-sm text-gray-400 mt-1">
+          Choose an item from the list, or create a new one to see its details here.
+        </p>
+      </div>
+    )}
+  </div>
+</div>
         {/* Pagination inside card */}
         <div className="px-4 sm:px-6 py-3 border-t border-gray-200">
           <InventoryPagination

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Plus, Bell, Settings, Grid3X3, ChevronDown, User, LogOut, Menu } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useSearch } from '../../../context/SearchContext';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -9,11 +10,14 @@ interface HeaderProps {
 const ClientHeader: React.FC<HeaderProps> = ({ onMenuClick }) => {
   // 1. Need to define state for the dropdown
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  
+
   // 2. Need to define navigation
   const navigate = useNavigate();
 
-  // 3. Define the logout handler
+  // 3. Global search term — shared with every page via SearchContext
+  const { searchTerm, setSearchTerm } = useSearch();
+
+  // 4. Define the logout handler
   const handleLogout = () => {
     navigate('/login');
   };
@@ -25,12 +29,14 @@ const ClientHeader: React.FC<HeaderProps> = ({ onMenuClick }) => {
         <button onClick={onMenuClick} className="md:hidden p-1">
           <Menu size={24} />
         </button>
-        
+
         {/* Search Input */}
         <div className="relative">
           <Search size={16} className="absolute left-3 top-2.5 text-gray-400" />
-          <input 
-            placeholder="Search..." 
+          <input
+            placeholder="Search..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="bg-[#2d3450] w-[150px] md:w-[300px] h-9 rounded-md pl-10 pr-4 text-sm outline-none"
           />
         </div>
@@ -43,11 +49,11 @@ const ClientHeader: React.FC<HeaderProps> = ({ onMenuClick }) => {
         </button>
         <Bell size={18} className="cursor-pointer text-gray-300" />
         <Settings size={18} className="cursor-pointer text-gray-300" />
-        
+
         {/* Profile Dropdown Container */}
         <div className="relative">
-          <div 
-            className="flex items-center gap-2 cursor-pointer" 
+          <div
+            className="flex items-center gap-2 cursor-pointer"
             onClick={() => setShowProfileMenu(!showProfileMenu)}
           >
             <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center font-bold text-xs">S</div>
@@ -70,7 +76,7 @@ const ClientHeader: React.FC<HeaderProps> = ({ onMenuClick }) => {
             </div>
           )}
         </div>
-        
+
         <Grid3X3 size={18} className="cursor-pointer text-gray-300" />
       </div>
     </header>

@@ -1,11 +1,13 @@
 // import React, { useState, useEffect } from 'react';
 // import {
 //   Edit, Trash2, MoreVertical, Package, Plus, Minus,
-//   Tag, FileText, Clock as ClockIcon, FileSpreadsheet, ShoppingCart, Receipt
+//   Tag, FileText, Clock as ClockIcon, FileSpreadsheet, ShoppingCart, Receipt,
+//   ArrowUpCircle, ArrowDownCircle
 // } from 'lucide-react';
-// import { Product, ProductTransaction } from '../../types/Inventory.types';
+// import { Product, ProductTransaction, ProductHistoryEntry } from '../../types/Inventory.types';
 // import { InventoryService } from '../../services/inventory.service';
 // import InvoiceView from '../billing/InvoiceView';
+// import CreatePayment from '../billing/Createpayment';
 
 // interface ItemDetailPaneProps {
 //   product: Product;
@@ -16,6 +18,15 @@
 // }
 
 // type DetailTab = 'overview' | 'transactions' | 'history';
+
+// // Minimal invoice context passed into CreatePayment when paying a specific
+// // invoice — mirrors PayableInvoice in CustomerDetails.tsx.
+// interface PayableInvoice {
+//   id: number;
+//   invoice_number: string;
+//   total: number;
+//   status: string;
+// }
 
 // /**
 //  * Right pane of the Zoho-style master-detail Inventory layout.
@@ -34,10 +45,18 @@
 //  *
 //  * Clicking an invoice number in the Transactions tab swaps the content
 //  * area (below the product header + tab bar) to show InvoiceView, instead
-//  * of covering the whole screen. Closing the invoice returns to the
-//  * Transactions tab content. Header (product name, Add/Remove Stock, Edit,
-//  * ⋮ menu) and the Overview/Transactions/History tab bar stay visible the
-//  * whole time.
+//  * of covering the whole screen. From there, clicking "Pay Invoice" swaps
+//  * the same content area again to show CreatePayment (pre-filled with the
+//  * invoice context), matching the inline component-swap pattern used in
+//  * CustomerDetails.tsx. Closing either one returns to the Transactions tab
+//  * content. Header (product name, Add/Remove Stock, Edit, ⋮ menu) and the
+//  * Overview/Transactions/History tab bar stay visible the whole time.
+//  *
+//  * History tab — Phase 1: shows manual stock_movements entries (Add Stock /
+//  * Remove Stock actions) via GET /api/stock-movements/product/:id, as a
+//  * vertical activity-feed timeline. Invoice/transaction-triggered stock
+//  * changes (inventory_transactions table) are a planned follow-up — there's
+//  * no backend endpoint for that yet, so they don't appear here yet.
 //  */
 // export const ItemDetailPane: React.FC<ItemDetailPaneProps> = ({
 //   product,
@@ -52,6 +71,15 @@
 //   const [transactionsLoading, setTransactionsLoading] = useState(false);
 //   const [transactionsError, setTransactionsError] = useState<string | null>(null);
 //   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+
+//   // History tab — stock_movements timeline.
+//   const [history, setHistory] = useState<ProductHistoryEntry[]>([]);
+//   const [historyLoading, setHistoryLoading] = useState(false);
+//   const [historyError, setHistoryError] = useState<string | null>(null);
+
+//   // Pay Invoice flow — mirrors CustomerDetails.tsx's payingInvoice/showPaymentForm.
+//   const [payingInvoice, setPayingInvoice] = useState<PayableInvoice | null>(null);
+//   const [showPaymentForm, setShowPaymentForm] = useState(false);
 
 //   const isGoods = (product.type ?? 'goods') === 'goods';
 
@@ -80,6 +108,31 @@
 //     };
 //   }, [activeTab, product.id]);
 
+//   useEffect(() => {
+//     if (activeTab !== 'history') return;
+
+//     let cancelled = false;
+//     setHistoryLoading(true);
+//     setHistoryError(null);
+
+//     InventoryService.getInstance()
+//       .getProductHistory(product.id)
+//       .then((data) => {
+//         if (!cancelled) setHistory(data);
+//       })
+//       .catch((err) => {
+//         console.error('Failed to load history:', err);
+//         if (!cancelled) setHistoryError('Could not load history. Please try again.');
+//       })
+//       .finally(() => {
+//         if (!cancelled) setHistoryLoading(false);
+//       });
+
+//     return () => {
+//       cancelled = true;
+//     };
+//   }, [activeTab, product.id]);
+
 //   const handleOpenInvoice = async (txn: ProductTransaction) => {
 //     try {
 //       const response = await fetch(
@@ -96,6 +149,31 @@
 //     } catch (error) {
 //       console.error('Failed to load invoice:', error);
 //     }
+//   };
+
+//   // Called from InvoiceView's "Pay Invoice" button (via the onPay prop).
+//   const handlePayInvoice = () => {
+//     if (!selectedInvoice) return;
+
+//     setPayingInvoice({
+//       id: selectedInvoice.id,
+//       invoice_number: selectedInvoice.invoice_number,
+//       total: selectedInvoice.total,
+//       status: selectedInvoice.status,
+//     });
+//     setShowPaymentForm(true);
+//   };
+
+//   const formatHistoryDate = (dateString: string) => {
+//     const date = new Date(dateString);
+//     if (isNaN(date.getTime())) return dateString;
+//     return date.toLocaleString('en-IN', {
+//       day: '2-digit',
+//       month: 'short',
+//       year: 'numeric',
+//       hour: '2-digit',
+//       minute: '2-digit',
+//     });
 //   };
 
 //   const tabs: { key: DetailTab; label: string }[] = [
@@ -204,7 +282,21 @@
 
 //       {/* Content */}
 //       <div className="flex-1 overflow-y-auto p-5">
-//         {selectedInvoice ? (
+//         {showPaymentForm && payingInvoice ? (
+//           <CreatePayment
+//             customer={{
+//               id: selectedInvoice?.customer_id,
+//               name: selectedInvoice?.customer_name,
+//               email: selectedInvoice?.customer_email,
+//             }}
+//             invoice={payingInvoice}
+//             payment={null}
+//             onClose={() => {
+//               setShowPaymentForm(false);
+//               setPayingInvoice(null);
+//             }}
+//           />
+//         ) : selectedInvoice ? (
 //           <InvoiceView
 //             invoice={selectedInvoice}
 //             customer={{
@@ -214,6 +306,7 @@
 //               currency: 'INR'
 //             }}
 //             onClose={() => setSelectedInvoice(null)}
+//             onPay={handlePayInvoice}
 //           />
 //         ) : (
 //           <>
@@ -406,9 +499,21 @@
 //                               {txn.date ? new Date(txn.date).toLocaleDateString('en-IN') : '—'}
 //                             </td>
 //                             <td className="px-3 py-2">
-//                               <span className="px-2 py-0.5 text-[11px] rounded-full bg-gray-100 text-gray-600 capitalize">
-//                                 {txn.status}
-//                               </span>
+//                              <span
+//   className={`px-2 py-0.5 text-[11px] rounded-full capitalize font-medium ${
+//     txn.status?.toLowerCase() === 'paid'
+//       ? 'bg-green-100 text-green-700'
+//       : txn.status?.toLowerCase() === 'draft'
+//       ? 'bg-blue-100 text-blue-800'
+//       : txn.status?.toLowerCase() === 'pending'
+//       ? 'bg-amber-100 text-amber-700'
+//       : txn.status?.toLowerCase() === 'overdue'
+//       ? 'bg-red-100 text-red-700'
+//       : 'bg-gray-100 text-gray-600'
+//   }`}
+// >
+//   {txn.status}
+// </span>
 //                             </td>
 //                             <td className="px-3 py-2 text-xs text-right text-gray-700">{txn.quantity}</td>
 //                             <td className="px-3 py-2 text-xs text-right font-medium text-gray-800">
@@ -424,12 +529,90 @@
 //             )}
 
 //             {activeTab === 'history' && (
-//               <div className="flex flex-col items-center justify-center py-16 text-center">
-//                 <ClockIcon size={36} className="text-gray-300 mb-3" />
-//                 <h3 className="text-sm font-medium text-gray-600">No history yet</h3>
-//                 <p className="text-xs text-gray-400 mt-1 max-w-xs">
-//                   Stock movements and item edits will be logged here once stock_movements is wired in.
-//                 </p>
+//               <div>
+//                 {historyLoading && (
+//                   <div className="flex flex-col items-center justify-center py-16 text-center">
+//                     <ClockIcon size={36} className="text-gray-300 mb-3 animate-pulse" />
+//                     <p className="text-sm text-gray-500">Loading history...</p>
+//                   </div>
+//                 )}
+
+//                 {!historyLoading && historyError && (
+//                   <div className="flex flex-col items-center justify-center py-16 text-center">
+//                     <ClockIcon size={36} className="text-red-300 mb-3" />
+//                     <h3 className="text-sm font-medium text-red-600">{historyError}</h3>
+//                   </div>
+//                 )}
+
+//                 {!historyLoading && !historyError && history.length === 0 && (
+//                   <div className="flex flex-col items-center justify-center py-16 text-center">
+//                     <ClockIcon size={36} className="text-gray-300 mb-3" />
+//                     <h3 className="text-sm font-medium text-gray-600">No history yet</h3>
+//                     <p className="text-xs text-gray-400 mt-1 max-w-xs">
+//                       Stock movements and item edits will be logged here once stock_movements is wired in.
+//                     </p>
+//                   </div>
+//                 )}
+
+//                 {!historyLoading && !historyError && history.length > 0 && (
+//                   <div className="max-w-2xl">
+//                     <ul className="relative">
+//                       {history.map((entry, idx) => {
+//                         const isIn = entry.movement_type === 'IN';
+//                         const isLast = idx === history.length - 1;
+
+//                         return (
+//                           <li key={entry.id} className="relative flex gap-3 pb-6">
+//                             {/* Connecting line — skipped for the last entry */}
+//                             {!isLast && (
+//                               <span className="absolute left-[11px] top-6 bottom-0 w-px bg-gray-200" />
+//                             )}
+
+//                             {/* Dot / icon */}
+//                             <span
+//                               className={`relative z-10 flex items-center justify-center w-6 h-6 rounded-full shrink-0 ${
+//                                 isIn
+//                                   ? 'bg-emerald-50 text-emerald-600'
+//                                   : 'bg-orange-50 text-orange-600'
+//                               }`}
+//                             >
+//                               {isIn ? <ArrowUpCircle size={16} /> : <ArrowDownCircle size={16} />}
+//                             </span>
+
+//                             {/* Entry content */}
+//                             <div className="flex-1 min-w-0 pt-0.5">
+//                               <div className="flex items-center justify-between gap-3">
+//                                 <p className="text-sm text-gray-900">
+//                                   <span className="font-semibold">
+//                                     {isIn ? 'Stock added' : 'Stock removed'}
+//                                   </span>
+//                                   <span className={`ml-2 font-medium ${isIn ? 'text-emerald-600' : 'text-orange-600'}`}>
+//                                     {isIn ? '+' : '−'}{entry.quantity}
+//                                   </span>
+//                                 </p>
+//                                 <span className="text-xs text-gray-400 shrink-0">
+//                                   {formatHistoryDate(entry.created_at)}
+//                                 </span>
+//                               </div>
+
+//                               {entry.reason && (
+//                                 <p className="text-xs text-gray-600 mt-0.5">{entry.reason}</p>
+//                               )}
+
+//                               {entry.reference_note && (
+//                                 <p className="text-xs text-gray-400 mt-0.5 italic">{entry.reference_note}</p>
+//                               )}
+
+//                               {entry.created_by_name && (
+//                                 <p className="text-xs text-gray-400 mt-0.5">By {entry.created_by_name}</p>
+//                               )}
+//                             </div>
+//                           </li>
+//                         );
+//                       })}
+//                     </ul>
+//                   </div>
+//                 )}
 //               </div>
 //             )}
 //           </>
@@ -444,9 +627,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   Edit, Trash2, MoreVertical, Package, Plus, Minus,
-  Tag, FileText, Clock as ClockIcon, FileSpreadsheet, ShoppingCart, Receipt
+  Tag, FileText, Clock as ClockIcon, FileSpreadsheet, ShoppingCart, Receipt,
+  ArrowUpCircle, ArrowDownCircle, ArrowLeft
 } from 'lucide-react';
-import { Product, ProductTransaction } from '../../types/Inventory.types';
+import { Product, ProductTransaction, ProductHistoryEntry } from '../../types/Inventory.types';
 import { InventoryService } from '../../services/inventory.service';
 import InvoiceView from '../billing/InvoiceView';
 import CreatePayment from '../billing/Createpayment';
@@ -457,6 +641,7 @@ interface ItemDetailPaneProps {
   onDelete: () => void;
   onAddStock: () => void;
   onRemoveStock: () => void;
+  onBack?: () => void;
 }
 
 type DetailTab = 'overview' | 'transactions' | 'history';
@@ -493,6 +678,18 @@ interface PayableInvoice {
  * CustomerDetails.tsx. Closing either one returns to the Transactions tab
  * content. Header (product name, Add/Remove Stock, Edit, ⋮ menu) and the
  * Overview/Transactions/History tab bar stay visible the whole time.
+ *
+ * History tab — Phase 1: shows manual stock_movements entries (Add Stock /
+ * Remove Stock actions) via GET /api/stock-movements/product/:id, as a
+ * vertical activity-feed timeline. Invoice/transaction-triggered stock
+ * changes (inventory_transactions table) are a planned follow-up — there's
+ * no backend endpoint for that yet, so they don't appear here yet.
+ *
+ * onBack — optional, only passed on mobile/narrow layouts (InventoryPage
+ * hides the item list and shows only this pane once an item is selected).
+ * Renders a small back arrow before the product name, hidden at md+ where
+ * the list stays visible alongside this pane so there's nothing to "go
+ * back" to.
  */
 export const ItemDetailPane: React.FC<ItemDetailPaneProps> = ({
   product,
@@ -500,6 +697,7 @@ export const ItemDetailPane: React.FC<ItemDetailPaneProps> = ({
   onDelete,
   onAddStock,
   onRemoveStock,
+  onBack,
 }) => {
   const [activeTab, setActiveTab] = useState<DetailTab>('overview');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -507,6 +705,11 @@ export const ItemDetailPane: React.FC<ItemDetailPaneProps> = ({
   const [transactionsLoading, setTransactionsLoading] = useState(false);
   const [transactionsError, setTransactionsError] = useState<string | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+
+  // History tab — stock_movements timeline.
+  const [history, setHistory] = useState<ProductHistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
 
   // Pay Invoice flow — mirrors CustomerDetails.tsx's payingInvoice/showPaymentForm.
   const [payingInvoice, setPayingInvoice] = useState<PayableInvoice | null>(null);
@@ -532,6 +735,31 @@ export const ItemDetailPane: React.FC<ItemDetailPaneProps> = ({
       })
       .finally(() => {
         if (!cancelled) setTransactionsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, product.id]);
+
+  useEffect(() => {
+    if (activeTab !== 'history') return;
+
+    let cancelled = false;
+    setHistoryLoading(true);
+    setHistoryError(null);
+
+    InventoryService.getInstance()
+      .getProductHistory(product.id)
+      .then((data) => {
+        if (!cancelled) setHistory(data);
+      })
+      .catch((err) => {
+        console.error('Failed to load history:', err);
+        if (!cancelled) setHistoryError('Could not load history. Please try again.');
+      })
+      .finally(() => {
+        if (!cancelled) setHistoryLoading(false);
       });
 
     return () => {
@@ -570,6 +798,18 @@ export const ItemDetailPane: React.FC<ItemDetailPaneProps> = ({
     setShowPaymentForm(true);
   };
 
+  const formatHistoryDate = (dateString: string) => {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    return date.toLocaleString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   const tabs: { key: DetailTab; label: string }[] = [
     { key: 'overview', label: 'Overview' },
     { key: 'transactions', label: 'Transactions' },
@@ -581,6 +821,15 @@ export const ItemDetailPane: React.FC<ItemDetailPaneProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between gap-3 px-5 py-3.5 border-b border-gray-200">
         <div className="flex items-center gap-2 min-w-0">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="md:hidden p-1 -ml-1 text-gray-500 hover:text-gray-700 shrink-0"
+              title="Back to list"
+            >
+              <ArrowLeft size={18} />
+            </button>
+          )}
           <h2 className="text-lg font-semibold text-gray-900 truncate">{product.name}</h2>
           <span
             className={`shrink-0 px-2 py-0.5 text-[11px] font-medium rounded-full ${
@@ -893,7 +1142,19 @@ export const ItemDetailPane: React.FC<ItemDetailPaneProps> = ({
                               {txn.date ? new Date(txn.date).toLocaleDateString('en-IN') : '—'}
                             </td>
                             <td className="px-3 py-2">
-                              <span className="px-2 py-0.5 text-[11px] rounded-full bg-gray-100 text-gray-600 capitalize">
+                              <span
+                                className={`px-2 py-0.5 text-[11px] rounded-full capitalize font-medium ${
+                                  txn.status?.toLowerCase() === 'paid'
+                                    ? 'bg-green-100 text-green-700'
+                                    : txn.status?.toLowerCase() === 'draft'
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : txn.status?.toLowerCase() === 'pending'
+                                    ? 'bg-amber-100 text-amber-700'
+                                    : txn.status?.toLowerCase() === 'overdue'
+                                    ? 'bg-red-100 text-red-700'
+                                    : 'bg-gray-100 text-gray-600'
+                                }`}
+                              >
                                 {txn.status}
                               </span>
                             </td>
@@ -911,12 +1172,90 @@ export const ItemDetailPane: React.FC<ItemDetailPaneProps> = ({
             )}
 
             {activeTab === 'history' && (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <ClockIcon size={36} className="text-gray-300 mb-3" />
-                <h3 className="text-sm font-medium text-gray-600">No history yet</h3>
-                <p className="text-xs text-gray-400 mt-1 max-w-xs">
-                  Stock movements and item edits will be logged here once stock_movements is wired in.
-                </p>
+              <div>
+                {historyLoading && (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <ClockIcon size={36} className="text-gray-300 mb-3 animate-pulse" />
+                    <p className="text-sm text-gray-500">Loading history...</p>
+                  </div>
+                )}
+
+                {!historyLoading && historyError && (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <ClockIcon size={36} className="text-red-300 mb-3" />
+                    <h3 className="text-sm font-medium text-red-600">{historyError}</h3>
+                  </div>
+                )}
+
+                {!historyLoading && !historyError && history.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <ClockIcon size={36} className="text-gray-300 mb-3" />
+                    <h3 className="text-sm font-medium text-gray-600">No history yet</h3>
+                    <p className="text-xs text-gray-400 mt-1 max-w-xs">
+                      Stock movements and item edits will be logged here once stock_movements is wired in.
+                    </p>
+                  </div>
+                )}
+
+                {!historyLoading && !historyError && history.length > 0 && (
+                  <div className="max-w-2xl">
+                    <ul className="relative">
+                      {history.map((entry, idx) => {
+                        const isIn = entry.movement_type === 'IN';
+                        const isLast = idx === history.length - 1;
+
+                        return (
+                          <li key={entry.id} className="relative flex gap-3 pb-6">
+                            {/* Connecting line — skipped for the last entry */}
+                            {!isLast && (
+                              <span className="absolute left-[11px] top-6 bottom-0 w-px bg-gray-200" />
+                            )}
+
+                            {/* Dot / icon */}
+                            <span
+                              className={`relative z-10 flex items-center justify-center w-6 h-6 rounded-full shrink-0 ${
+                                isIn
+                                  ? 'bg-emerald-50 text-emerald-600'
+                                  : 'bg-orange-50 text-orange-600'
+                              }`}
+                            >
+                              {isIn ? <ArrowUpCircle size={16} /> : <ArrowDownCircle size={16} />}
+                            </span>
+
+                            {/* Entry content */}
+                            <div className="flex-1 min-w-0 pt-0.5">
+                              <div className="flex items-center justify-between gap-3">
+                                <p className="text-sm text-gray-900">
+                                  <span className="font-semibold">
+                                    {isIn ? 'Stock added' : 'Stock removed'}
+                                  </span>
+                                  <span className={`ml-2 font-medium ${isIn ? 'text-emerald-600' : 'text-orange-600'}`}>
+                                    {isIn ? '+' : '−'}{entry.quantity}
+                                  </span>
+                                </p>
+                                <span className="text-xs text-gray-400 shrink-0">
+                                  {formatHistoryDate(entry.created_at)}
+                                </span>
+                              </div>
+
+                              {entry.reason && (
+                                <p className="text-xs text-gray-600 mt-0.5">{entry.reason}</p>
+                              )}
+
+                              {entry.reference_note && (
+                                <p className="text-xs text-gray-400 mt-0.5 italic">{entry.reference_note}</p>
+                              )}
+
+                              {entry.created_by_name && (
+                                <p className="text-xs text-gray-400 mt-0.5">By {entry.created_by_name}</p>
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
           </>

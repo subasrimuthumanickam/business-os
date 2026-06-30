@@ -393,3 +393,60 @@ export const deleteInvoice = async (
   });
 
 };
+
+export const getAllInvoices = async (): Promise<any> => {
+  return new Promise((resolve, reject) => {
+
+    db.all(
+      `
+      SELECT
+        invoices.*,
+        customers.display_name AS customer_name,
+        customers.email AS customer_email
+      FROM invoices
+      LEFT JOIN customers
+      ON customers.id = invoices.customer_id
+      ORDER BY invoices.id DESC
+      `,
+      [],
+      async (err: any, invoices: any[]) => {
+
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        if (!invoices || invoices.length === 0) {
+          resolve([]);
+          return;
+        }
+
+        const updatedInvoices = await Promise.all(
+          invoices.map((invoice) => {
+            return new Promise((res, rej) => {
+
+              db.all(
+                `SELECT * FROM invoice_items WHERE invoice_id = ?`,
+                [invoice.id],
+                (itemErr: any, items: any[]) => {
+
+                  if (itemErr) {
+                    rej(itemErr);
+                    return;
+                  }
+
+                  invoice.items = items;
+                  res(invoice);
+                }
+              );
+
+            });
+          })
+        );
+
+        resolve(updatedInvoices);
+      }
+    );
+
+  });
+};

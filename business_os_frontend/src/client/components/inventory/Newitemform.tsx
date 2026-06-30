@@ -52,7 +52,7 @@ export const NewItemForm: React.FC<NewItemFormProps> = ({
   const isGoods = form.type === 'goods';
  
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 max-w-4xl mx-auto">
+    <div className="bg-white">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900">New Item</h2>
@@ -61,7 +61,7 @@ export const NewItemForm: React.FC<NewItemFormProps> = ({
         </button>
       </div>
  
-      <div className="px-6 py-5 space-y-5">
+      <div className="px-6 py-5 space-y-5 max-w-3xl">
         {/* Type toggle */}
         <div className="flex items-center gap-6">
           <span className="text-sm font-medium text-gray-700">Type</span>
