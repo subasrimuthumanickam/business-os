@@ -1,3 +1,4 @@
+// 
 // src/client/components/projects/TaskBoard.tsx
 import React, { useState, useEffect } from 'react';
 import { 
@@ -14,7 +15,11 @@ import {
   Users,
   ChevronDown,
   Search,
-  RefreshCw
+  RefreshCw,
+  Bug,
+  ArrowRight,
+  Play,
+  XCircle
 } from 'lucide-react';
 
 interface Subtask {
@@ -39,6 +44,13 @@ interface Task {
   comments: number;
   attachments: number;
   subtasks: Subtask[];
+  // ✅ New fields for developer/tester workflow
+  isBug?: boolean;
+  bugReportedBy?: string;
+  bugAssignedTo?: string;
+  reworkCount?: number;
+  testingNotes?: string;
+  developerNotes?: string;
 }
 
 // Column order - defines forward-only progression
@@ -65,8 +77,6 @@ const getNextColumn = (currentColumn: string): string | null => {
 const isMoveAllowed = (source: string, destination: string): boolean => {
   const sourceIndex = COLUMN_ORDER.indexOf(source);
   const destIndex = COLUMN_ORDER.indexOf(destination);
-  // Can only move forward (destIndex > sourceIndex)
-  // Cannot move backward (destIndex < sourceIndex)
   return destIndex > sourceIndex;
 };
 
@@ -104,7 +114,9 @@ const TaskBoard: React.FC = () => {
         { title: 'Create wireframes', completed: false },
         { title: 'Design mockups', completed: false },
         { title: 'Get feedback', completed: false }
-      ]
+      ],
+      isBug: false,
+      reworkCount: 0
     },
     {
       id: '2',
@@ -122,7 +134,9 @@ const TaskBoard: React.FC = () => {
       updatedAt: '2024-06-02T09:00:00Z',
       comments: 0,
       attachments: 0,
-      subtasks: []
+      subtasks: [],
+      isBug: false,
+      reworkCount: 0
     },
     {
       id: '3',
@@ -144,7 +158,9 @@ const TaskBoard: React.FC = () => {
         { title: 'Setup API endpoints', completed: true },
         { title: 'Implement authentication', completed: true },
         { title: 'Test integration', completed: false }
-      ]
+      ],
+      isBug: false,
+      reworkCount: 0
     },
     {
       id: '4',
@@ -166,7 +182,9 @@ const TaskBoard: React.FC = () => {
         { title: 'Prepare test cases', completed: true },
         { title: 'Conduct sessions', completed: true },
         { title: 'Compile results', completed: false }
-      ]
+      ],
+      isBug: false,
+      reworkCount: 0
     },
     {
       id: '5',
@@ -188,7 +206,9 @@ const TaskBoard: React.FC = () => {
         { title: 'Analyze current queries', completed: false },
         { title: 'Implement indexes', completed: false },
         { title: 'Performance testing', completed: false }
-      ]
+      ],
+      isBug: false,
+      reworkCount: 0
     },
     {
       id: '6',
@@ -210,7 +230,9 @@ const TaskBoard: React.FC = () => {
         { title: 'Create logo variations', completed: true },
         { title: 'Finalize brand colors', completed: true },
         { title: 'Create guidelines', completed: true }
-      ]
+      ],
+      isBug: false,
+      reworkCount: 0
     }
   ];
 
@@ -223,6 +245,19 @@ const TaskBoard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [filterAssignee, setFilterAssignee] = useState<string>('all');
+
+  // ✅ New state for modals
+  const [showBugReportModal, setShowBugReportModal] = useState(false);
+  const [bugReport, setBugReport] = useState({
+    taskId: '',
+    title: '',
+    description: '',
+    assignee: '',
+    priority: 'high' as 'low' | 'medium' | 'high' | 'urgent'
+  });
+  const [showReworkModal, setShowReworkModal] = useState(false);
+  const [reworkTask, setReworkTask] = useState<Task | null>(null);
+  const [reworkNotes, setReworkNotes] = useState('');
 
   useEffect(() => {
     try {
@@ -301,6 +336,123 @@ const TaskBoard: React.FC = () => {
     return ['all', ...new Set(assignees)];
   };
 
+  // ✅ Move task to next status (Developer workflow)
+  const handleMoveTask = (taskId: string, direction: 'forward' | 'backward') => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const statusOrder: Task['status'][] = ['todo', 'in-progress', 'review', 'done'];
+    const currentIndex = statusOrder.indexOf(task.status);
+    
+    let newStatus: Task['status'];
+    if (direction === 'forward') {
+      if (currentIndex < statusOrder.length - 1) {
+        newStatus = statusOrder[currentIndex + 1];
+      } else {
+        return;
+      }
+    } else {
+      if (currentIndex > 0) {
+        newStatus = statusOrder[currentIndex - 1];
+      } else {
+        return;
+      }
+    }
+
+    const updatedTasks = tasks.map(t => {
+      if (t.id === taskId) {
+        return { ...t, status: newStatus, updatedAt: new Date().toISOString() };
+      }
+      return t;
+    });
+
+    setTasks(updatedTasks);
+  };
+
+  // ✅ Report a bug (Tester -> Developer)
+  const handleReportBug = (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    setBugReport({
+      taskId: taskId,
+      title: `[BUG] ${task.title}`,
+      description: `Bug found in task: ${task.title}\n\nOriginal Description: ${task.description}\n\nPlease fix the following issues:\n`,
+      assignee: task.assignee,
+      priority: 'high'
+    });
+    setShowBugReportModal(true);
+  };
+
+  const handleSubmitBugReport = () => {
+    const originalTask = tasks.find(t => t.id === bugReport.taskId);
+    if (!originalTask) return;
+
+    const newBugTask: Task = {
+      id: `bug-${Date.now()}`,
+      title: bugReport.title,
+      description: bugReport.description + `\n\n**Bug reported by:** ${originalTask.assignee}\n**Original task:** ${originalTask.title}`,
+      status: 'todo',
+      priority: bugReport.priority,
+      assignee: bugReport.assignee,
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      estimatedHours: originalTask.estimatedHours || 4,
+      loggedHours: 0,
+      tags: ['Bug', ...(originalTask.tags || [])],
+      projectName: originalTask.projectName,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      comments: 0,
+      attachments: 0,
+      subtasks: [],
+      isBug: true,
+      bugReportedBy: originalTask.assignee,
+      bugAssignedTo: bugReport.assignee,
+      reworkCount: (originalTask.reworkCount || 0) + 1,
+      testingNotes: bugReport.description
+    };
+
+    setTasks([newBugTask, ...tasks]);
+    setShowBugReportModal(false);
+    setBugReport({
+      taskId: '',
+      title: '',
+      description: '',
+      assignee: '',
+      priority: 'high'
+    });
+  };
+
+  // ✅ Rework task (Tester sends back to Developer)
+  const handleReworkTask = (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    setReworkTask(task);
+    setReworkNotes('');
+    setShowReworkModal(true);
+  };
+
+  const handleSubmitRework = () => {
+    if (!reworkTask) return;
+
+    const updatedTasks = tasks.map(t => {
+      if (t.id === reworkTask.id) {
+        return {
+          ...t,
+          status: 'todo' as Task['status'],
+          reworkCount: (t.reworkCount || 0) + 1,
+          testingNotes: reworkNotes || 'Needs rework. Please fix the issues.',
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return t;
+    });
+
+    setTasks(updatedTasks);
+    setShowReworkModal(false);
+    setReworkTask(null);
+    setReworkNotes('');
+  };
+
   // Handle drag start
   const handleDragStart = (task: Task) => {
     setDraggedTask(task);
@@ -319,7 +471,6 @@ const TaskBoard: React.FC = () => {
     
     // ✅ Check if move is allowed (forward only) - SILENT PREVENTION
     if (!isMoveAllowed(draggedTask.status, targetStatus)) {
-      // ✅ SILENTLY PREVENT - No alert message
       setDraggedTask(null);
       return;
     }
@@ -398,7 +549,6 @@ const TaskBoard: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {columns.map(column => {
           const columnTasks = getTasksByStatus(column.id);
-          // ✅ Check if drop is allowed on this column
           const isDropAllowed = draggedTask && isMoveAllowed(draggedTask.status, column.id);
           
           return (
@@ -468,6 +618,18 @@ const TaskBoard: React.FC = () => {
                           <Tag className="w-2.5 h-2.5 mr-0.5" />
                           <span className="truncate max-w-[60px]">{task.projectName}</span>
                         </span>
+                        {/* ✅ Bug badge */}
+                        {task.isBug && (
+                          <span className="text-[10px] px-2 py-0.5 bg-red-100 text-red-700 rounded-full flex items-center border border-red-200">
+                            <Bug className="w-2.5 h-2.5 mr-0.5" /> Bug
+                          </span>
+                        )}
+                        {/* ✅ Rework count badge */}
+                        {task.reworkCount && task.reworkCount > 0 && (
+                          <span className="text-[10px] px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full flex items-center border border-orange-200">
+                            <RefreshCw className="w-2.5 h-2.5 mr-0.5" /> {task.reworkCount}
+                          </span>
+                        )}
                       </div>
 
                       <div className="flex items-center justify-between text-xs mb-3">
@@ -508,8 +670,75 @@ const TaskBoard: React.FC = () => {
                         <span>{task.comments} comments</span>
                       </div>
 
+                      {/* ✅ Action buttons for developer/tester workflow */}
+                      {task.status === 'todo' && (
+                        <div className="mt-2 flex gap-1">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMoveTask(task.id, 'forward');
+                            }}
+                            className="flex-1 text-[10px] px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition flex items-center justify-center gap-1"
+                          >
+                            <Play className="w-2.5 h-2.5" /> Start Work
+                          </button>
+                        </div>
+                      )}
+
+                      {task.status === 'in-progress' && (
+                        <div className="mt-2 flex gap-1">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMoveTask(task.id, 'forward');
+                            }}
+                            className="flex-1 text-[10px] px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition flex items-center justify-center gap-1"
+                          >
+                            <ArrowRight className="w-2.5 h-2.5" /> Move to Review
+                          </button>
+                        </div>
+                      )}
+
+                      {task.status === 'review' && (
+                        <div className="mt-2 flex gap-1">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReworkTask(task.id);
+                            }}
+                            className="flex-1 text-[10px] px-2 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition flex items-center justify-center gap-1"
+                          >
+                            <RefreshCw className="w-2.5 h-2.5" /> Rework
+                          </button>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReportBug(task.id);
+                            }}
+                            className="flex-1 text-[10px] px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition flex items-center justify-center gap-1"
+                          >
+                            <Bug className="w-2.5 h-2.5" /> Bug
+                          </button>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMoveTask(task.id, 'forward');
+                            }}
+                            className="flex-1 text-[10px] px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition flex items-center justify-center gap-1"
+                          >
+                            <CheckCircle className="w-2.5 h-2.5" /> Approve
+                          </button>
+                        </div>
+                      )}
+
+                      {task.status === 'done' && task.isBug && (
+                        <div className="mt-2 text-[10px] text-green-600 flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" /> Bug fixed by {task.assignee}
+                        </div>
+                      )}
+
                       {/* Forward indicator - shows next column */}
-                      {task.status !== 'done' && (
+                      {task.status !== 'done' && !task.isBug && (
                         <div className="mt-2 text-[10px] text-blue-400 flex items-center gap-1">
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -531,6 +760,130 @@ const TaskBoard: React.FC = () => {
           );
         })}
       </div>
+
+      {/* ✅ Bug Report Modal - NEW */}
+      {showBugReportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2 text-red-600">
+                <Bug className="w-5 h-5" /> Report Bug
+              </h3>
+              <button onClick={() => setShowBugReportModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+                <XCircle className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Bug Title *</label>
+                <input 
+                  type="text" 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={bugReport.title}
+                  onChange={(e) => setBugReport({ ...bugReport, title: e.target.value })}
+                  placeholder="Enter bug title"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Bug Description *</label>
+                <textarea 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  rows={5}
+                  value={bugReport.description}
+                  onChange={(e) => setBugReport({ ...bugReport, description: e.target.value })}
+                  placeholder="Describe the bug in detail..."
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Assign to Developer *</label>
+                  <input 
+                    type="text" 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={bugReport.assignee}
+                    onChange={(e) => setBugReport({ ...bugReport, assignee: e.target.value })}
+                    placeholder="Developer name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                  <select 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={bugReport.priority}
+                    onChange={(e) => setBugReport({ ...bugReport, priority: e.target.value as Task['priority'] })}
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
+              <button 
+                onClick={() => setShowBugReportModal(false)} 
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSubmitBugReport} 
+                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition"
+              >
+                Report Bug
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Rework Modal - NEW */}
+      {showReworkModal && reworkTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2 text-orange-600">
+                <RefreshCw className="w-5 h-5" /> Send for Rework
+              </h3>
+              <button onClick={() => setShowReworkModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+                <XCircle className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="text-sm font-medium text-gray-700">Task: {reworkTask.title}</p>
+                <p className="text-xs text-gray-500 mt-1">Assignee: {reworkTask.assignee}</p>
+                <p className="text-xs text-gray-500">Status: In Review → To Do</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Rework Notes *</label>
+                <textarea 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  rows={4}
+                  value={reworkNotes}
+                  onChange={(e) => setReworkNotes(e.target.value)}
+                  placeholder="Describe what needs to be fixed or improved..."
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
+              <button 
+                onClick={() => setShowReworkModal(false)} 
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSubmitRework} 
+                className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition"
+              >
+                Send for Rework
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
