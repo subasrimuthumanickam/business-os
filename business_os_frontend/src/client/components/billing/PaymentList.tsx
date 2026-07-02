@@ -1,586 +1,367 @@
 import React, { useState, useEffect } from 'react';
-
-interface PaymentMethod {
-  id: string;
-  cardholderName: string;
-  expiryDate: string;
-  cardType: 'VISA' | 'Mastercard' | 'Amex';
-  lastFour: string;
-  isDefault: boolean;
-  billingAddress?: string;
-}
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';   
 
 interface Payment {
-  id: string;
-  invoiceNumber: string;
-  clientName: string;
+  id: number;
+  payment_number: string;
+  customer_id?: number;         
+  customer_name: string;
+  customer_email?: string;
   amount: number;
-  date: string;
-  method: string;
-  status: 'successful' | 'pending' | 'failed';
-  reference: string;
-  transactionId?: string;
+  payment_date: string;
+  payment_method: string;
+  reference_number?: string;
+  notes?: string;
+  invoice_id?: number;
+  invoice_number?: string;
+  status?: string;
 }
 
 interface PaymentListProps {
-  payments?: Payment[];
-  paymentMethods?: PaymentMethod[];
-  onPaymentUpdate?: (payments: Payment[]) => void;
-  onPaymentMethodUpdate?: (methods: PaymentMethod[]) => void;
+  onNewPayment?: () => void;
+  onViewReceipt?: (payment: Payment) => void;   
+
 }
 
-const PaymentList: React.FC<PaymentListProps> = ({ 
-  payments: propPayments,
-  paymentMethods: propPaymentMethods,
-  onPaymentUpdate,
-  onPaymentMethodUpdate
-}) => {
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>(propPaymentMethods || []);
-  const [payments, setPayments] = useState<Payment[]>(propPayments || []);
-  const [searchTerm, setSearchTerm] = useState('');
+const API = 'http://localhost:5000/api';
+
+const STATUS_TABS = [
+  { label: 'All', value: 'all' },
+  { label: 'Completed', value: 'completed' },
+  { label: 'Pending', value: 'pending' },
+  { label: 'Failed', value: 'failed' },
+];
+
+const METHOD_ICONS: Record<string, string> = {
+  'upi': '',
+  'cash': '',
+  'card': '',
+  'bank transfer': '',
+  'cheque': '',
+};
+
+const PaymentList: React.FC<PaymentListProps> = ({ onNewPayment, onViewReceipt }) => {
+  const navigate = useNavigate();  
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showAddMethod, setShowAddMethod] = useState(false);
-  const [showPaymentDetails, setShowPaymentDetails] = useState<Payment | null>(null);
+  const [activeTab, setActiveTab] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [methodFilter, setMethodFilter] = useState('all');
 
   useEffect(() => {
-    if (!propPayments) {
-      fetchData();
-    }
+    fetchPayments();
   }, []);
 
-  const fetchData = async () => {
-    
+  const fetchPayments = async () => {
+    setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const mockPaymentMethods: PaymentMethod[] = [
-        {
-          id: '1',
-          cardholderName: 'AZUNYAN U WU',
-          expiryDate: '08/11',
-          cardType: 'VISA',
-          lastFour: '6187',
-          isDefault: true,
-          billingAddress: '123 Main St, NY'
-        },
-        {
-          id: '2',
-          cardholderName: 'AZUNYAN U WU',
-          expiryDate: '08/11',
-          cardType: 'VISA',
-          lastFour: '6187',
-          isDefault: false,
-          billingAddress: '456 Oak Ave, CA'
-        },
-        {
-          id: '3',
-          cardholderName: 'John Smith',
-          expiryDate: '12/24',
-          cardType: 'Mastercard',
-          lastFour: '4321',
-          isDefault: false,
-          billingAddress: '789 Pine Rd, TX'
-        },
-      ];
-
-      const mockPayments: Payment[] = [
-        {
-          id: '1',
-          invoiceNumber: '#011',
-          clientName: 'Tech Solutions Inc.',
-          amount: 25.00,
-          date: '2026-06-25',
-          method: 'VISA ****6187',
-          status: 'successful',
-          reference: 'TXN-001-2026',
-          transactionId: 'TRX_001'
-        },
-        {
-          id: '2',
-          invoiceNumber: '#010',
-          clientName: 'Design Studio LLC',
-          amount: 35.00,
-          date: '2026-05-25',
-          method: 'Mastercard ****4321',
-          status: 'successful',
-          reference: 'TXN-002-2026',
-          transactionId: 'TRX_002'
-        },
-        {
-          id: '3',
-          invoiceNumber: '#009',
-          clientName: 'Marketing Agency',
-          amount: 40.00,
-          date: '2026-04-25',
-          method: 'VISA ****6187',
-          status: 'failed',
-          reference: 'TXN-003-2026',
-          transactionId: 'TRX_003'
-        },
-        {
-          id: '4',
-          invoiceNumber: '#008',
-          clientName: 'Consulting Group',
-          amount: 30.00,
-          date: '2026-03-25',
-          method: 'PayPal',
-          status: 'pending',
-          reference: 'TXN-004-2026',
-          transactionId: 'TRX_004'
-        },
-        {
-          id: '5',
-          invoiceNumber: '#007',
-          clientName: 'Startup Labs',
-          amount: 20.00,
-          date: '2026-02-25',
-          method: 'VISA ****6187',
-          status: 'successful',
-          reference: 'TXN-005-2026',
-          transactionId: 'TRX_005'
-        },
-      ];
-
-      setPaymentMethods(mockPaymentMethods);
-      setPayments(mockPayments);
-      if (onPaymentMethodUpdate) onPaymentMethodUpdate(mockPaymentMethods);
-      if (onPaymentUpdate) onPaymentUpdate(mockPayments);
-    } catch (error) {
-      console.error('Error fetching payment data:', error);
-    } finally {
-      
-    }
-  };
-
-  const getStatusColor = (status: string): string => {
-    switch (status) {
-      case 'successful':
-        return 'text-green-700 bg-green-50 border-green-200';
-      case 'pending':
-        return 'text-yellow-700 bg-yellow-50 border-yellow-200';
-      case 'failed':
-        return 'text-red-700 bg-red-50 border-red-200';
-      default:
-        return 'text-gray-700 bg-gray-50 border-gray-200';
-    }
-  };
-
-  const getCardIcon = (type: string): React.ReactNode => {
-    switch (type) {
-      case 'VISA':
-        return (
-          <div className="w-10 h-7 bg-blue-600 rounded flex items-center justify-center">
-            <span className="text-white text-xs font-bold">VISA</span>
-          </div>
-        );
-      case 'Mastercard':
-        return (
-          <div className="w-10 h-7 bg-red-600 rounded flex items-center justify-center">
-            <span className="text-white text-xs font-bold">MC</span>
-          </div>
-        );
-      case 'Amex':
-        return (
-          <div className="w-10 h-7 bg-blue-400 rounded flex items-center justify-center">
-            <span className="text-white text-xs font-bold">AMEX</span>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
-
-  const handleSetDefault = async (id: string) => {
-    try {
-      const updatedMethods = paymentMethods.map((method: PaymentMethod) => ({
-        ...method,
-        isDefault: method.id === id
+      const res = await axios.get(`${API}/payments`);
+      const raw = res.data.data;
+      const dataArray = Array.isArray(raw) ? raw : raw ? [raw] : [];
+      const formatted = dataArray.map((p: any) => ({
+        id: p.id,
+        payment_number: p.payment_number,
+        customer_id: p.customer_id,        
+        customer_name: p.customer_name || p.display_name || '—',
+        customer_email: p.customer_email || p.email || '',
+        amount: Number(p.amount) || 0,
+        payment_date: p.payment_date,
+        payment_method: p.payment_method || '—',
+        reference_number: p.reference_number || '',
+        notes: p.notes || '',
+        invoice_id: p.invoice_id,
+        invoice_number: p.invoice_number || '',
+        status: (p.status || 'completed').toLowerCase(),
       }));
-      setPaymentMethods(updatedMethods);
-      if (onPaymentMethodUpdate) onPaymentMethodUpdate(updatedMethods);
-    } catch (error) {
-      console.error('Error setting default payment method:', error);
+      setPayments(formatted);
+    } catch (err) {
+      console.error('Failed to fetch payments:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDeleteMethod = async (id: string) => {
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this payment?')) return;
     try {
-      const updatedMethods = paymentMethods.filter((method: PaymentMethod) => method.id !== id);
-      setPaymentMethods(updatedMethods);
-      if (onPaymentMethodUpdate) onPaymentMethodUpdate(updatedMethods);
-    } catch (error) {
-      console.error('Error deleting payment method:', error);
+      await axios.delete(`${API}/payments/${id}`);
+      setPayments((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      alert('Failed to delete payment');
     }
   };
 
-  const filteredPayments = payments.filter((payment: Payment) =>
-    payment.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    payment.invoiceNumber.includes(searchTerm) ||
-    payment.reference.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleExportPayments = () => {
+  let csvContent =
+    "data:text/csv;charset=utf-8,Payment ID,Date,Customer Name,Customer Email,Amount,Payment Method,Reference,Status,Invoice Number\n";
 
-  const totalPayments = payments.reduce((sum: number, p: Payment) => sum + p.amount, 0);
-  const successfulPayments = payments.filter((p: Payment) => p.status === 'successful').length;
-  const successRate = payments.length > 0 ? Math.round((successfulPayments / payments.length) * 100) : 0;
+  filteredPayments.forEach((p) => {
+    csvContent += `${p.payment_number},"${formatDateTime(p.payment_date)}","${p.customer_name}","${p.customer_email || ''}",${p.amount},"${p.payment_method}","${p.reference_number || ''}","${p.status || ''}","${p.invoice_number || ''}"\n`;
+  });
 
- 
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", "business_os_payments.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+  const formatDateTime = (dateString: string) => {
+    if (!dateString) return '—';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    }) + ', ' + date.toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'completed':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+            Completed
+          </span>
+        );
+      case 'pending':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 border border-yellow-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 inline-block" />
+            Pending
+          </span>
+        );
+      case 'failed':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
+            <span className="✕ text-red-500 text-[10px]" />
+            Failed
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-gray-400 inline-block" />
+            {status || 'Completed'}
+          </span>
+        );
+    }
+  };
+
+  const filteredPayments = payments.filter((p) => {
+    const matchesTab = activeTab === 'all' || p.status === activeTab;
+    const matchesSearch =
+      !searchTerm ||
+      p.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.customer_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.payment_number.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesMethod =
+      methodFilter === 'all' ||
+      p.payment_method.toLowerCase() === methodFilter.toLowerCase();
+    return matchesTab && matchesSearch && matchesMethod;
+  });
+
+  const uniqueMethods = ['all', ...Array.from(new Set(payments.map((p) => p.payment_method.toLowerCase())))];
 
   return (
-    <div className="space-y-6">
-      {/* Payment Methods Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800">Payment Methods</h3>
-            <p className="text-sm text-gray-500 mt-1">
-              {paymentMethods.length} saved payment methods
-            </p>
-          </div>
+    <div className="h-screen bg-white flex flex-col">
+
+      {/* Top toolbar */}
+      <div className="border-b px-6 py-4 bg-white flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-gray-800">Payments</h2>
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowAddMethod(true)}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            onClick={fetchPayments}
+            className="p-2 border border-gray-200 rounded-md text-gray-500 hover:bg-gray-50 transition-colors"
+            title="Refresh"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
+              <path d="M23 4v6h-6M1 20v-6h6" />
+              <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
             </svg>
-            Add Payment Method
           </button>
-        </div>
-
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {paymentMethods.length === 0 ? (
-              <div className="col-span-2 text-center py-8 text-gray-500">
-                No payment methods added yet
-              </div>
-            ) : (
-              paymentMethods.map((method: PaymentMethod) => (
-                <div
-                  key={method.id}
-                  className={`border rounded-lg p-4 flex items-center justify-between ${
-                    method.isDefault ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    {getCardIcon(method.cardType)}
-                    <div>
-                      <p className="font-medium text-gray-800">{method.cardholderName}</p>
-                      <p className="text-sm text-gray-600">
-                        {method.cardType} •••• {method.lastFour}
-                      </p>
-                      <p className="text-xs text-gray-500">Expires {method.expiryDate}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {method.isDefault && (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
-                        Default
-                      </span>
-                    )}
-                    {!method.isDefault && (
-                      <button
-                        onClick={() => handleSetDefault(method.id)}
-                        className="text-xs text-blue-600 hover:text-blue-700"
-                      >
-                        Set Default
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleDeleteMethod(method.id)}
-                      className="text-gray-400 hover:text-red-600 transition-colors"
-                    >
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="3 6 5 6 21 6" />
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+          <button
+  onClick={handleExportPayments}
+  className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+>
+  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
+  </svg>
+  Export
+</button>
         </div>
       </div>
 
-      {/* Payment History Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800">Payment History</h3>
-              <p className="text-sm text-gray-500 mt-1">{payments.length} Total transactions</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-xs text-gray-500">Total Amount</p>
-                <p className="text-lg font-bold text-gray-800">${totalPayments.toFixed(2)}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-gray-500">Success Rate</p>
-                <p className="text-lg font-bold text-green-600">{successRate}%</p>
-              </div>
-            </div>
-          </div>
-          
-          {/* Search */}
-          <div className="mt-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search payments..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none w-full md:w-64 text-sm"
-              />
-              <svg
-                className="absolute left-3 top-2.5 w-4 h-4 text-gray-400"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-            </div>
-          </div>
+      {/* Status filter tabs */}
+      <div className="border-b px-6 bg-white">
+        <div className="flex gap-6">
+          {STATUS_TABS.map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => setActiveTab(tab.value)}
+              className={`py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === tab.value
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {tab.label}
+              {tab.value !== 'all' && (
+                <span className="ml-1.5 px-1.5 py-0.5 text-[10px] rounded-full bg-gray-100 text-gray-500">
+                  {payments.filter((p) => p.status === tab.value).length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Search + Filter row */}
+      <div className="border-b px-6 py-3 bg-white flex items-center gap-3">
+        <div className="relative">
+          <svg className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search by name, email, payment number..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm w-72 outline-none focus:border-blue-500"
+          />
         </div>
 
-        <div className="overflow-x-auto">
+        <select
+          value={methodFilter}
+          onChange={(e) => setMethodFilter(e.target.value)}
+          className="border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-600 outline-none"
+        >
+          <option value="all">Payment Method — All</option>
+          {uniqueMethods.filter((m) => m !== 'all').map((m) => (
+            <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Table */}
+      <div className="flex-1 overflow-y-auto">
+        {loading ? (
+          <div className="flex items-center justify-center h-32 text-gray-400 text-sm">
+            Loading payments...
+          </div>
+        ) : filteredPayments.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-48 text-gray-400">
+            <svg className="w-10 h-10 mb-3 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+            </svg>
+            <p className="text-sm">No payments found</p>
+          </div>
+        ) : (
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Reference
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date &amp; Time ↓
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Invoice
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Client
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Amount
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Method
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Customer Details
                 </th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Payment Method
+                </th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Payment ID
+                </th>
+                <th className="px-6 py-3" />
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredPayments.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
-                    No payments found
+            <tbody className="divide-y divide-gray-100">
+              {filteredPayments.map((payment) => (
+                <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                    {formatDateTime(payment.payment_date)}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm font-semibold text-gray-900">
+                      ₹{payment.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </span>
+                    <span className="ml-1 text-xs text-gray-400">INR</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    {getStatusBadge(payment.status || 'completed')}
+                  </td>
+                  <td className="px-6 py-4">
+  <p
+    className="text-sm font-medium text-gray-800 cursor-pointer hover:text-blue-600 hover:underline"
+    onClick={() => payment.customer_id && navigate(`/client/customers/${payment.customer_id}`)}
+  >
+    {payment.customer_name}
+  </p>
+  {payment.customer_email && (
+    <p className="text-xs text-gray-500 mt-0.5">{payment.customer_email}</p>
+  )}
+</td>
+                  <td className="px-6 py-4">
+                    <span className="inline-flex items-center gap-1.5 text-sm text-gray-700">
+                      <span>{METHOD_ICONS[payment.payment_method.toLowerCase()] || ''}</span>
+                      {payment.payment_method}
+                    </span>
+                  </td>
+                  {/* <td className="px-6 py-4">
+                    <span className="text-sm text-blue-600 font-medium">
+                      {payment.payment_number}
+                    </span>
+                    {payment.invoice_number && (
+                      <p className="text-xs text-gray-400 mt-0.5">INV: {payment.invoice_number}</p>
+                    )}
+                  </td> */}
+                  <td className="px-6 py-4">
+  <span
+    className="text-sm text-blue-600 font-medium cursor-pointer hover:underline"
+    onClick={() => onViewReceipt && onViewReceipt(payment)}
+  >
+    {payment.payment_number}
+  </span>
+  {payment.invoice_number && (
+    <p className="text-xs text-gray-400 mt-0.5">INV: {payment.invoice_number}</p>
+  )}
+</td>
+                  <td className="px-6 py-4 text-right">
+                    <button
+                      onClick={() => handleDelete(payment.id)}
+                      className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                      title="Delete"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+                      </svg>
+                    </button>
                   </td>
                 </tr>
-              ) : (
-                filteredPayments.map((payment: Payment) => (
-                  <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-800">
-                      {payment.reference}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-blue-600">
-                      {payment.invoiceNumber}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-700">
-                      {payment.clientName}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-800">
-                      ${payment.amount.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {new Date(payment.date).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {payment.method}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border ${getStatusColor(payment.status)}`}>
-                        {payment.status === 'successful' && (
-                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        )}
-                        {payment.status === 'pending' && (
-                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="12" r="10" />
-                            <polyline points="12 6 12 12 16 14" />
-                          </svg>
-                        )}
-                        {payment.status === 'failed' && (
-                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="12" r="10" />
-                            <line x1="15" y1="9" x2="9" y2="15" />
-                            <line x1="9" y1="9" x2="15" y2="15" />
-                          </svg>
-                        )}
-                        {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => setShowPaymentDetails(payment)}
-                        className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
-                      >
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
-        </div>
+        )}
       </div>
 
-      {/* Add Payment Method Modal */}
-      {showAddMethod && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Add Payment Method</h3>
-            <form className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Cardholder Name
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="John Doe"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Card Number
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="4111 1111 1111 1111"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Expiry Date
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    placeholder="MM/YY"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    CVV
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    placeholder="123"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowAddMethod(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
-                >
-                  Add Method
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Payment Details Modal */}
-      {showPaymentDetails && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">Payment Details</h3>
-              <button
-                onClick={() => setShowPaymentDetails(null)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <p className="text-sm text-gray-500">Reference</p>
-                <p className="font-medium">{showPaymentDetails.reference}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Invoice</p>
-                <p className="font-medium">{showPaymentDetails.invoiceNumber}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Client</p>
-                <p className="font-medium">{showPaymentDetails.clientName}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Amount</p>
-                <p className="text-2xl font-bold text-blue-600">${showPaymentDetails.amount.toFixed(2)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Date</p>
-                <p>{new Date(showPaymentDetails.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Method</p>
-                <p>{showPaymentDetails.method}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Status</p>
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border ${getStatusColor(showPaymentDetails.status)}`}>
-                  {showPaymentDetails.status.charAt(0).toUpperCase() + showPaymentDetails.status.slice(1)}
-                </span>
-              </div>
-              {showPaymentDetails.transactionId && (
-                <div>
-                  <p className="text-sm text-gray-500">Transaction ID</p>
-                  <p className="text-sm font-mono bg-gray-50 p-2 rounded">{showPaymentDetails.transactionId}</p>
-                </div>
-              )}
-            </div>
-            <div className="flex justify-end mt-6 pt-4 border-t">
-              <button
-                onClick={() => setShowPaymentDetails(null)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50"
-              >
-                Close
-              </button>
-            </div>
-          </div>
+      {/* Footer count */}
+      {filteredPayments.length > 0 && (
+        <div className="border-t px-6 py-3 bg-white text-xs text-gray-500">
+          Showing {filteredPayments.length} of {payments.length} payments
         </div>
       )}
     </div>

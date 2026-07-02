@@ -232,3 +232,22 @@ export const deletePayment = async (req: Request, res: Response) => {
         res.status(500).json({ success: false, message: "Internal Server Error" });
     }
 };
+
+export const getAllPayments = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const rows: any = await db.execute(
+      `SELECT p.*, 
+        c.display_name AS customer_name,
+        c.email AS customer_email,
+        i.invoice_number
+       FROM payments p
+       LEFT JOIN customers c ON c.id = p.customer_id
+       LEFT JOIN invoices i ON i.id = p.invoice_id
+       ORDER BY p.created_at DESC`,
+       []
+    );
+    return res.status(200).json({ success: true, data: rows });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};

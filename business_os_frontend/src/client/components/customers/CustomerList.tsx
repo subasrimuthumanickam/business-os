@@ -4,6 +4,7 @@ import CustomerDetails from './CustomerDetails';
 import * as customerService from '../../services/customerService';
 import './CustomerList.css';
 import { Search } from "lucide-react";
+import { useParams, useNavigate } from 'react-router-dom';
 
 // 🎯 Matching the full schema entity layout from our SQLite upgrade data types
 interface Customer {
@@ -29,6 +30,8 @@ interface Customer {
 }
 
 export const CustomerList: React.FC = () => {
+  const { id } = useParams();          
+  const navigate = useNavigate(); 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -40,9 +43,22 @@ export const CustomerList: React.FC = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    loadCustomers();
-  }, []);
+  // Load customers ONCE on mount
+useEffect(() => {
+  loadCustomers();
+}, []);
+
+// Sync viewingCustomer with URL id, whenever id or customers list changes
+useEffect(() => {
+  if (id && customers.length > 0) {
+    const found = customers.find((c) => c.id === Number(id));
+    if (found) {
+      setViewingCustomer((prev) => (prev?.id === found.id ? prev : found));
+    }
+  } else if (!id) {
+    setViewingCustomer(null);
+  }
+}, [id, customers]);
 
   const loadCustomers = async () => {
     try {
@@ -170,14 +186,22 @@ export const CustomerList: React.FC = () => {
         </div>
       ) : viewingCustomer ? (
         <div>
-          <button className="btn-secondary back-btn" onClick={() => setViewingCustomer(null)}>
+          {/* <button className="btn-secondary back-btn" onClick={() => setViewingCustomer(null)}>
             ← Back to Registry Table
-          </button>
+          </button> */}
+          <button
+      className="btn-secondary back-btn"
+      onClick={() => {
+        setViewingCustomer(null);
+        navigate('/client/customers');   
+      }}
+    >
+      ← Back to Registry Table
+    </button>
           <CustomerDetails 
   customer={{ 
     ...viewingCustomer, 
     id: viewingCustomer.id.toString(),
-    // 'name' illa na empty string anuppiduvom, error varathu
     name: viewingCustomer.display_name || viewingCustomer.name || "" 
   } as any} 
 />
