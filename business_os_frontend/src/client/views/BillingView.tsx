@@ -1,33 +1,70 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import InvoiceList from "../components/billing/InvoiceList";
 import PaymentList from "../components/billing/PaymentList";
 import ExpenseList from "../components/billing/ExpenseList";
 import CreateInvoice from "../components/billing/CreateInvoice";
 import InvoiceView from "../components/billing/InvoiceView";
 import CreatePayment from "../components/billing/Createpayment";
-
-type BillingTab =
-  | "invoices"
-  | "payments"
-  | "expenses"
-  | "create-invoice";
+import ReceiptView from "../components/billing/ReceiptView";
+import CreateExpense from "../components/billing/CreateExpense";
 
 const BillingView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<BillingTab>("invoices");
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  // Invoice editing — full invoice object fetched before opening CreateInvoice
+  // Derive active section from URL path — so sidebar NavLinks work directly.
+  // /client/billing/invoices → "invoices"
+  // /client/billing/payments → "payments"
+  // /client/billing/expenses → "expenses"
+  // /client/billing           → "invoices" (default)
+  const getSection = () => {
+    if (location.pathname.includes('/payments')) return 'payments';
+    if (location.pathname.includes('/expenses')) return 'expenses';
+    return 'invoices';
+  };
+
+  const activeSection = getSection();
+
+  // Invoice editing
   const [editingInvoice, setEditingInvoice] = useState<any>(null);
 
-  // InvoiceView — for clicking invoice number, PDF, Print
+  // InvoiceView — for view / PDF / print
   const [viewingInvoice, setViewingInvoice] = useState<any>(null);
   const [autoDownload, setAutoDownload] = useState(false);
 
-  // CreatePayment — for Record Payment button
+  // CreatePayment
   const [payingInvoice, setPayingInvoice] = useState<any>(null);
+  const [payingCustomer, setPayingCustomer] = useState<any>(null);
+
+  // CreateInvoice (new)
+  const [showCreateInvoice, setShowCreateInvoice] = useState(false);
+
+  // CreatePayment (new, from payments tab)
+  const [showCreatePayment, setShowCreatePayment] = useState(false);
+
+  const [viewingReceipt, setViewingReceipt] = useState<any>(null);
+
+  const [showCreateExpense, setShowCreateExpense] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<any>(null);
+
+  // Clear all overlay states when URL/section changes
+  // (e.g. user clicks Payments in sidebar while an invoice is open)
+  useEffect(() => {
+    setEditingInvoice(null);
+    setViewingInvoice(null);
+    setPayingInvoice(null);
+    setPayingCustomer(null);
+    setAutoDownload(false);
+    setShowCreateInvoice(false);
+    setShowCreatePayment(false);
+    setViewingReceipt(null);
+    setShowCreateExpense(false);
+  setEditingExpense(null);
+  }, [location.pathname]);
 
   const API = "http://localhost:5000/api";
 
-  // Fetch full invoice (with items + customer details) before opening Edit or View
   const fetchInvoice = async (invoiceId: string | number) => {
     const res = await fetch(`${API}/invoices/${invoiceId}`);
     const data = await res.json();
@@ -71,25 +108,38 @@ const BillingView: React.FC = () => {
       total: invoice.amount,
       status: invoice.status,
     });
+    setPayingCustomer({
+      id: invoice.customer_id ?? "",
+      name: invoice.clientName ?? "",
+      email: invoice.clientEmail ?? "",
+    });
   };
 
-  // ─── Early-return swap pattern (same as CustomerDetails.tsx) ────────────
+  // ─── Early-return swap pattern ───────────────────────────────────────────
 
-  // CreatePayment
+  // CreatePayment (from Invoice Record Payment)
   if (payingInvoice) {
     return (
       <CreatePayment
-        customer={{
-          id: viewingInvoice?.customer_id ?? "",
-          name: viewingInvoice?.customer_name ?? "",
-          email: viewingInvoice?.customer_email ?? "",
-        }}
+        customer={payingCustomer ?? { id: "", name: "", email: "" }}
         invoice={payingInvoice}
         payment={null}
         onClose={() => {
           setPayingInvoice(null);
-          setViewingInvoice(null);
+          setPayingCustomer(null);
         }}
+      />
+    );
+  }
+
+  // CreatePayment (new, from Payments tab + New)
+  if (showCreatePayment) {
+    return (
+      <CreatePayment
+        customer={{ id: "", name: "", email: "" }}
+        invoice={null}
+        payment={null}
+        onClose={() => setShowCreatePayment(false)}
       />
     );
   }
@@ -117,6 +167,11 @@ const BillingView: React.FC = () => {
             total: viewingInvoice.total,
             status: viewingInvoice.status,
           });
+          setPayingCustomer({
+            id: viewingInvoice.customer_id ?? "",
+            name: viewingInvoice.customer_name ?? "",
+            email: viewingInvoice.customer_email ?? "",
+          });
           setViewingInvoice(null);
         }}
       />
@@ -129,31 +184,57 @@ const BillingView: React.FC = () => {
       <CreateInvoice
         customer={{} as any}
         invoice={editingInvoice}
-        onClose={() => {
-          setEditingInvoice(null);
-        }}
+        onClose={() => setEditingInvoice(null)}
       />
     );
   }
 
   // CreateInvoice (new)
-  if (activeTab === "create-invoice") {
+  if (showCreateInvoice) {
     return (
       <CreateInvoice
         customer={{} as any}
-        onClose={() => setActiveTab("invoices")}
+        onClose={() => setShowCreateInvoice(false)}
       />
     );
   }
+
+  if (viewingReceipt) {
+  return (
+    <ReceiptView
+      payment={viewingReceipt}
+      customer={{
+        name: viewingReceipt.customer_name,
+        email: viewingReceipt.customer_email,
+        currency: "INR",
+      }}
+      onClose={() => setViewingReceipt(null)}
+    />
+  );
+}
+
+if (showCreateExpense || editingExpense) {
+  return (
+    <CreateExpense
+      expense={editingExpense}
+      onClose={() => {
+        setShowCreateExpense(false);
+        setEditingExpense(null);
+      }}
+    />
+  );
+}
+
+  // ─── Main layout ─────────────────────────────────────────────────────────
 
   return (
     <div className="h-screen bg-white flex flex-col">
       <div className="flex-1 overflow-hidden">
 
-        {activeTab === "invoices" && (
+        {activeSection === "invoices" && (
           <InvoiceList
             onInvoiceUpdate={() => {}}
-            onNewInvoice={() => setActiveTab("create-invoice")}
+            onNewInvoice={() => setShowCreateInvoice(true)}
             onEditInvoice={handleEdit}
             onViewInvoice={handleViewInvoice}
             onPdfInvoice={handlePdf}
@@ -161,9 +242,17 @@ const BillingView: React.FC = () => {
           />
         )}
 
-        {activeTab === "payments" && <PaymentList />}
+        {activeSection === "payments" && (
+          <PaymentList
+            onNewPayment={() => setShowCreatePayment(true)}
+            onViewReceipt={(payment) => setViewingReceipt(payment)}
+          />
+        )}
 
-        {activeTab === "expenses" && <ExpenseList />}
+        {activeSection === "expenses" && <ExpenseList 
+         onNewExpense={() => setShowCreateExpense(true)}
+    onEditExpense={(expense) => setEditingExpense(expense)}
+        />}
 
       </div>
     </div>

@@ -533,6 +533,7 @@ import axios from 'axios';
 interface Invoice {
   id: string;
   invoiceNumber: string;
+  customer_id?: number;
   clientName: string;
   amount: number;
   date: string;
@@ -540,6 +541,8 @@ interface Invoice {
   status: 'paid' | 'pending' | 'overdue' | 'failed' | 'draft';
   plan: string;
   clientEmail?: string;
+  subtotal?: number;
+  tax?: number;
   items?: Array<{
     description: string;
     quantity: number;
@@ -701,10 +704,40 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
             filteredInvoices.map((invoice) => (
               <div
                 key={invoice.id}
-                onClick={() => {
-                  setSelectedInvoice(invoice);
-                  setSendBannerMessage(null);
-                }}
+                  onClick={async () => {
+  setSendBannerMessage(null);
+  try {
+    const res = await fetch(`http://localhost:5000/api/invoices/${invoice.id}`);
+    const data = await res.json();
+    if (data.success) {
+      const mappedItems = (data.data.items || []).map((item: any) => ({
+        description: item.item_name || item.description || '—',
+        quantity: item.quantity,
+        rate: Number(item.rate),
+        amount: Number(item.amount),
+      }));
+
+      setSelectedInvoice({
+        ...invoice,
+        id: String(data.data.id ?? invoice.id),
+          customer_id: data.data.customer_id,  // ← add this
+      invoiceNumber: data.data.invoice_number ?? invoice.invoiceNumber,
+        clientName: data.data.customer_name ?? invoice.clientName,
+        clientEmail: data.data.customer_email ?? invoice.clientEmail,
+        amount: Number(data.data.total) || invoice.amount,
+        date: data.data.invoice_date ?? invoice.date,
+        dueDate: data.data.due_date ?? invoice.dueDate,
+        status: (data.data.status?.toLowerCase() ?? invoice.status) as Invoice['status'],
+        items: mappedItems,  // ← explicitly set AFTER spread, no ...data.data override
+        subtotal: Number(data.data.subtotal) || 0,
+        tax: Number(data.data.tax) || 0,
+      });
+    }
+  } catch (err) {
+    console.error('Failed to fetch full invoice:', err);
+    setSelectedInvoice(invoice);
+  }
+}}
                 className={`p-4 border-b cursor-pointer transition-all ${
                   selectedInvoice?.id === invoice.id
                     ? "bg-blue-50 border-l-4 border-blue-600"
@@ -765,12 +798,14 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
                   >
                     Print
                   </button>
-                  <button
-                    onClick={() => onRecordPayment?.(selectedInvoice)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
-                  >
-                    Record Payment
-                  </button>
+                  {selectedInvoice.status?.toLowerCase() !== 'paid' && (
+                 <button
+               onClick={() => onRecordPayment?.(selectedInvoice)}
+               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
+              >
+             Record Payment
+              </button>
+               )}
                 </div>
               </div>
 
@@ -829,101 +864,127 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
               )}
 
               {/* Invoice Preview */}
-              <div className="p-8">
-                <div className="relative bg-white border shadow-sm p-10 max-w-5xl mx-auto overflow-hidden">
+              {/* Invoice Preview — matches CustomerDetails InvoiceView style */}
+<div className="p-8">
+  <div className="relative bg-white border border-gray-200 rounded-sm p-10 max-w-5xl mx-auto overflow-hidden">
 
-                  {/* Diagonal "Draft" ribbon */}
-                  {selectedInvoice.status === 'draft' && (
-                    <div className="absolute top-0 left-0 w-32 h-32 overflow-hidden pointer-events-none">
-                      <div className="absolute top-[18px] left-[-38px] w-[160px] -rotate-45 bg-slate-400 text-white text-[11px] font-semibold tracking-wide text-center py-1 shadow-sm">
-                        Draft
-                      </div>
-                    </div>
-                  )}
+    {/* Diagonal "Draft" ribbon — only for Draft status */}
+    {/* {selectedInvoice.status?.toLowerCase() === 'draft' && (
+      <div className="absolute top-0 left-0 w-32 h-32 overflow-hidden pointer-events-none">
+        <div className="absolute top-[18px] left-[-38px] w-[160px] -rotate-45 bg-slate-400 text-white text-[11px] font-semibold tracking-wide text-center py-1 shadow-sm">
+          Draft
+        </div>
+      </div>
+    )} */}
 
-                  <div className="flex justify-between mb-12">
-                    <div>
-                      <h3 className="font-bold text-lg text-gray-800">BusinessOS</h3>
-                      <p className="text-gray-500 text-sm mt-1">Business Management Software</p>
-                    </div>
-                    <div className="text-right">
-                      <h1 className="text-4xl font-light text-gray-800">INVOICE</h1>
-                      <p className="text-gray-500 mt-2"># {selectedInvoice.invoiceNumber}</p>
-                    </div>
-                  </div>
+    {/* Diagonal status ribbon — Draft (gray) / Paid (green) / Pending (blue) / Overdue (red) */}
+{['draft', 'paid', 'pending', 'overdue'].includes(selectedInvoice.status?.toLowerCase()) && (
+  <div className="absolute top-0 left-0 w-32 h-32 overflow-hidden pointer-events-none">
+    <div className={`absolute top-[18px] left-[-38px] w-[160px] -rotate-45 text-white text-[11px] font-semibold tracking-wide text-center py-1 shadow-sm capitalize ${
+      selectedInvoice.status?.toLowerCase() === 'paid'
+        ? 'bg-green-500'
+        : selectedInvoice.status?.toLowerCase() === 'pending'
+        ? 'bg-blue-500'
+        : selectedInvoice.status?.toLowerCase() === 'overdue'
+        ? 'bg-red-500'
+        : 'bg-slate-400'
+    }`}>
+      {selectedInvoice.status}
+    </div>
+  </div>
+)}
 
-                  <div className="mb-10">
-                    <p className="text-sm text-gray-500 mb-1">Bill To</p>
-                    <h3
-                      className="font-semibold text-lg text-blue-700 cursor-pointer hover:underline"
-                      onClick={() => onViewInvoice?.(selectedInvoice)}
-                    >
-                      {selectedInvoice.clientName}
-                    </h3>
-                    <p className="text-gray-600 text-sm">{selectedInvoice.clientEmail}</p>
-                  </div>
+    {/* Header */}
+    <div className="flex justify-between items-start mb-10">
+      <div>
+        <h3 className="font-bold text-lg text-gray-800">BusinessOS</h3>
+        <p className="text-gray-500 text-sm mt-1">Business Management Software</p>
+      </div>
+      <div className="text-right">
+        <h1 className="text-4xl font-bold text-gray-900">INVOICE</h1>
+      </div>
+    </div>
 
-                  <div className="grid grid-cols-3 gap-10 mb-10">
-                    <div>
-                      <p className="text-sm text-gray-500">Invoice Date</p>
-                      <h4 className="font-semibold mt-2">
-                        {new Date(selectedInvoice.date).toLocaleDateString()}
-                      </h4>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Due Date</p>
-                      <h4 className="font-semibold mt-2">
-                        {new Date(selectedInvoice.dueDate).toLocaleDateString()}
-                      </h4>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Balance Due</p>
-                      <h2 className="text-3xl text-red-600 font-bold mt-2">
-                        ₹{Number(selectedInvoice.amount).toFixed(2)}
-                      </h2>
-                    </div>
-                  </div>
+    <hr className="border-gray-200 mb-8" />
 
-                  {/* Items Table */}
-                  <table className="w-full border">
-                    <thead className="bg-gray-800 text-white">
-                      <tr>
-                        <th className="text-left px-4 py-3 text-sm">#</th>
-                        <th className="text-left px-4 py-3 text-sm">Item & Description</th>
-                        <th className="text-center px-4 py-3 text-sm">Qty</th>
-                        <th className="text-center px-4 py-3 text-sm">Rate</th>
-                        <th className="text-right px-4 py-3 text-sm">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedInvoice.items && selectedInvoice.items.length > 0 ? (
-                        selectedInvoice.items.map((item, index) => (
-                          <tr key={index} className="border-t">
-                            <td className="px-4 py-3 text-sm text-gray-500">{index + 1}</td>
-                            <td className="px-4 py-3 text-sm">{item.description}</td>
-                            <td className="text-center px-4 py-3 text-sm">{item.quantity}</td>
-                            <td className="text-center px-4 py-3 text-sm">₹{Number(item.rate).toFixed(2)}</td>
-                            <td className="text-right px-4 py-3 text-sm">₹{Number(item.amount).toFixed(2)}</td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={5} className="text-center py-6 text-gray-400 text-sm">No items</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+    {/* Bill To + Invoice Meta */}
+    <div className="flex justify-between mb-10">
+      <div>
+        <p className="text-sm text-gray-500 mb-2">Bill To</p>
+        <p className="font-bold text-gray-900 text-base">{selectedInvoice.clientName}</p>
+        <p className="text-gray-600 text-sm mt-1">{selectedInvoice.clientEmail}</p>
+      </div>
+      <div className="text-right space-y-3">
+        <div>
+          <p className="text-sm text-gray-500">Invoice No</p>
+          <p className="font-bold text-gray-900">{selectedInvoice.invoiceNumber}</p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-500">Invoice Date</p>
+          <p className="font-bold text-gray-900">
+            {new Date(selectedInvoice.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+          </p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-500">Due Date</p>
+          <p className="font-bold text-gray-900">
+            {new Date(selectedInvoice.dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+          </p>
+        </div>
+      </div>
+    </div>
 
-                  <div className="mt-10 flex justify-end">
-                    <div className="w-72">
-                      <div className="flex justify-between border-t py-4">
-                        <span className="font-semibold">Total</span>
-                        <span className="text-xl font-bold">₹{Number(selectedInvoice.amount).toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+    {/* Items Table */}
+    <table className="w-full border border-gray-200 rounded">
+      <thead>
+        <tr className="bg-gray-50">
+          <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700 border-b border-gray-200">#</th>
+          <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700 border-b border-gray-200">Item Name</th>
+          <th className="text-center px-4 py-3 text-sm font-semibold text-gray-700 border-b border-gray-200">Qty</th>
+          <th className="text-center px-4 py-3 text-sm font-semibold text-gray-700 border-b border-gray-200">Rate</th>
+          <th className="text-right px-4 py-3 text-sm font-semibold text-gray-700 border-b border-gray-200">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {selectedInvoice.items && selectedInvoice.items.length > 0 ? (
+          selectedInvoice.items.map((item, index) => (
+            <tr key={index} className="border-b border-gray-100">
+              <td className="px-4 py-3 text-sm text-gray-500">{index + 1}</td>
+              <td className="px-4 py-3 text-sm text-gray-800">{item.description}</td>
+              <td className="text-center px-4 py-3 text-sm text-blue-600 font-medium">{item.quantity}</td>
+              <td className="text-center px-4 py-3 text-sm text-gray-700">₹{Number(item.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+              <td className="text-right px-4 py-3 text-sm text-gray-800">₹{Number(item.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td colSpan={5} className="text-center py-6 text-gray-400 text-sm">No items</td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+
+    {/* Totals — Subtotal / Tax / Total */}
+    <div className="mt-8 flex justify-end">
+      <div className="w-80 space-y-3">
+        <div className="flex justify-between text-sm text-gray-600">
+          <span>Subtotal</span>
+          <span>₹{Number(selectedInvoice.amount * 100 / 118).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+        </div>
+        <div className="flex justify-between text-sm text-gray-600">
+          <span>Tax</span>
+          <span>₹{Number(selectedInvoice.amount - selectedInvoice.amount * 100 / 118).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+        </div>
+        <hr className="border-gray-200" />
+        <div className="flex justify-between font-bold text-lg text-gray-900 pt-1">
+          <span>Total</span>
+          <span>₹{Number(selectedInvoice.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
             </>
           ) : (
             <div className="h-full flex items-center justify-center text-gray-500">

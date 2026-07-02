@@ -1,352 +1,472 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useMemo, useState } from "react";
+
+type AttendanceStatus =
+  | "Office-in"
+  | "Remote-in"
+  | "Weekend"
+  | "Absent"
+  | "Holiday"
+  | "Leave";
 
 interface AttendanceRecord {
-  id: string;
-  employeeName: string;
-  employeeCode: string;
+  id: number;
+
   date: string;
+  day: string;
+  fullDate: string;
+
   checkIn: string;
   checkOut: string;
-  status: 'present' | 'absent' | 'late' | 'half-day';
-  workingHours: number;
-  overtime?: number;
+  workedHours: string;
+
+  status: AttendanceStatus;
 }
 
-interface AttendanceTrackerProps {
-  records?: AttendanceRecord[];
-  onAttendanceUpdate?: (records: AttendanceRecord[]) => void;
-}
+const attendanceWeeks: AttendanceRecord[][] = [
+  [
+    {
+      id: 1,
+      date: "05",
+      day: "SUN",
+      fullDate: "05 Jan 2025",
+      checkIn: "--:--",
+      checkOut: "--:--",
+      workedHours: "--:--",
+      status: "Weekend",
+    },
+    {
+      id: 2,
+      date: "06",
+      day: "MON",
+      fullDate: "06 Jan 2025",
+      checkIn: "09:00 AM",
+      checkOut: "06:30 PM",
+      workedHours: "09:30",
+      status: "Office-in",
+    },
+    {
+      id: 3,
+      date: "07",
+      day: "TUE",
+      fullDate: "07 Jan 2025",
+      checkIn: "08:50 AM",
+      checkOut: "07:00 PM",
+      workedHours: "10:10",
+      status: "Remote-in",
+    },
+    {
+      id: 4,
+      date: "08",
+      day: "WED",
+      fullDate: "08 Jan 2025",
+      checkIn: "00:00",
+      checkOut: "00:00",
+      workedHours: "00:00",
+      status: "Absent",
+    },
+    {
+      id: 5,
+      date: "09",
+      day: "THU",
+      fullDate: "09 Jan 2025",
+      checkIn: "09:00 AM",
+      checkOut: "06:30 PM",
+      workedHours: "09:30",
+      status: "Office-in",
+    },
+    {
+      id: 6,
+      date: "10",
+      day: "FRI",
+      fullDate: "10 Jan 2025",
+      checkIn: "09:20 AM",
+      checkOut: "08:00 PM",
+      workedHours: "10:40",
+      status: "Remote-in",
+    },
+    {
+      id: 7,
+      date: "11",
+      day: "SAT",
+      fullDate: "11 Jan 2025",
+      checkIn: "--:--",
+      checkOut: "--:--",
+      workedHours: "--:--",
+      status: "Weekend",
+    },
+  ],
 
-const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({
-  records: propRecords,
-  onAttendanceUpdate
-}) => {
-  const [records, setRecords] = useState<AttendanceRecord[]>(propRecords || []);
-  const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [showMarkModal, setShowMarkModal] = useState(false);
-  const [markData, setMarkData] = useState({
-    employeeId: '',
-    checkIn: '',
-    checkOut: '',
-    status: 'present' as AttendanceRecord['status']
-  });
+  [
+    {
+      id: 8,
+      date: "12",
+      day: "SUN",
+      fullDate: "12 Jan 2025",
+      checkIn: "--:--",
+      checkOut: "--:--",
+      workedHours: "--:--",
+      status: "Weekend",
+    },
+    {
+      id: 9,
+      date: "13",
+      day: "MON",
+      fullDate: "13 Jan 2025",
+      checkIn: "09:03 AM",
+      checkOut: "06:35 PM",
+      workedHours: "09:32",
+      status: "Office-in",
+    },
+    {
+      id: 10,
+      date: "14",
+      day: "TUE",
+      fullDate: "14 Jan 2025",
+      checkIn: "08:55 AM",
+      checkOut: "06:55 PM",
+      workedHours: "10:00",
+      status: "Remote-in",
+    },
+    {
+      id: 11,
+      date: "15",
+      day: "WED",
+      fullDate: "15 Jan 2025",
+      checkIn: "--:--",
+      checkOut: "--:--",
+      workedHours: "--:--",
+      status: "Holiday",
+    },
+    {
+      id: 12,
+      date: "16",
+      day: "THU",
+      fullDate: "16 Jan 2025",
+      checkIn: "09:05 AM",
+      checkOut: "06:40 PM",
+      workedHours: "09:35",
+      status: "Office-in",
+    },
+    {
+      id: 13,
+      date: "17",
+      day: "FRI",
+      fullDate: "17 Jan 2025",
+      checkIn: "--:--",
+      checkOut: "--:--",
+      workedHours: "--:--",
+      status: "Leave",
+    },
+    {
+      id: 14,
+      date: "18",
+      day: "SAT",
+      fullDate: "18 Jan 2025",
+      checkIn: "--:--",
+      checkOut: "--:--",
+      workedHours: "--:--",
+      status: "Weekend",
+    },
+  ],
+];
 
-  useEffect(() => {
-    if (!propRecords) {
-      fetchAttendance();
-    }
-  }, [selectedDate]);
+// const tabs = [
+//   "Attendance Summary",
+//   "Overtime",
+//   "Regularization",
+//   "On Duty",
+//   "Hourly Permission",
+//   "Shift",
+//   "Shift Change Request",
+// ];
 
-  const fetchAttendance = async () => {
-  try {
-    const response = await fetch(
-      "http://localhost:5000/api/hrms/attendance"
-    );
-
-    const data = await response.json();
-
-    setRecords(data.data || []);
-
-    if (onAttendanceUpdate) {
-      onAttendanceUpdate(data.data || []);
-    }
-  } catch (error) {
-    console.error(
-      "Error fetching attendance:",
-      error
-    );
+const statusConfig: Record<
+  AttendanceStatus,
+  {
+    line: string;
+    badge: string;
+    dot: string;
   }
+> = {
+  "Office-in": {
+    line: "bg-emerald-400",
+    badge:
+      "bg-white border border-gray-300 text-gray-700 shadow-sm",
+    dot: "bg-emerald-400",
+  },
+
+  "Remote-in": {
+    line: "bg-cyan-400",
+    badge:
+      "bg-white border border-gray-300 text-gray-700 shadow-sm",
+    dot: "bg-cyan-400",
+  },
+
+  Weekend: {
+    line: "bg-yellow-300",
+    badge:
+      "bg-white border border-yellow-300 text-gray-700 shadow-sm",
+    dot: "bg-yellow-400",
+  },
+
+  Absent: {
+    line: "bg-red-400",
+    badge:
+      "bg-white border border-gray-300 text-gray-700 shadow-sm",
+    dot: "bg-red-400",
+  },
+
+  Holiday: {
+    line: "bg-violet-400",
+    badge:
+      "bg-white border border-gray-300 text-gray-700 shadow-sm",
+    dot: "bg-violet-400",
+  },
+
+  Leave: {
+    line: "bg-orange-400",
+    badge:
+      "bg-white border border-gray-300 text-gray-700 shadow-sm",
+    dot: "bg-orange-400",
+  },
 };
 
-  const getStatusColor = (status: string): string => {
-    switch (status) {
-      case 'present':
-        return 'text-green-700 bg-green-50';
-      case 'absent':
-        return 'text-red-700 bg-red-50';
-      case 'late':
-        return 'text-yellow-700 bg-yellow-50';
-      case 'half-day':
-        return 'text-blue-700 bg-blue-50';
-      default:
-        return 'text-gray-700 bg-gray-50';
+const AttendanceTracker: React.FC = () => {
+  const [weekIndex, setWeekIndex] = useState(0);
+
+  const records = useMemo(
+    () => attendanceWeeks[weekIndex],
+    [weekIndex]
+  );
+
+  const weekLabel = useMemo(() => {
+    const first = records[0];
+    const last = records[records.length - 1];
+
+    return `${first.fullDate} - ${last.fullDate}`;
+  }, [records]);
+
+  const previousWeek = () => {
+    if (weekIndex > 0) {
+      setWeekIndex((prev) => prev - 1);
     }
   };
 
-  const handleStatusChange = async (id: string, newStatus: AttendanceRecord['status']) => {
-    try {
-      const updatedRecords = records.map(record =>
-        record.id === id ? { ...record, status: newStatus } : record
-      );
-      setRecords(updatedRecords);
-      if (onAttendanceUpdate) onAttendanceUpdate(updatedRecords);
-      if (selectedRecord?.id === id) {
-        setSelectedRecord({ ...selectedRecord, status: newStatus });
-      }
-    } catch (error) {
-      console.error('Error updating attendance status:', error);
+  const nextWeek = () => {
+    if (weekIndex < attendanceWeeks.length - 1) {
+      setWeekIndex((prev) => prev + 1);
     }
   };
+    return (
+    <div className="min-h-screen bg-[#f6f8fb]">
+      {/* ============================
+            TOP TABS
+      ============================ */}
 
-  const filteredRecords = records.filter((record: AttendanceRecord) => {
-    const matchesSearch = record.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      record.employeeCode.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || record.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
-
-  const presentCount = records.filter(r => r.status === 'present').length;
-  const lateCount = records.filter(r => r.status === 'late').length;
-  const absentCount = records.filter(r => r.status === 'absent').length;
-
-  const handleRecordClick = (record: AttendanceRecord) => {
-    setSelectedRecord(selectedRecord?.id === record.id ? null : record);
-  };
-
-  return (
-    <div className="flex h-full w-full bg-white">
-      {/* Table Section - 60% width */}
-      <div className="w-[60%] border-r border-gray-200 bg-white overflow-hidden flex flex-col">
-        {/* Toolbar */}
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center space-x-3">
-            <span className="text-sm font-medium text-gray-700">Attendance</span>
-            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-              {filteredRecords.length}
-            </span>
-          </div>
-          <div className="flex items-center space-x-2 flex-wrap gap-2">
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 w-40 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-2 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All</option>
-              <option value="present">Present</option>
-              <option value="late">Late</option>
-              <option value="absent">Absent</option>
-              <option value="half-day">Half Day</option>
-            </select>
+      <div className="border-b bg-white">
+        <div className="mx-auto flex max-w-[1500px] overflow-x-auto whitespace-nowrap px-4">
+          {/* {tabs.map((tab, index) => (
             <button
-              onClick={() => setShowMarkModal(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
+              key={tab}
+              className={`border-b-2 px-5 py-4 text-sm transition-all ${
+                index === 0
+                  ? "border-blue-600 font-semibold text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-800"
+              }`}
             >
-              + Mark
+              {tab}
             </button>
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="flex-1 overflow-auto p-3">
-          <table className="w-full text-sm">
-            <thead className="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">
-              <tr>
-                <th className="pb-2 font-medium text-left">Employee</th>
-                <th className="pb-2 font-medium text-left">Code</th>
-                <th className="pb-2 font-medium text-left">Check In</th>
-                <th className="pb-2 font-medium text-left">Check Out</th>
-                <th className="pb-2 font-medium text-left">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {filteredRecords.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
-                    No attendance records found
-                  </td>
-                </tr>
-              ) : (
-                filteredRecords.map((record: AttendanceRecord) => (
-                  <tr
-                    key={record.id}
-                    className={`hover:bg-gray-50 cursor-pointer transition-colors ${
-                      selectedRecord?.id === record.id ? 'bg-blue-50' : ''
-                    }`}
-                    onClick={() => handleRecordClick(record)}
-                  >
-                    <td className="py-2.5 pr-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-xs">
-                          {record.employeeName.split(' ').map(n => n[0]).join('')}
-                        </div>
-                        <span className="text-sm font-medium text-gray-800">{record.employeeName}</span>
-                      </div>
-                    </td>
-                    <td className="py-2.5 pr-3 text-sm text-gray-600">{record.employeeCode}</td>
-                    <td className="py-2.5 pr-3 text-sm text-gray-600">{record.checkIn}</td>
-                    <td className="py-2.5 pr-3 text-sm text-gray-600">{record.checkOut}</td>
-                    <td className="py-2.5 pr-3">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(record.status)}`}>
-                        {record.status.charAt(0).toUpperCase() + record.status.slice(1).replace('-', ' ')}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-          
-          <div className="mt-3 text-xs text-gray-500 flex items-center justify-between border-t border-gray-100 pt-3">
-            <span>Displaying {filteredRecords.length} of {records.length}</span>
-            <span>Rows per page: 10</span>
-          </div>
+          ))} */}
         </div>
       </div>
 
-      {/* Detail Panel - 40% width */}
-      <div className="w-[40%] bg-white p-5 overflow-auto">
-        {selectedRecord ? (
-          <div>
-            <h2 className="text-base font-bold text-gray-800 border-b border-gray-200 pb-3 mb-4">
-              Attendance Details
-            </h2>
-            
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xl font-medium">
-                  {selectedRecord.employeeName.split(' ').map(n => n[0]).join('')}
-                </div>
-                <div>
-                  <p className="text-base font-bold text-gray-800">{selectedRecord.employeeName}</p>
-                  <p className="text-sm text-gray-500">{selectedRecord.employeeCode}</p>
-                </div>
-              </div>
+      {/* ============================
+              PAGE CONTENT
+      ============================ */}
 
-              <div>
-                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Date</p>
-                <p className="text-sm font-medium text-gray-800">
-                  {new Date(selectedRecord.date).toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    month: 'long', 
-                    day: 'numeric', 
-                    year: 'numeric' 
-                  })}
-                </p>
-              </div>
+      <div className="mx-auto max-w-[1500px] p-5">
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs text-gray-400">Check In</p>
-                  <p className="text-sm font-medium text-gray-800">{selectedRecord.checkIn}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400">Check Out</p>
-                  <p className="text-sm font-medium text-gray-800">{selectedRecord.checkOut}</p>
-                </div>
-              </div>
+        {/* Toolbar */}
 
-              <div>
-                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Status</p>
-                <select
-                  value={selectedRecord.status}
-                  onChange={(e) => handleStatusChange(selectedRecord.id, e.target.value as AttendanceRecord['status'])}
-                  className={`mt-1 px-3 py-1 text-xs font-medium rounded-full border ${getStatusColor(selectedRecord.status)}`}
-                >
-                  <option value="present">Present</option>
-                  <option value="late">Late</option>
-                  <option value="absent">Absent</option>
-                  <option value="half-day">Half Day</option>
-                </select>
-              </div>
+        <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs text-gray-400">Working Hours</p>
-                  <p className="text-sm font-medium text-gray-800">{selectedRecord.workingHours}h</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400">Overtime</p>
-                  <p className="text-sm font-medium text-blue-600">{selectedRecord.overtime ? `${selectedRecord.overtime}h` : '-'}</p>
-                </div>
-              </div>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
-              <div className="border-t border-gray-100 pt-3">
-                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Actions</p>
-                <div className="flex flex-wrap gap-2">
-                  <button className="text-xs bg-blue-50 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-100 transition">
-                    Edit
-                  </button>
-                  <button className="text-xs bg-green-50 text-green-700 px-3 py-1 rounded-lg hover:bg-green-100 transition">
-                    Export
-                  </button>
-                </div>
-              </div>
+            {/* Week Navigation */}
+
+            <div className="flex items-center gap-3">
+
+              <button
+                onClick={previousWeek}
+                disabled={weekIndex === 0}
+                className="flex h-9 w-9 items-center justify-center rounded border border-gray-200 bg-white text-gray-500 transition hover:bg-gray-100 disabled:opacity-40"
+              >
+                ‹
+              </button>
+
+              <button className="flex h-9 w-9 items-center justify-center rounded border border-gray-200 bg-white text-gray-600 hover:bg-gray-100">
+                📅
+              </button>
+
+              <button
+                onClick={nextWeek}
+                disabled={weekIndex === attendanceWeeks.length - 1}
+                className="flex h-9 w-9 items-center justify-center rounded border border-gray-200 bg-white text-gray-500 transition hover:bg-gray-100 disabled:opacity-40"
+              >
+                ›
+              </button>
+
+              <h2 className="ml-2 text-lg font-semibold text-gray-700">
+                {weekLabel}
+              </h2>
+
             </div>
-          </div>
-        ) : (
-          <div className="h-full flex items-center justify-center text-gray-400 text-sm">
-            Select a record to view details
-          </div>
-        )}
-      </div>
 
-      {/* Mark Attendance Modal */}
-      {showMarkModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Mark Attendance</h3>
-            <form className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Employee</label>
-                <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                  <option value="">Select employee</option>
-                  <option value="EMP001">Takiya Baksh</option>
-                  <option value="EMP002">John Smith</option>
-                  <option value="EMP003">Sarah Johnson</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Check In</label>
-                <input type="time" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Check Out</label>
-                <input type="time" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                  <option value="present">Present</option>
-                  <option value="late">Late</option>
-                  <option value="absent">Absent</option>
-                  <option value="half-day">Half Day</option>
-                </select>
-              </div>
-              <div className="flex justify-end gap-3 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setShowMarkModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
-                >
-                  Mark Attendance
-                </button>
-              </div>
-            </form>
+            {/* Right Controls */}
+
+            <div className="flex items-center gap-2">
+
+              <button className="flex h-9 w-9 items-center justify-center rounded border border-blue-500 bg-blue-50 text-blue-600">
+                ☷
+              </button>
+
+              <button className="flex h-9 w-9 items-center justify-center rounded border border-gray-200 bg-white text-gray-600 hover:bg-gray-50">
+                ☰
+              </button>
+
+              <button className="flex h-9 w-9 items-center justify-center rounded border border-gray-200 bg-white text-gray-600 hover:bg-gray-50">
+                🗓
+              </button>
+
+              <button className="rounded-l bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                Request
+              </button>
+
+              <button className="rounded-r bg-blue-700 px-3 py-2 text-white hover:bg-blue-800">
+                ▼
+              </button>
+
+            </div>
+
           </div>
+
         </div>
-      )}
+
+        {/* ============================
+              ATTENDANCE TABLE
+        ============================ */}
+
+        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+
+          {records.map((record) => {
+
+            const style = statusConfig[record.status];
+
+            return (
+              <div
+                key={record.id}
+                className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
+              >
+
+                <div className="flex min-h-[86px] items-center">
+
+                  {/* Date */}
+
+                  <div className="w-[90px] border-r border-gray-100 text-center">
+
+                    <h2 className="text-3xl font-semibold text-gray-800">
+                      {record.date}
+                    </h2>
+
+                    <p className="mt-1 text-xs uppercase tracking-wider text-gray-500">
+                      {record.day}
+                    </p>
+
+                  </div>
+
+                  {/* Check In */}
+
+                  <div className="w-[140px] px-6 text-center">
+
+                    <span className="text-[15px] font-semibold text-gray-700">
+                      {record.checkIn}
+                    </span>
+
+                  </div>
+
+                  {/* Timeline */}
+
+                  <div className="flex flex-1 items-center px-2">
+                    <div className="relative flex h-10 flex-1 items-center">
+
+                      {/* Left Gray Dot */}
+                      <div className="z-10 h-2.5 w-2.5 rounded-full bg-gray-300" />
+
+                      {/* Colored Timeline */}
+                      <div className="relative mx-2 flex-1">
+
+                        <div className="absolute left-0 right-0 top-1/2 h-[2px] -translate-y-1/2 bg-gray-200" />
+
+                        <div
+                          className={`absolute left-0 right-0 top-1/2 h-[2px] -translate-y-1/2 ${style.line}`}
+                        />
+
+                        {/* Status Badge */}
+                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                          <span
+                            className={`rounded-md px-3 py-1 text-xs font-medium ${style.badge}`}
+                          >
+                            {record.status}
+                          </span>
+                        </div>
+
+                      </div>
+
+                      {/* Right Status Dot */}
+                      <div
+                        className={`z-10 h-2.5 w-2.5 rounded-full ${style.dot}`}
+                      />
+
+                      {/* End Gray Dot */}
+                      <div className="ml-2 h-2.5 w-2.5 rounded-full bg-gray-300" />
+
+                    </div>
+
+                  </div>
+
+                  {/* Check Out */}
+
+                  <div className="w-[140px] px-6 text-center">
+
+                    <span className="text-[15px] font-semibold text-gray-700">
+                      {record.checkOut}
+                    </span>
+
+                  </div>
+
+                  {/* Worked Hours */}
+
+                  <div className="w-[130px] px-5 text-center">
+
+                    <div className="text-lg font-semibold text-gray-700">
+                      {record.workedHours}
+                    </div>
+
+                    <div className="text-sm leading-4 text-gray-500">
+                      Hrs Worked
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+            );
+          })}
+        </div>
+
+      </div>
     </div>
   );
 };
