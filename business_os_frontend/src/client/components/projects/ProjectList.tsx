@@ -9232,7 +9232,7 @@
 // };
 
 // export default ProjectList;
-// ProjectList.tsx
+// ProjectList.tsx - Complete with proper task storage
 // import React, { useState, useEffect, useRef } from 'react';
 // import {
 //   Search,
@@ -9283,6 +9283,21 @@
 //   timerSeconds?: number;
 //   timerStartTime?: string;
 //   assignedUsers?: string[];
+//   tasks?: string[];
+//   currentTask?: string;
+// }
+
+// interface TimeEntry {
+//   id: string;
+//   date: string;
+//   project: string;
+//   projectId: string;
+//   task: string;
+//   time: string;
+//   timeInSeconds: number;
+//   employee: string;
+//   status: 'Billable' | 'Non-Bill';
+//   notes?: string;
 // }
 
 // type TabType = 'projects' | 'taskboard' | 'timetracker';
@@ -9299,15 +9314,17 @@
 //   const [formData, setFormData] = useState({
 //     projectName: '',
 //     customerName: currentUser,
-//     billingMethod: 'Based on Task Hours',
+//     billingMethod: 'Based on Task Hours' as Project['billingMethod'],
 //     rate: 0,
 //     budget: 0,
 //     status: 'active' as 'active' | 'inactive' | 'completed',
 //     startDate: '',
 //     endDate: '',
 //     description: '',
+//     tasks: [] as string[],
 //   });
 
+//   const [taskInput, setTaskInput] = useState('');
 //   const [errors, setErrors] = useState<Record<string, string>>({});
 //   const [isSaving, setIsSaving] = useState(false);
 
@@ -9317,6 +9334,23 @@
 //     if (errors[name]) {
 //       setErrors(prev => ({ ...prev, [name]: '' }));
 //     }
+//   };
+
+//   const handleAddTask = () => {
+//     if (taskInput.trim()) {
+//       setFormData(prev => ({
+//         ...prev,
+//         tasks: [...prev.tasks, taskInput.trim()]
+//       }));
+//       setTaskInput('');
+//     }
+//   };
+
+//   const handleRemoveTask = (taskToRemove: string) => {
+//     setFormData(prev => ({
+//       ...prev,
+//       tasks: prev.tasks.filter(t => t !== taskToRemove)
+//     }));
 //   };
 
 //   const handleSubmit = () => {
@@ -9338,7 +9372,8 @@
 //         budget: Number(formData.budget) || 0,
 //         loggedHours: '00:00',
 //         createdAt: new Date().toISOString(),
-//         updatedAt: new Date().toISOString()
+//         updatedAt: new Date().toISOString(),
+//         tasks: formData.tasks
 //       });
 //       setIsSaving(false);
 //     }, 500);
@@ -9415,6 +9450,35 @@
 //             </div>
 //           </div>
 //           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Tasks</label>
+//             <div className="flex gap-2">
+//               <input
+//                 type="text"
+//                 value={taskInput}
+//                 onChange={(e) => setTaskInput(e.target.value)}
+//                 className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+//                 placeholder="Add task..."
+//                 onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
+//               />
+//               <button
+//                 onClick={handleAddTask}
+//                 className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition text-sm"
+//               >
+//                 Add
+//               </button>
+//             </div>
+//             <div className="flex flex-wrap gap-1 mt-2">
+//               {formData.tasks.map(task => (
+//                 <span key={task} className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs flex items-center gap-1">
+//                   {task}
+//                   <button onClick={() => handleRemoveTask(task)} className="text-gray-400 hover:text-red-500">
+//                     <X className="w-3 h-3" />
+//                   </button>
+//                 </span>
+//               ))}
+//             </div>
+//           </div>
+//           <div>
 //             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
 //             <select name="status" value={formData.status} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
 //               <option value="active">Active</option>
@@ -9448,11 +9512,11 @@
 //   handleDeleteProject: (id: string) => void;
 //   onProjectClick: (projectId: string) => void;
 //   onEditClick: (project: Project) => void;
-//   onStartTimer: (projectId: string) => void;
+//   onStartTimer: (projectId: string, task?: string) => void;
 //   onStopTimer: (projectId: string) => void;
 //   onCompleteProject: (projectId: string) => void;
 //   onLogTime: (projectName: string) => void;
-//   onOpenTimeTracker: () => void;
+//   onOpenTimeTracker: (projectName?: string) => void;
 //   currentUser?: string;
 // }
 
@@ -9478,7 +9542,6 @@
 //   onOpenTimeTracker,
 //   currentUser = ''
 // }) => {
-//   // ✅ Filter projects - only show projects where current user is assigned
 //   const filteredProjects = projects.filter((project: Project) => {
 //     const matchesView = viewBy === 'all' || project.status === viewBy;
 //     const matchesSearch = project.projectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -9494,29 +9557,12 @@
 
 //   const totalPages = Math.ceil(filteredProjects.length / itemsPerPage);
 
-//   const toggleProjectSelection = (projectId: string) => {
-//     setSelectedProjects((prev: string[]) =>
-//       prev.includes(projectId)
-//         ? prev.filter((id: string) => id !== projectId)
-//         : [...prev, projectId]
-//     );
-//   };
-
 //   const getStatusColor = (status: string) => {
 //     switch(status) {
 //       case 'active': return 'bg-green-100 text-green-800 border-green-200';
 //       case 'inactive': return 'bg-gray-100 text-gray-800 border-gray-200';
 //       case 'completed': return 'bg-blue-100 text-blue-800 border-blue-200';
 //       default: return 'bg-gray-100 text-gray-800 border-gray-200';
-//     }
-//   };
-
-//   const getStatusIcon = (status: string) => {
-//     switch(status) {
-//       case 'active': return <CheckCircle className="w-3 h-3 text-green-500" />;
-//       case 'inactive': return <XCircle className="w-3 h-3 text-gray-500" />;
-//       case 'completed': return <CheckCircle className="w-3 h-3 text-blue-500" />;
-//       default: return <AlertCircle className="w-3 h-3 text-gray-500" />;
 //     }
 //   };
 
@@ -9539,7 +9585,6 @@
 //     setSelectedProjects([]);
 //   };
 
-//   // Format timer display
 //   const formatTimerDisplay = (seconds: number) => {
 //     const hrs = Math.floor(seconds / 3600);
 //     const mins = Math.floor((seconds % 3600) / 60);
@@ -9547,7 +9592,6 @@
 //     return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 //   };
 
-//   // ✅ CARD VIEW ONLY
 //   const renderCardView = () => {
 //     const getInitials = (name: string) => name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
 //     const getRandomColor = (name: string) => {
@@ -9556,146 +9600,155 @@
 //     };
 //     return (
 //       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-//         {paginatedProjects.map((project: Project) => (
-//           <div 
-//             key={project.id} 
-//             className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition p-3 sm:p-4"
-//           >
-//             <div className="flex items-start justify-between mb-3">
-//               <div className="flex items-center space-x-2">
-//                 <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full ${getRandomColor(project.customerName)} text-white flex items-center justify-center text-[10px] sm:text-xs font-medium flex-shrink-0`}>
-//                   {getInitials(project.customerName)}
-//                 </div>
-//                 <div>
-//                   <div 
-//                     className="text-sm font-semibold text-gray-700 hover:text-purple-600 cursor-pointer transition-colors duration-200" 
-//                     onClick={() => onProjectClick(project.id)}
-//                   >
-//                     {project.customerName}
+//         {paginatedProjects.map((project: Project) => {
+//           // ✅ Get the first task from the project's tasks
+//           const firstTask = project.tasks && project.tasks.length > 0 ? project.tasks[0] : '';
+          
+//           return (
+//             <div 
+//               key={project.id} 
+//               className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition p-3 sm:p-4"
+//             >
+//               <div className="flex items-start justify-between mb-3">
+//                 <div className="flex items-center space-x-2">
+//                   <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full ${getRandomColor(project.customerName)} text-white flex items-center justify-center text-[10px] sm:text-xs font-medium flex-shrink-0`}>
+//                     {getInitials(project.customerName)}
 //                   </div>
-//                   <p 
-//                     className="text-xs text-gray-500 hover:text-purple-600 cursor-pointer transition-colors duration-200"
-//                     onClick={() => onProjectClick(project.id)}
-//                   >
-//                     {project.projectName}
-//                   </p>
+//                   <div>
+//                     <div 
+//                       className="text-sm font-semibold text-gray-700 hover:text-purple-600 cursor-pointer transition-colors duration-200" 
+//                       onClick={() => onProjectClick(project.id)}
+//                     >
+//                       {project.customerName}
+//                     </div>
+//                     <p 
+//                       className="text-xs text-gray-500 hover:text-purple-600 cursor-pointer transition-colors duration-200"
+//                       onClick={() => onProjectClick(project.id)}
+//                     >
+//                       {project.projectName}
+//                     </p>
+//                   </div>
+//                 </div>
+//                 <span className={`px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded-full ${getStatusColor(project.status)}`}>
+//                   {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+//                 </span>
+//               </div>
+//               <p className="text-xs text-gray-600 line-clamp-2 mb-3">{project.description}</p>
+              
+//               <div className="grid grid-cols-2 gap-2 mb-3">
+//                 <div className="bg-gray-50 rounded p-1.5 sm:p-2">
+//                   <div className="text-[10px] text-gray-500">Billing</div>
+//                   <div className="text-[10px] sm:text-xs font-medium text-gray-700 truncate">{project.billingMethod}</div>
+//                 </div>
+//                 <div className="bg-gray-50 rounded p-1.5 sm:p-2">
+//                   <div className="text-[10px] text-gray-500">Rate</div>
+//                   <div className="text-[10px] sm:text-xs font-medium text-gray-700">
+//                     {project.rate ? `$${Number(project.rate).toFixed(2)}/hr` : '-'}
+//                   </div>
 //                 </div>
 //               </div>
-//               <span className={`px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded-full ${getStatusColor(project.status)}`}>
-//                 {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
-//               </span>
-//             </div>
-//             <p className="text-xs text-gray-600 line-clamp-2 mb-3">{project.description}</p>
-            
-//             <div className="grid grid-cols-2 gap-2 mb-3">
-//               <div className="bg-gray-50 rounded p-1.5 sm:p-2">
-//                 <div className="text-[10px] text-gray-500">Billing</div>
-//                 <div className="text-[10px] sm:text-xs font-medium text-gray-700 truncate">{project.billingMethod}</div>
-//               </div>
-//               <div className="bg-gray-50 rounded p-1.5 sm:p-2">
-//                 <div className="text-[10px] text-gray-500">Rate</div>
-//                 <div className="text-[10px] sm:text-xs font-medium text-gray-700">
-//                   {project.rate ? `$${Number(project.rate).toFixed(2)}/hr` : '-'}
+              
+//               <div className="flex items-center justify-between text-xs sm:text-sm mb-2">
+//                 <div className="flex items-center space-x-1">
+//                   <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+//                   <span className="font-mono">{project.loggedHours}</span>
+//                 </div>
+//                 <div className="flex items-center space-x-1">
+//                   <DollarSign className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+//                   <span>{project.budget ? `$${Number(project.budget).toFixed(2)}` : '$0'}</span>
 //                 </div>
 //               </div>
-//             </div>
-            
-//             <div className="flex items-center justify-between text-xs sm:text-sm mb-2">
-//               <div className="flex items-center space-x-1">
-//                 <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
-//                 <span className="font-mono">{project.loggedHours}</span>
-//               </div>
-//               <div className="flex items-center space-x-1">
-//                 <DollarSign className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
-//                 <span>{project.budget ? `$${Number(project.budget).toFixed(2)}` : '$0'}</span>
-//               </div>
-//             </div>
-            
-//             {project.status !== 'completed' ? (
-//               <div className="mt-2 flex items-center justify-between bg-gray-50 rounded-lg p-1.5 sm:p-2">
-//                 <div className="flex items-center gap-1 sm:gap-1.5">
-//                   <Clock className={`w-3 h-3 sm:w-4 sm:h-4 ${project.timerRunning ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
-//                   <span className={`text-[10px] sm:text-xs font-mono font-medium ${project.timerRunning ? 'text-green-600' : 'text-gray-600'}`}>
-//                     {formatTimerDisplay(project.timerSeconds || 0)}
-//                   </span>
+              
+//               {project.status !== 'completed' ? (
+//                 <div className="mt-2 flex items-center justify-between bg-gray-50 rounded-lg p-1.5 sm:p-2">
+//                   <div className="flex items-center gap-1 sm:gap-1.5">
+//                     <Clock className={`w-3 h-3 sm:w-4 sm:h-4 ${project.timerRunning ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
+//                     <span className={`text-[10px] sm:text-xs font-mono font-medium ${project.timerRunning ? 'text-green-600' : 'text-gray-600'}`}>
+//                       {formatTimerDisplay(project.timerSeconds || 0)}
+//                     </span>
+//                   </div>
+//                   <div className="flex items-center gap-0.5 sm:gap-1">
+//                     {!project.timerRunning ? (
+//                       <button
+//                         onClick={(e) => { 
+//                           e.stopPropagation(); 
+//                           // ✅ Pass the first task from the project's tasks
+//                           onStartTimer(project.id, firstTask); 
+//                         }}
+//                         className="p-0.5 sm:p-1 text-green-600 hover:bg-green-50 rounded transition"
+//                         title="Start Timer"
+//                       >
+//                         <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                       </button>
+//                     ) : (
+//                       <button
+//                         onClick={(e) => { e.stopPropagation(); onStopTimer(project.id); }}
+//                         className="p-0.5 sm:p-1 text-yellow-600 hover:bg-yellow-50 rounded transition"
+//                         title="Pause Timer"
+//                       >
+//                         <Pause className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                       </button>
+//                     )}
+//                     <button
+//                       onClick={(e) => { e.stopPropagation(); onCompleteProject(project.id); }}
+//                       className="p-0.5 sm:p-1 text-blue-600 hover:bg-blue-50 rounded transition"
+//                       title="Complete Project"
+//                     >
+//                       <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                     </button>
+//                   </div>
 //                 </div>
+//               ) : (
+//                 <div className="mt-2 flex items-center justify-center bg-green-50 rounded-lg p-1.5 sm:p-2">
+//                   <CheckCircle className="w-4 h-4 text-green-600 mr-1" />
+//                   <span className="text-xs font-medium text-green-600">Completed</span>
+//                 </div>
+//               )}
+              
+//               <div className="mt-2 sm:mt-3 flex items-center justify-between">
 //                 <div className="flex items-center gap-0.5 sm:gap-1">
-//                   {!project.timerRunning ? (
-//                     <button
-//                       onClick={(e) => { e.stopPropagation(); onStartTimer(project.id); }}
-//                       className="p-0.5 sm:p-1 text-green-600 hover:bg-green-50 rounded transition"
-//                       title="Start Timer"
-//                     >
-//                       <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-//                     </button>
-//                   ) : (
-//                     <button
-//                       onClick={(e) => { e.stopPropagation(); onStopTimer(project.id); }}
-//                       className="p-0.5 sm:p-1 text-yellow-600 hover:bg-yellow-50 rounded transition"
-//                       title="Pause Timer"
-//                     >
-//                       <Pause className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-//                     </button>
-//                   )}
-//                   <button
-//                     onClick={(e) => { e.stopPropagation(); onCompleteProject(project.id); }}
-//                     className="p-0.5 sm:p-1 text-blue-600 hover:bg-blue-50 rounded transition"
-//                     title="Complete Project"
+//                   <button 
+//                     onClick={(e) => { e.stopPropagation(); onEditClick(project); }}
+//                     className="p-0.5 sm:p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition"
+//                     title="Edit"
 //                   >
-//                     <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                     <Edit className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                   </button>
+//                   <button 
+//                     onClick={(e) => { e.stopPropagation(); onLogTime(project.projectName); }}
+//                     className="p-0.5 sm:p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition"
+//                     title="Log Time"
+//                   >
+//                     <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                   </button>
+//                   <button 
+//                     onClick={(e) => { e.stopPropagation(); 
+//                       const np = { ...project, id: String(Date.now()), projectName: `${project.projectName} (Copy)`, loggedHours: '00:00', timerSeconds: 0, timerRunning: false }; 
+//                       setProjects((prev: Project[]) => [...prev, np]); 
+//                     }}
+//                     className="p-0.5 sm:p-1 text-gray-400 hover:text-purple-600 rounded hover:bg-purple-50 transition"
+//                     title="Clone"
+//                   >
+//                     <Copy className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                   </button>
+//                   <button 
+//                     onClick={(e) => { e.stopPropagation(); handleDeleteProject(project.id); }}
+//                     className="p-0.5 sm:p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 transition"
+//                     title="Delete"
+//                   >
+//                     <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
 //                   </button>
 //                 </div>
-//               </div>
-//             ) : (
-//               <div className="mt-2 flex items-center justify-center bg-green-50 rounded-lg p-1.5 sm:p-2">
-//                 <CheckCircle className="w-4 h-4 text-green-600 mr-1" />
-//                 <span className="text-xs font-medium text-green-600">Completed</span>
-//               </div>
-//             )}
-            
-//             <div className="mt-2 sm:mt-3 flex items-center justify-between">
-//               <div className="flex items-center gap-0.5 sm:gap-1">
 //                 <button 
-//                   onClick={(e) => { e.stopPropagation(); onEditClick(project); }}
-//                   className="p-0.5 sm:p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition"
-//                   title="Edit"
+//                   onClick={(e) => { e.stopPropagation(); onOpenTimeTracker(project.projectName); }}
+//                   className="text-[10px] sm:text-xs text-blue-600 hover:text-blue-700"
 //                 >
-//                   <Edit className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-//                 </button>
-//                 <button 
-//                   onClick={(e) => { e.stopPropagation(); onLogTime(project.projectName); }}
-//                   className="p-0.5 sm:p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition"
-//                   title="Log Time"
-//                 >
-//                   <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-//                 </button>
-//                 <button 
-//                   onClick={(e) => { e.stopPropagation(); 
-//                     const np = { ...project, id: String(Date.now()), projectName: `${project.projectName} (Copy)`, loggedHours: '00:00', timerSeconds: 0, timerRunning: false }; 
-//                     setProjects((prev: Project[]) => [...prev, np]); 
-//                   }}
-//                   className="p-0.5 sm:p-1 text-gray-400 hover:text-purple-600 rounded hover:bg-purple-50 transition"
-//                   title="Clone"
-//                 >
-//                   <Copy className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-//                 </button>
-//                 <button 
-//                   onClick={(e) => { e.stopPropagation(); handleDeleteProject(project.id); }}
-//                   className="p-0.5 sm:p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 transition"
-//                   title="Delete"
-//                 >
-//                   <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                   View in Tracker
 //                 </button>
 //               </div>
-//               <button 
-//                 onClick={(e) => { e.stopPropagation(); }}
-//                 className="text-[10px] sm:text-xs text-blue-600 hover:text-blue-700"
-//               >
-//                 Create Expense
-//               </button>
 //             </div>
-//           </div>
-//         ))}
+//           );
+//         })}
 //       </div>
 //     );
 //   };
@@ -9734,7 +9787,7 @@
 //               <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />Filter
 //             </button>
 //             <button 
-//               onClick={onOpenTimeTracker}
+//               onClick={() => onOpenTimeTracker()}
 //               className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 flex items-center"
 //             >
 //               <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />Tracker
@@ -9828,22 +9881,21 @@
 //   const [showLogTimePage, setShowLogTimePage] = useState(false);
 //   const [logTimeProject, setLogTimeProject] = useState('');
 
-//   // ✅ Current employee - this would come from auth in a real app
 //   const [currentUser] = useState('Patricia Boyle');
 
+//   // Each project has its own timer
 //   const timerRefs = useRef<Record<string, NodeJS.Timeout>>({});
-//   // ✅ Global tracker state
-//   const [globalTrackerSeconds, setGlobalTrackerSeconds] = useState(0);
-//   const [isGlobalTrackerRunning, setIsGlobalTrackerRunning] = useState(false);
-//   const globalTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+//   // Store which project timer is currently active in Time Tracker
+//   const [activeTrackerProjectId, setActiveTrackerProjectId] = useState<string | null>(null);
+  
+//   // Store time entries
+//   const [entries, setEntries] = useState<TimeEntry[]>([]);
 
-//   // ✅ Start with empty projects - only user created projects will show
-//   const [projects, setProjects] = useState<Project[]>([
-//     // Empty by default - only projects created by the user will appear
-//   ]);
+//   const [projects, setProjects] = useState<Project[]>([]);
 
+//   // Load data from localStorage
 //   useEffect(() => {
-//     // Load projects from localStorage
 //     try {
 //       const savedProjects = localStorage.getItem('userProjects');
 //       if (savedProjects) {
@@ -9863,20 +9915,32 @@
 //         setProjects(prev => prev.map(project => ({
 //           ...project,
 //           timerRunning: timerData[project.id]?.running || false,
-//           timerSeconds: timerData[project.id]?.seconds || 0
+//           timerSeconds: timerData[project.id]?.seconds || 0,
+//           currentTask: timerData[project.id]?.currentTask || ''
 //         })));
-//         // Load global tracker state
-//         if (timerData.global) {
-//           setGlobalTrackerSeconds(timerData.global.seconds || 0);
-//           setIsGlobalTrackerRunning(timerData.global.running || false);
+//         if (timerData.activeProjectId) {
+//           setActiveTrackerProjectId(timerData.activeProjectId);
 //         }
 //       }
 //     } catch (error) {
 //       console.error('Failed to load timer data:', error);
 //     }
+
+//     // Load entries
+//     try {
+//       const savedEntries = localStorage.getItem('timeEntries');
+//       if (savedEntries) {
+//         const parsed = JSON.parse(savedEntries);
+//         if (Array.isArray(parsed)) {
+//           setEntries(parsed);
+//         }
+//       }
+//     } catch (error) {
+//       console.error('Failed to load entries:', error);
+//     }
 //   }, []);
 
-//   // Save projects to localStorage whenever they change
+//   // Save projects to localStorage
 //   useEffect(() => {
 //     try {
 //       localStorage.setItem('userProjects', JSON.stringify(projects));
@@ -9888,172 +9952,169 @@
 //   // Save timer data to localStorage
 //   useEffect(() => {
 //     try {
-//       const timerData: Record<string, { running: boolean; seconds: number }> = {
-//         global: {
-//           running: isGlobalTrackerRunning,
-//           seconds: globalTrackerSeconds
-//         }
+//       const timerData: Record<string, any> = {
+//         activeProjectId: activeTrackerProjectId
 //       };
 //       projects.forEach(project => {
 //         timerData[project.id] = {
 //           running: project.timerRunning || false,
-//           seconds: project.timerSeconds || 0
+//           seconds: project.timerSeconds || 0,
+//           currentTask: project.currentTask || ''
 //         };
 //       });
 //       localStorage.setItem('projectTimers', JSON.stringify(timerData));
 //     } catch (error) {
 //       console.error('Failed to save timer data:', error);
 //     }
-//   }, [projects, isGlobalTrackerRunning, globalTrackerSeconds]);
+//   }, [projects, activeTrackerProjectId]);
 
-//   // ✅ Global timer interval
+//   // Save entries to localStorage whenever they change
 //   useEffect(() => {
-//     if (isGlobalTrackerRunning) {
-//       if (globalTimerRef.current) clearInterval(globalTimerRef.current);
-//       globalTimerRef.current = setInterval(() => {
-//         setGlobalTrackerSeconds(prev => prev + 1);
-//         // Update all project timers to sync with global tracker
-//         setProjects(prev => prev.map(p => 
-//           p.timerRunning ? { ...p, timerSeconds: globalTrackerSeconds + 1 } : p
-//         ));
-//       }, 1000);
-//     } else if (globalTimerRef.current) {
-//       clearInterval(globalTimerRef.current);
-//       globalTimerRef.current = null;
+//     try {
+//       localStorage.setItem('timeEntries', JSON.stringify(entries));
+//     } catch (error) {
+//       console.error('Failed to save entries:', error);
 //     }
+//   }, [entries]);
 
-//     return () => {
-//       if (globalTimerRef.current) {
-//         clearInterval(globalTimerRef.current);
-//         globalTimerRef.current = null;
-//       }
-//     };
-//   }, [isGlobalTrackerRunning, globalTrackerSeconds]);
-
-//   // ✅ Clean up all timers on unmount
+//   // Clean up all timers on unmount
 //   useEffect(() => {
 //     return () => {
 //       Object.values(timerRefs.current).forEach(clearInterval);
-//       if (globalTimerRef.current) {
-//         clearInterval(globalTimerRef.current);
-//         globalTimerRef.current = null;
-//       }
 //     };
 //   }, []);
 
-//   // ✅ Start timer for a project - syncs with global tracker
-//   const handleStartTimer = (projectId: string) => {
-//     // If global tracker is not running, start it
-//     if (!isGlobalTrackerRunning) {
-//       setIsGlobalTrackerRunning(true);
-//     }
+//   // Format time
+//   const formatTime = (totalSeconds: number) => {
+//     const hours = Math.floor(totalSeconds / 3600);
+//     const minutes = Math.floor((totalSeconds % 3600) / 60);
+//     const secs = totalSeconds % 60;
+//     return `${String(hours).padStart(2, '0')}h : ${String(minutes).padStart(2, '0')}m : ${String(secs).padStart(2, '0')}s`;
+//   };
 
-//     // Mark project as running
-//     setProjects(prev => prev.map(p => 
-//       p.id === projectId ? { ...p, timerRunning: true, timerSeconds: globalTrackerSeconds } : p
-//     ));
+//   // ✅ Create time entry with the task name
+//   const createTimeEntry = (projectId: string, seconds: number, task: string = 'Unspecified', notes: string = '') => {
+//     const project = projects.find(p => p.id === projectId);
+//     if (!project) return;
 
-//     // Start project-specific interval for display updates
+//     console.log('Creating entry - Project:', project.projectName, 'Task:', task); // Debug
+
+//     const newEntry: TimeEntry = {
+//       id: Date.now().toString(),
+//       date: new Date().toISOString().split('T')[0],
+//       project: project.projectName,
+//       projectId: project.id,
+//       task: task || 'Unspecified', // ✅ Use the task passed
+//       time: formatTime(seconds),
+//       timeInSeconds: seconds,
+//       employee: project.customerName || 'Unassigned',
+//       status: 'Billable',
+//       notes: notes || undefined
+//     };
+
+//     setEntries(prev => {
+//       const updated = [newEntry, ...prev];
+//       try {
+//         localStorage.setItem('timeEntries', JSON.stringify(updated));
+//       } catch (error) {
+//         console.error('Failed to save entries:', error);
+//       }
+//       return updated;
+//     });
+//   };
+
+//   // ✅ Start timer for a project - store the task in currentTask
+//   const handleStartTimer = (projectId: string, task: string = '') => {
+//     // Check if this project is already running
+//     const project = projects.find(p => p.id === projectId);
+//     if (project?.timerRunning) return;
+
+//     // If the project has a timer, clear it first
 //     if (timerRefs.current[projectId]) {
 //       clearInterval(timerRefs.current[projectId]);
+//       delete timerRefs.current[projectId];
 //     }
+
+//     // ✅ Use the passed task or get from project's tasks
+//     let taskToUse = task;
+//     if (!taskToUse && project?.tasks && project.tasks.length > 0) {
+//       taskToUse = project.tasks[0];
+//     }
+//     if (!taskToUse) {
+//       taskToUse = 'Unspecified';
+//     }
+
+//     console.log('Starting timer - Project:', project?.projectName, 'Task:', taskToUse);
+
+//     // ✅ Mark project as running and store the task
+//     setProjects(prev => prev.map(p => 
+//       p.id === projectId ? { 
+//         ...p, 
+//         timerRunning: true,
+//         currentTask: taskToUse
+//       } : p
+//     ));
+
+//     // Set this as the active tracker project
+//     setActiveTrackerProjectId(projectId);
+
+//     // Start project-specific interval
 //     timerRefs.current[projectId] = setInterval(() => {
 //       setProjects(prev => prev.map(p => 
-//         p.id === projectId && p.timerRunning ? { ...p, timerSeconds: globalTrackerSeconds } : p
+//         p.id === projectId && p.timerRunning ? { ...p, timerSeconds: (p.timerSeconds || 0) + 1 } : p
 //       ));
 //     }, 1000);
 //   };
 
-//   // ✅ Stop timer for a project
-//   const handleStopTimer = (projectId: string) => {
+//   // ✅ Stop timer for a project - use the stored task
+//   const handleStopTimer = (projectId: string, task: string = '', notes: string = '') => {
+//     // Get the project and its current seconds
+//     const project = projects.find(p => p.id === projectId);
+//     if (!project) return;
+
+//     const seconds = project.timerSeconds || 0;
+//     // ✅ Use the stored task or the passed task
+//     const taskToUse = task || project.currentTask || 'Unspecified';
+
+//     console.log('Stopping timer - Project:', project?.projectName, 'Task:', taskToUse, 'Seconds:', seconds);
+
 //     // Stop project-specific interval
 //     if (timerRefs.current[projectId]) {
 //       clearInterval(timerRefs.current[projectId]);
 //       delete timerRefs.current[projectId];
 //     }
 
-//     // Mark project as stopped
+//     // Mark project as stopped and clear the task
 //     setProjects(prev => prev.map(p => 
-//       p.id === projectId ? { ...p, timerRunning: false } : p
+//       p.id === projectId ? { ...p, timerRunning: false, currentTask: '' } : p
 //     ));
 
-//     // Check if any other project is still running
-//     const anyRunning = projects.some(p => p.id !== projectId && p.timerRunning);
-//     if (!anyRunning && isGlobalTrackerRunning) {
-//       // Stop global tracker if no other projects are running
-//       setIsGlobalTrackerRunning(false);
+//     // ✅ Create time entry with the task name
+//     if (seconds > 0) {
+//       createTimeEntry(projectId, seconds, taskToUse, notes);
 //     }
-//   };
 
-//   // ✅ Handle global tracker start from Time Tracker tab
-//   const handleGlobalTrackerStart = () => {
-//     if (!isGlobalTrackerRunning) {
-//       setIsGlobalTrackerRunning(true);
-//       // Start all active project timers
-//       setProjects(prev => prev.map(p => 
-//         p.status === 'active' ? { ...p, timerRunning: true, timerSeconds: globalTrackerSeconds } : p
-//       ));
-//       // Start intervals for all active projects
-//       projects.forEach(p => {
-//         if (p.status === 'active' && !timerRefs.current[p.id]) {
-//           timerRefs.current[p.id] = setInterval(() => {
-//             setProjects(prev => prev.map(proj => 
-//               proj.id === p.id && proj.timerRunning ? { ...proj, timerSeconds: globalTrackerSeconds } : proj
-//             ));
-//           }, 1000);
-//         }
-//       });
-//     }
-//   };
-
-//   // ✅ Handle global tracker stop from Time Tracker tab
-//   const handleGlobalTrackerStop = () => {
-//     if (isGlobalTrackerRunning) {
-//       setIsGlobalTrackerRunning(false);
-//       // Stop all project timers
-//       setProjects(prev => prev.map(p => ({ ...p, timerRunning: false })));
-//       Object.keys(timerRefs.current).forEach(key => {
-//         clearInterval(timerRefs.current[key]);
-//         delete timerRefs.current[key];
-//       });
-//     }
-//   };
-
-//   // ✅ Handle global tracker reset
-//   const handleGlobalTrackerReset = () => {
-//     handleGlobalTrackerStop();
-//     setGlobalTrackerSeconds(0);
-//     setProjects(prev => prev.map(p => ({ ...p, timerSeconds: 0 })));
+//     // Keep the project selected in Time Tracker so entries show immediately
 //   };
 
 //   const handleCompleteProject = (projectId: string) => {
-//     if (timerRefs.current[projectId]) {
-//       clearInterval(timerRefs.current[projectId]);
-//       delete timerRefs.current[projectId];
+//     const project = projects.find(p => p.id === projectId);
+//     if (project?.timerRunning) {
+//       handleStopTimer(projectId);
 //     }
 
 //     setProjects(prev => prev.map(p => {
 //       if (p.id === projectId) {
-//         const timerSeconds = p.timerSeconds || 0;
-//         const hoursToAdd = timerSeconds / 3600;
-//         const currentHours = parseFloat(p.loggedHours) || 0;
-//         const newHours = (currentHours + hoursToAdd).toFixed(2);
 //         return { 
 //           ...p, 
 //           status: 'completed',
-//           loggedHours: newHours,
 //           timerRunning: false,
-//           timerSeconds: 0
+//           timerSeconds: 0,
+//           currentTask: ''
 //         };
 //       }
 //       return p;
 //     }));
-
-//     // Check if any other project is still running
-//     const anyRunning = projects.some(p => p.id !== projectId && p.timerRunning);
-//     if (!anyRunning && isGlobalTrackerRunning) {
-//       setIsGlobalTrackerRunning(false);
-//     }
 //   };
 
 //   const handleDeleteProject = (id: string) => {
@@ -10062,13 +10123,11 @@
 //         clearInterval(timerRefs.current[id]);
 //         delete timerRefs.current[id];
 //       }
-//       setProjects((prev: Project[]) => prev.filter((p: Project) => p.id !== id));
-      
-//       // Check if any projects still running
-//       const anyRunning = projects.some(p => p.id !== id && p.timerRunning);
-//       if (!anyRunning && isGlobalTrackerRunning) {
-//         setIsGlobalTrackerRunning(false);
+//       if (activeTrackerProjectId === id) {
+//         setActiveTrackerProjectId(null);
 //       }
+//       setEntries(prev => prev.filter(entry => entry.projectId !== id));
+//       setProjects((prev: Project[]) => prev.filter((p: Project) => p.id !== id));
 //     }
 //   };
 
@@ -10107,7 +10166,8 @@
 //           endDate: updatedData.endDate,
 //           customerName: updatedData.customerName,
 //           updatedAt: new Date().toISOString(),
-//           assignedUsers: updatedData.assignedUsers || [currentUser]
+//           assignedUsers: updatedData.assignedUsers || [currentUser],
+//           tasks: updatedData.tasks || p.tasks || []
 //         };
 //       }
 //       return p;
@@ -10121,6 +10181,8 @@
 //   };
 
 //   const handleCreateProject = (projectData: any) => {
+//     console.log('Creating project with tasks:', projectData.tasks);
+    
 //     const newProject: Project = {
 //       id: String(Date.now()),
 //       customerName: projectData.customerName,
@@ -10137,22 +10199,18 @@
 //       updatedAt: new Date().toISOString(),
 //       timerRunning: false,
 //       timerSeconds: 0,
-//       assignedUsers: [currentUser]
+//       assignedUsers: [currentUser],
+//       tasks: projectData.tasks || [],
+//       currentTask: ''
 //     };
+    
+//     console.log('New project created:', newProject);
 //     setProjects([newProject, ...projects]);
 //     setView('list');
 //   };
 
-//   const handleStartTimerHeader = () => {
+//   const handleHeaderStart = () => {
 //     setTimerProjectName('');
-//     // Start global tracker if not running
-//     if (!isGlobalTrackerRunning) {
-//       setIsGlobalTrackerRunning(true);
-//       // Start all active projects
-//       setProjects(prev => prev.map(p => 
-//         p.status === 'active' ? { ...p, timerRunning: true } : p
-//       ));
-//     }
 //     setActiveTab('timetracker');
 //   };
 
@@ -10167,8 +10225,12 @@
 //     alert(`Time logged successfully!\nProject: ${data.project}\nTime: ${data.timeSpent}`);
 //   };
 
-//   // ✅ Pass timer control functions to TimeTracker
-//   const handleOpenTimeTracker = () => {
+//   const handleOpenTimeTracker = (projectName?: string) => {
+//     if (projectName) {
+//       setTimerProjectName(projectName);
+//     } else {
+//       setTimerProjectName('');
+//     }
 //     setActiveTab('timetracker');
 //   };
 
@@ -10188,7 +10250,8 @@
 //       startDate: editProjectData.startDate,
 //       endDate: editProjectData.endDate,
 //       customerName: editProjectData.customerName,
-//       assignedUsers: editProjectData.assignedUsers || [currentUser]
+//       assignedUsers: editProjectData.assignedUsers || [currentUser],
+//       tasks: editProjectData.tasks || []
 //     };
 //     return (
 //       <ProjectEdit 
@@ -10247,34 +10310,18 @@
 //       case 'timetracker':
 //         return (
 //           <TimeTracker 
-//             preselectedProject={timerProjectName} 
+//             preselectedProject={timerProjectName}
 //             currentUser={currentUser}
-//             isGlobalRunning={isGlobalTrackerRunning}
-//             globalSeconds={globalTrackerSeconds}
-//             onGlobalStart={handleGlobalTrackerStart}
-//             onGlobalStop={handleGlobalTrackerStop}
-//             onGlobalReset={handleGlobalTrackerReset}
+//             activeProjectId={activeTrackerProjectId}
+//             projects={projects}
+//             entries={entries}
+//             onStartTimer={handleStartTimer}
+//             onStopTimer={handleStopTimer}
 //           />
 //         );
 //       default:
 //         return null;
 //     }
-//   };
-
-//   const handleHeaderStart = () => {
-//     setTimerProjectName('');
-//     if (!isGlobalTrackerRunning) {
-//       setIsGlobalTrackerRunning(true);
-//       setProjects(prev => prev.map(p => 
-//         p.status === 'active' ? { ...p, timerRunning: true } : p
-//       ));
-//     }
-//     setActiveTab('timetracker');
-//   };
-
-//   const handleHeaderLogTime = () => {
-//     setLogTimeProject('');
-//     setShowLogTimePage(true);
 //   };
 
 //   return (
@@ -10302,7 +10349,10 @@
 //               <span className="hidden xs:inline">Start</span>
 //             </button>
 //             <button 
-//               onClick={handleHeaderLogTime}
+//               onClick={() => {
+//                 setLogTimeProject('');
+//                 setShowLogTimePage(true);
+//               }}
 //               className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 text-xs sm:text-sm shadow-sm whitespace-nowrap"
 //             >
 //               <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
@@ -10349,7 +10399,7 @@
 //           </div>
 //           <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm text-gray-500 bg-white px-2 sm:px-4 py-1 sm:py-2 rounded-lg shadow-sm border border-gray-200">
 //             <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
-//             <span>3 Entries</span>
+//             <span>{entries.length} Entries</span>
 //           </div>
 //         </div>
 //       )}
@@ -10400,7 +10450,7 @@
 // };
 
 // export default ProjectList;
-// ProjectList.tsx
+// ProjectList.tsx - Complete
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Search,
@@ -10451,6 +10501,21 @@ interface Project {
   timerSeconds?: number;
   timerStartTime?: string;
   assignedUsers?: string[];
+  tasks?: string[];
+  currentTask?: string;
+}
+
+interface TimeEntry {
+  id: string;
+  date: string;
+  project: string;
+  projectId: string;
+  task: string;
+  time: string;
+  timeInSeconds: number;
+  employee: string;
+  status: 'Billable' | 'Non-Bill';
+  notes?: string;
 }
 
 type TabType = 'projects' | 'taskboard' | 'timetracker';
@@ -10467,15 +10532,17 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({ onBack, onSave, c
   const [formData, setFormData] = useState({
     projectName: '',
     customerName: currentUser,
-    billingMethod: 'Based on Task Hours',
+    billingMethod: 'Based on Task Hours' as Project['billingMethod'],
     rate: 0,
     budget: 0,
     status: 'active' as 'active' | 'inactive' | 'completed',
     startDate: '',
     endDate: '',
     description: '',
+    tasks: [] as string[],
   });
 
+  const [taskInput, setTaskInput] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
 
@@ -10485,6 +10552,23 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({ onBack, onSave, c
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
+  };
+
+  const handleAddTask = () => {
+    if (taskInput.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        tasks: [...prev.tasks, taskInput.trim()]
+      }));
+      setTaskInput('');
+    }
+  };
+
+  const handleRemoveTask = (taskToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      tasks: prev.tasks.filter(t => t !== taskToRemove)
+    }));
   };
 
   const handleSubmit = () => {
@@ -10506,7 +10590,8 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({ onBack, onSave, c
         budget: Number(formData.budget) || 0,
         loggedHours: '00:00',
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        tasks: formData.tasks
       });
       setIsSaving(false);
     }, 500);
@@ -10583,6 +10668,35 @@ const CreateProjectPage: React.FC<CreateProjectPageProps> = ({ onBack, onSave, c
             </div>
           </div>
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tasks</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={taskInput}
+                onChange={(e) => setTaskInput(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                placeholder="Add task..."
+                onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
+              />
+              <button
+                onClick={handleAddTask}
+                className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition text-sm"
+              >
+                Add
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1 mt-2">
+              {formData.tasks.map(task => (
+                <span key={task} className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs flex items-center gap-1">
+                  {task}
+                  <button onClick={() => handleRemoveTask(task)} className="text-gray-400 hover:text-red-500">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select name="status" value={formData.status} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
               <option value="active">Active</option>
@@ -10616,7 +10730,7 @@ interface ProjectsTabProps {
   handleDeleteProject: (id: string) => void;
   onProjectClick: (projectId: string) => void;
   onEditClick: (project: Project) => void;
-  onStartTimer: (projectId: string) => void;
+  onStartTimer: (projectId: string, task?: string) => void;
   onStopTimer: (projectId: string) => void;
   onCompleteProject: (projectId: string) => void;
   onLogTime: (projectName: string) => void;
@@ -10704,146 +10818,153 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
     };
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-        {paginatedProjects.map((project: Project) => (
-          <div 
-            key={project.id} 
-            className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition p-3 sm:p-4"
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center space-x-2">
-                <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full ${getRandomColor(project.customerName)} text-white flex items-center justify-center text-[10px] sm:text-xs font-medium flex-shrink-0`}>
-                  {getInitials(project.customerName)}
-                </div>
-                <div>
-                  <div 
-                    className="text-sm font-semibold text-gray-700 hover:text-purple-600 cursor-pointer transition-colors duration-200" 
-                    onClick={() => onProjectClick(project.id)}
-                  >
-                    {project.customerName}
+        {paginatedProjects.map((project: Project) => {
+          const firstTask = project.tasks && project.tasks.length > 0 ? project.tasks[0] : '';
+          
+          return (
+            <div 
+              key={project.id} 
+              className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition p-3 sm:p-4"
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center space-x-2">
+                  <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full ${getRandomColor(project.customerName)} text-white flex items-center justify-center text-[10px] sm:text-xs font-medium flex-shrink-0`}>
+                    {getInitials(project.customerName)}
                   </div>
-                  <p 
-                    className="text-xs text-gray-500 hover:text-purple-600 cursor-pointer transition-colors duration-200"
-                    onClick={() => onProjectClick(project.id)}
-                  >
-                    {project.projectName}
-                  </p>
+                  <div>
+                    <div 
+                      className="text-sm font-semibold text-gray-700 hover:text-purple-600 cursor-pointer transition-colors duration-200" 
+                      onClick={() => onProjectClick(project.id)}
+                    >
+                      {project.customerName}
+                    </div>
+                    <p 
+                      className="text-xs text-gray-500 hover:text-purple-600 cursor-pointer transition-colors duration-200"
+                      onClick={() => onProjectClick(project.id)}
+                    >
+                      {project.projectName}
+                    </p>
+                  </div>
+                </div>
+                <span className={`px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded-full ${getStatusColor(project.status)}`}>
+                  {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+                </span>
+              </div>
+              <p className="text-xs text-gray-600 line-clamp-2 mb-3">{project.description}</p>
+              
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <div className="bg-gray-50 rounded p-1.5 sm:p-2">
+                  <div className="text-[10px] text-gray-500">Billing</div>
+                  <div className="text-[10px] sm:text-xs font-medium text-gray-700 truncate">{project.billingMethod}</div>
+                </div>
+                <div className="bg-gray-50 rounded p-1.5 sm:p-2">
+                  <div className="text-[10px] text-gray-500">Rate</div>
+                  <div className="text-[10px] sm:text-xs font-medium text-gray-700">
+                    {project.rate ? `$${Number(project.rate).toFixed(2)}/hr` : '-'}
+                  </div>
                 </div>
               </div>
-              <span className={`px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded-full ${getStatusColor(project.status)}`}>
-                {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
-              </span>
-            </div>
-            <p className="text-xs text-gray-600 line-clamp-2 mb-3">{project.description}</p>
-            
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              <div className="bg-gray-50 rounded p-1.5 sm:p-2">
-                <div className="text-[10px] text-gray-500">Billing</div>
-                <div className="text-[10px] sm:text-xs font-medium text-gray-700 truncate">{project.billingMethod}</div>
-              </div>
-              <div className="bg-gray-50 rounded p-1.5 sm:p-2">
-                <div className="text-[10px] text-gray-500">Rate</div>
-                <div className="text-[10px] sm:text-xs font-medium text-gray-700">
-                  {project.rate ? `$${Number(project.rate).toFixed(2)}/hr` : '-'}
+              
+              <div className="flex items-center justify-between text-xs sm:text-sm mb-2">
+                <div className="flex items-center space-x-1">
+                  <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+                  <span className="font-mono">{project.loggedHours}</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <DollarSign className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+                  <span>{project.budget ? `$${Number(project.budget).toFixed(2)}` : '$0'}</span>
                 </div>
               </div>
-            </div>
-            
-            <div className="flex items-center justify-between text-xs sm:text-sm mb-2">
-              <div className="flex items-center space-x-1">
-                <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
-                <span className="font-mono">{project.loggedHours}</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <DollarSign className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
-                <span>{project.budget ? `$${Number(project.budget).toFixed(2)}` : '$0'}</span>
-              </div>
-            </div>
-            
-            {project.status !== 'completed' ? (
-              <div className="mt-2 flex items-center justify-between bg-gray-50 rounded-lg p-1.5 sm:p-2">
-                <div className="flex items-center gap-1 sm:gap-1.5">
-                  <Clock className={`w-3 h-3 sm:w-4 sm:h-4 ${project.timerRunning ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
-                  <span className={`text-[10px] sm:text-xs font-mono font-medium ${project.timerRunning ? 'text-green-600' : 'text-gray-600'}`}>
-                    {formatTimerDisplay(project.timerSeconds || 0)}
-                  </span>
+              
+              {project.status !== 'completed' ? (
+                <div className="mt-2 flex items-center justify-between bg-gray-50 rounded-lg p-1.5 sm:p-2">
+                  <div className="flex items-center gap-1 sm:gap-1.5">
+                    <Clock className={`w-3 h-3 sm:w-4 sm:h-4 ${project.timerRunning ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
+                    <span className={`text-[10px] sm:text-xs font-mono font-medium ${project.timerRunning ? 'text-green-600' : 'text-gray-600'}`}>
+                      {formatTimerDisplay(project.timerSeconds || 0)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-0.5 sm:gap-1">
+                    {!project.timerRunning ? (
+                      <button
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          onStartTimer(project.id, firstTask); 
+                        }}
+                        className="p-0.5 sm:p-1 text-green-600 hover:bg-green-50 rounded transition"
+                        title="Start Timer"
+                      >
+                        <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onStopTimer(project.id); }}
+                        className="p-0.5 sm:p-1 text-yellow-600 hover:bg-yellow-50 rounded transition"
+                        title="Pause Timer"
+                      >
+                        <Pause className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                      </button>
+                    )}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onCompleteProject(project.id); }}
+                      className="p-0.5 sm:p-1 text-blue-600 hover:bg-blue-50 rounded transition"
+                      title="Complete Project"
+                    >
+                      <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                    </button>
+                  </div>
                 </div>
+              ) : (
+                <div className="mt-2 flex items-center justify-center bg-green-50 rounded-lg p-1.5 sm:p-2">
+                  <CheckCircle className="w-4 h-4 text-green-600 mr-1" />
+                  <span className="text-xs font-medium text-green-600">Completed</span>
+                </div>
+              )}
+              
+              <div className="mt-2 sm:mt-3 flex items-center justify-between">
                 <div className="flex items-center gap-0.5 sm:gap-1">
-                  {!project.timerRunning ? (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onStartTimer(project.id); }}
-                      className="p-0.5 sm:p-1 text-green-600 hover:bg-green-50 rounded transition"
-                      title="Start Timer"
-                    >
-                      <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                    </button>
-                  ) : (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onStopTimer(project.id); }}
-                      className="p-0.5 sm:p-1 text-yellow-600 hover:bg-yellow-50 rounded transition"
-                      title="Pause Timer"
-                    >
-                      <Pause className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                    </button>
-                  )}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onCompleteProject(project.id); }}
-                    className="p-0.5 sm:p-1 text-blue-600 hover:bg-blue-50 rounded transition"
-                    title="Complete Project"
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); onEditClick(project); }}
+                    className="p-0.5 sm:p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition"
+                    title="Edit"
                   >
-                    <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                    <Edit className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); onLogTime(project.projectName); }}
+                    className="p-0.5 sm:p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition"
+                    title="Log Time"
+                  >
+                    <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); 
+                      const np = { ...project, id: String(Date.now()), projectName: `${project.projectName} (Copy)`, loggedHours: '00:00', timerSeconds: 0, timerRunning: false }; 
+                      setProjects((prev: Project[]) => [...prev, np]); 
+                    }}
+                    className="p-0.5 sm:p-1 text-gray-400 hover:text-purple-600 rounded hover:bg-purple-50 transition"
+                    title="Clone"
+                  >
+                    <Copy className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); handleDeleteProject(project.id); }}
+                    className="p-0.5 sm:p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 transition"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   </button>
                 </div>
-              </div>
-            ) : (
-              <div className="mt-2 flex items-center justify-center bg-green-50 rounded-lg p-1.5 sm:p-2">
-                <CheckCircle className="w-4 h-4 text-green-600 mr-1" />
-                <span className="text-xs font-medium text-green-600">Completed</span>
-              </div>
-            )}
-            
-            <div className="mt-2 sm:mt-3 flex items-center justify-between">
-              <div className="flex items-center gap-0.5 sm:gap-1">
                 <button 
-                  onClick={(e) => { e.stopPropagation(); onEditClick(project); }}
-                  className="p-0.5 sm:p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition"
-                  title="Edit"
+                  onClick={(e) => { e.stopPropagation(); onOpenTimeTracker(project.projectName); }}
+                  className="text-[10px] sm:text-xs text-blue-600 hover:text-blue-700"
                 >
-                  <Edit className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                </button>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); onLogTime(project.projectName); }}
-                  className="p-0.5 sm:p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition"
-                  title="Log Time"
-                >
-                  <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                </button>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); 
-                    const np = { ...project, id: String(Date.now()), projectName: `${project.projectName} (Copy)`, loggedHours: '00:00', timerSeconds: 0, timerRunning: false }; 
-                    setProjects((prev: Project[]) => [...prev, np]); 
-                  }}
-                  className="p-0.5 sm:p-1 text-gray-400 hover:text-purple-600 rounded hover:bg-purple-50 transition"
-                  title="Clone"
-                >
-                  <Copy className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                </button>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); handleDeleteProject(project.id); }}
-                  className="p-0.5 sm:p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 transition"
-                  title="Delete"
-                >
-                  <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  View in Tracker
                 </button>
               </div>
-              <button 
-                onClick={(e) => { e.stopPropagation(); onOpenTimeTracker(project.projectName); }}
-                className="text-[10px] sm:text-xs text-blue-600 hover:text-blue-700"
-              >
-                View in Tracker
-              </button>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
@@ -10983,9 +11104,13 @@ const ProjectList: React.FC = () => {
   
   // Store which project timer is currently active in Time Tracker
   const [activeTrackerProjectId, setActiveTrackerProjectId] = useState<string | null>(null);
+  
+  // Store time entries
+  const [entries, setEntries] = useState<TimeEntry[]>([]);
 
   const [projects, setProjects] = useState<Project[]>([]);
 
+  // Load data from localStorage
   useEffect(() => {
     try {
       const savedProjects = localStorage.getItem('userProjects');
@@ -11006,14 +11131,32 @@ const ProjectList: React.FC = () => {
         setProjects(prev => prev.map(project => ({
           ...project,
           timerRunning: timerData[project.id]?.running || false,
-          timerSeconds: timerData[project.id]?.seconds || 0
+          timerSeconds: timerData[project.id]?.seconds || 0,
+          currentTask: timerData[project.id]?.currentTask || ''
         })));
+        if (timerData.activeProjectId) {
+          setActiveTrackerProjectId(timerData.activeProjectId);
+        }
       }
     } catch (error) {
       console.error('Failed to load timer data:', error);
     }
+
+    // Load entries
+    try {
+      const savedEntries = localStorage.getItem('timeEntries');
+      if (savedEntries) {
+        const parsed = JSON.parse(savedEntries);
+        if (Array.isArray(parsed)) {
+          setEntries(parsed);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load entries:', error);
+    }
   }, []);
 
+  // Save projects to localStorage
   useEffect(() => {
     try {
       localStorage.setItem('userProjects', JSON.stringify(projects));
@@ -11025,18 +11168,30 @@ const ProjectList: React.FC = () => {
   // Save timer data to localStorage
   useEffect(() => {
     try {
-      const timerData: Record<string, { running: boolean; seconds: number }> = {};
+      const timerData: Record<string, any> = {
+        activeProjectId: activeTrackerProjectId
+      };
       projects.forEach(project => {
         timerData[project.id] = {
           running: project.timerRunning || false,
-          seconds: project.timerSeconds || 0
+          seconds: project.timerSeconds || 0,
+          currentTask: project.currentTask || ''
         };
       });
       localStorage.setItem('projectTimers', JSON.stringify(timerData));
     } catch (error) {
       console.error('Failed to save timer data:', error);
     }
-  }, [projects]);
+  }, [projects, activeTrackerProjectId]);
+
+  // Save entries to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('timeEntries', JSON.stringify(entries));
+    } catch (error) {
+      console.error('Failed to save entries:', error);
+    }
+  }, [entries]);
 
   // Clean up all timers on unmount
   useEffect(() => {
@@ -11045,27 +11200,71 @@ const ProjectList: React.FC = () => {
     };
   }, []);
 
-  // Start timer for a project - each project has its own independent timer
-  const handleStartTimer = (projectId: string) => {
-    // Check if this project is already running
+  // Format time
+  const formatTime = (totalSeconds: number) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+    return `${String(hours).padStart(2, '0')}h : ${String(minutes).padStart(2, '0')}m : ${String(secs).padStart(2, '0')}s`;
+  };
+
+  // Create time entry
+  const createTimeEntry = (projectId: string, seconds: number, task: string = 'Unspecified', notes: string = '') => {
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return;
+
+    const newEntry: TimeEntry = {
+      id: Date.now().toString(),
+      date: new Date().toISOString().split('T')[0],
+      project: project.projectName,
+      projectId: project.id,
+      task: task || 'Unspecified',
+      time: formatTime(seconds),
+      timeInSeconds: seconds,
+      employee: project.customerName || 'Unassigned',
+      status: 'Billable',
+      notes: notes || undefined
+    };
+
+    setEntries(prev => {
+      const updated = [newEntry, ...prev];
+      try {
+        localStorage.setItem('timeEntries', JSON.stringify(updated));
+      } catch (error) {
+        console.error('Failed to save entries:', error);
+      }
+      return updated;
+    });
+  };
+
+  // Start timer for a project - with task name
+  const handleStartTimer = (projectId: string, task: string = '') => {
     const project = projects.find(p => p.id === projectId);
     if (project?.timerRunning) return;
 
-    // If the project has a timer, clear it first
     if (timerRefs.current[projectId]) {
       clearInterval(timerRefs.current[projectId]);
       delete timerRefs.current[projectId];
     }
 
-    // Mark project as running - keep its accumulated seconds
+    let taskToUse = task;
+    if (!taskToUse && project?.tasks && project.tasks.length > 0) {
+      taskToUse = project.tasks[0];
+    }
+    if (!taskToUse) {
+      taskToUse = 'Unspecified';
+    }
+
     setProjects(prev => prev.map(p => 
-      p.id === projectId ? { ...p, timerRunning: true } : p
+      p.id === projectId ? { 
+        ...p, 
+        timerRunning: true,
+        currentTask: taskToUse
+      } : p
     ));
 
-    // Set this as the active tracker project
     setActiveTrackerProjectId(projectId);
 
-    // Start project-specific interval
     timerRefs.current[projectId] = setInterval(() => {
       setProjects(prev => prev.map(p => 
         p.id === projectId && p.timerRunning ? { ...p, timerSeconds: (p.timerSeconds || 0) + 1 } : p
@@ -11073,49 +11272,42 @@ const ProjectList: React.FC = () => {
     }, 1000);
   };
 
-  // Stop timer for a project
-  const handleStopTimer = (projectId: string) => {
-    // Stop project-specific interval
+  // Stop timer for a project - use the stored task
+  const handleStopTimer = (projectId: string, task: string = '', notes: string = '') => {
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return;
+
+    const seconds = project.timerSeconds || 0;
+    const taskToUse = task || project.currentTask || 'Unspecified';
+
     if (timerRefs.current[projectId]) {
       clearInterval(timerRefs.current[projectId]);
       delete timerRefs.current[projectId];
     }
 
-    // Mark project as stopped (keep accumulated seconds)
     setProjects(prev => prev.map(p => 
-      p.id === projectId ? { ...p, timerRunning: false } : p
+      p.id === projectId ? { ...p, timerRunning: false, currentTask: '' } : p
     ));
 
-    // Clear active tracker if this was the active one
-    if (activeTrackerProjectId === projectId) {
-      setActiveTrackerProjectId(null);
+    if (seconds > 0) {
+      createTimeEntry(projectId, seconds, taskToUse, notes);
     }
   };
 
   const handleCompleteProject = (projectId: string) => {
     const project = projects.find(p => p.id === projectId);
     if (project?.timerRunning) {
-      if (timerRefs.current[projectId]) {
-        clearInterval(timerRefs.current[projectId]);
-        delete timerRefs.current[projectId];
-      }
-      if (activeTrackerProjectId === projectId) {
-        setActiveTrackerProjectId(null);
-      }
+      handleStopTimer(projectId);
     }
 
     setProjects(prev => prev.map(p => {
       if (p.id === projectId) {
-        const timerSeconds = p.timerSeconds || 0;
-        const hoursToAdd = timerSeconds / 3600;
-        const currentHours = parseFloat(p.loggedHours) || 0;
-        const newHours = (currentHours + hoursToAdd).toFixed(2);
         return { 
           ...p, 
           status: 'completed',
-          loggedHours: newHours,
           timerRunning: false,
-          timerSeconds: 0
+          timerSeconds: 0,
+          currentTask: ''
         };
       }
       return p;
@@ -11131,6 +11323,7 @@ const ProjectList: React.FC = () => {
       if (activeTrackerProjectId === id) {
         setActiveTrackerProjectId(null);
       }
+      setEntries(prev => prev.filter(entry => entry.projectId !== id));
       setProjects((prev: Project[]) => prev.filter((p: Project) => p.id !== id));
     }
   };
@@ -11170,7 +11363,8 @@ const ProjectList: React.FC = () => {
           endDate: updatedData.endDate,
           customerName: updatedData.customerName,
           updatedAt: new Date().toISOString(),
-          assignedUsers: updatedData.assignedUsers || [currentUser]
+          assignedUsers: updatedData.assignedUsers || [currentUser],
+          tasks: updatedData.tasks || p.tasks || []
         };
       }
       return p;
@@ -11200,7 +11394,9 @@ const ProjectList: React.FC = () => {
       updatedAt: new Date().toISOString(),
       timerRunning: false,
       timerSeconds: 0,
-      assignedUsers: [currentUser]
+      assignedUsers: [currentUser],
+      tasks: projectData.tasks || [],
+      currentTask: ''
     };
     setProjects([newProject, ...projects]);
     setView('list');
@@ -11222,7 +11418,6 @@ const ProjectList: React.FC = () => {
     alert(`Time logged successfully!\nProject: ${data.project}\nTime: ${data.timeSpent}`);
   };
 
-  // Open Time Tracker with optional project preselected
   const handleOpenTimeTracker = (projectName?: string) => {
     if (projectName) {
       setTimerProjectName(projectName);
@@ -11248,7 +11443,8 @@ const ProjectList: React.FC = () => {
       startDate: editProjectData.startDate,
       endDate: editProjectData.endDate,
       customerName: editProjectData.customerName,
-      assignedUsers: editProjectData.assignedUsers || [currentUser]
+      assignedUsers: editProjectData.assignedUsers || [currentUser],
+      tasks: editProjectData.tasks || []
     };
     return (
       <ProjectEdit 
@@ -11275,6 +11471,7 @@ const ProjectList: React.FC = () => {
     );
   }
 
+  // ==================== RENDER TAB CONTENT ====================
   const renderTabContent = () => {
     switch(activeTab) {
       case 'projects':
@@ -11303,15 +11500,16 @@ const ProjectList: React.FC = () => {
           />
         );
       case 'taskboard':
-        return <TaskBoard />;
+        // ✅ Pass projects to TaskBoard
+        return <TaskBoard projects={projects} />;
       case 'timetracker':
-        // Pass projects and timer control functions
         return (
           <TimeTracker 
             preselectedProject={timerProjectName}
             currentUser={currentUser}
             activeProjectId={activeTrackerProjectId}
             projects={projects}
+            entries={entries}
             onStartTimer={handleStartTimer}
             onStopTimer={handleStopTimer}
           />
@@ -11396,7 +11594,7 @@ const ProjectList: React.FC = () => {
           </div>
           <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm text-gray-500 bg-white px-2 sm:px-4 py-1 sm:py-2 rounded-lg shadow-sm border border-gray-200">
             <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
-            <span>3 Entries</span>
+            <span>{entries.length} Entries</span>
           </div>
         </div>
       )}
