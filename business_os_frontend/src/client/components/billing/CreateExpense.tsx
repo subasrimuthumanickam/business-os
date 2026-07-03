@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -101,6 +102,8 @@ const CreateExpense: React.FC<Props> = ({ customer, expense, onClose }) => {
     notes: "",
     customer_id: customer?.id || "",
     customer_name: customer?.name || "",
+    is_billable: false,
+    status: "pending" as "paid" | "pending" | "failed",
   });
 
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -110,6 +113,47 @@ const CreateExpense: React.FC<Props> = ({ customer, expense, onClose }) => {
   useEffect(() => {
     fetchAccounts();
   }, []);
+
+  useEffect(() => {
+    if (expense) {
+      setForm({
+        expense_date: expense.expense_date ? expense.expense_date.split("T")[0] : new Date().toISOString().split("T")[0],
+        paid_by: expense.paid_by || "",
+        expense_account_id: expense.expense_account_id ? String(expense.expense_account_id) : "",
+        expense_type: expense.expense_type || "services",
+        sac_code: expense.sac_code || "",
+        currency: expense.currency || "INR",
+        amount: expense.amount != null ? String(expense.amount) : "",
+        tax_code: expense.tax_code || "",
+        paid_through_id: expense.paid_through_id ? String(expense.paid_through_id) : "",
+        vendor_name: expense.vendor_name || "",
+        gst_treatment: expense.gst_treatment || "",
+        vendor_gstin: expense.vendor_gstin || "",
+        destination_of_supply: expense.destination_of_supply || "",
+        reverse_charge: !!expense.reverse_charge,
+        invoice_reference: expense.invoice_reference || "",
+        reference_number: expense.reference_number || "",
+        notes: expense.notes || "",
+        customer_id: expense.customer_id || "",
+        customer_name: expense.customer_name || "",
+        is_billable: !!expense.is_billable,
+        status: expense.status || "pending",
+      });
+
+      if (expense.is_itemized && Array.isArray(expense.items) && expense.items.length > 0) {
+        setIsItemized(true);
+        setLineItems(
+          expense.items.map((item: any) => ({
+            key: makeKey(),
+            expense_account_id: String(item.expense_account_id),
+            notes: item.notes || "",
+            tax_code: item.tax_code || "",
+            amount: String(item.amount),
+          }))
+        );
+      }
+    }
+  }, [expense]);
 
   const fetchAccounts = async () => {
     try {
@@ -230,7 +274,9 @@ const CreateExpense: React.FC<Props> = ({ customer, expense, onClose }) => {
         reference_number: form.reference_number,
         notes: form.notes,
         customer_id: form.customer_id || null,
-        status: "pending",
+        customer_name: form.customer_name || null,
+        is_billable: form.is_billable,
+        status: form.status,
         is_itemized: isItemized,
         ...(isItemized
           ? {
@@ -251,7 +297,10 @@ const CreateExpense: React.FC<Props> = ({ customer, expense, onClose }) => {
             }),
       };
 
-      const res = await axios.post(`${API}/expenses`, payload);
+      const res = expense?.id
+        ? await axios.put(`${API}/expenses/${expense.id}`, payload)
+        : await axios.post(`${API}/expenses`, payload);
+
       if (res.data?.success) {
         onClose();
       } else {
@@ -271,7 +320,7 @@ const CreateExpense: React.FC<Props> = ({ customer, expense, onClose }) => {
       <div className="border-b px-6 py-4 flex items-center justify-between bg-white">
         <div className="flex items-center gap-8">
           <h2 className="text-lg font-semibold text-gray-800 border-b-2 border-red-500 pb-1">
-            Record Expense
+            {expense?.id ? "Edit Expense" : "Record Expense"}
           </h2>
           <span className="text-sm text-blue-600 cursor-not-allowed opacity-50">Record Mileage</span>
         </div>
@@ -557,6 +606,20 @@ const CreateExpense: React.FC<Props> = ({ customer, expense, onClose }) => {
               />
             </div>
 
+            <div className="grid grid-cols-[160px_1fr] items-center gap-x-4">
+              <label className="text-sm text-gray-700">Payment Status</label>
+              <select
+                name="status"
+                value={form.status}
+                onChange={handleChange}
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm w-full outline-none focus:border-blue-500"
+              >
+                <option value="pending">Pending</option>
+                <option value="paid">Paid</option>
+                <option value="failed">Failed</option>
+              </select>
+            </div>
+
             <hr className="my-2" />
 
             {/* ── GST section ── */}
@@ -672,14 +735,24 @@ const CreateExpense: React.FC<Props> = ({ customer, expense, onClose }) => {
 
             <div className="grid grid-cols-[160px_1fr] items-center gap-x-4">
               <label className="text-sm text-gray-700">Customer Name</label>
-              <input
-                type="text"
-                name="customer_name"
-                value={form.customer_name}
-                onChange={handleChange}
-                placeholder="Search customer"
-                className="border border-gray-300 rounded-md px-3 py-2 text-sm w-full outline-none focus:border-blue-500"
-              />
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  name="customer_name"
+                  value={form.customer_name}
+                  onChange={handleChange}
+                  placeholder="Search customer"
+                  className="border border-gray-300 rounded-md px-3 py-2 text-sm w-full outline-none focus:border-blue-500"
+                />
+                <label className="flex items-center gap-1.5 text-sm text-gray-700 whitespace-nowrap">
+                  <input
+                    type="checkbox"
+                    checked={form.is_billable}
+                    onChange={(e) => setForm({ ...form, is_billable: e.target.checked })}
+                  />
+                  Billable
+                </label>
+              </div>
             </div>
 
             {/* Grand total preview */}
