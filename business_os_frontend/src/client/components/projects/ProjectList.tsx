@@ -10451,6 +10451,1201 @@
 
 // export default ProjectList;
 // ProjectList.tsx - Complete
+// import React, { useState, useEffect, useRef } from 'react';
+// import {
+//   Search,
+//   Plus,
+//   Filter,
+//   Clock,
+//   Edit,
+//   Trash2,
+//   Copy,
+//   Play,
+//   ChevronDown,
+//   CheckCircle,
+//   XCircle,
+//   AlertCircle,
+//   LayoutGrid,
+//   DollarSign,
+//   LayoutDashboard,
+//   ClipboardList,
+//   Timer,
+//   Save,
+//   X,
+//   Users,
+//   Pause,
+//   ArrowLeft
+// } from 'lucide-react';
+// import TimeTracker from './TimeTracker';
+// import TaskBoard from './TaskBoard';
+// import ProjectDetail from './ProjectDetail';
+// import ProjectEdit from './ProjectEdit';
+// import LogTimePage from './LogTimePage';
+
+// // ==================== TYPES ====================
+// interface Project {
+//   id: string;
+//   customerName: string;
+//   projectName: string;
+//   billingMethod: 'Based on Task Hours' | 'Based on Project Hours' | 'Fixed Cost for Project' | 'Based on Staff Hours';
+//   rate: number | null;
+//   status: 'active' | 'inactive' | 'completed';
+//   loggedHours: string;
+//   budget: number | null;
+//   startDate: string;
+//   endDate: string;
+//   description: string;
+//   createdAt: string;
+//   updatedAt: string;
+//   timerRunning?: boolean;
+//   timerSeconds?: number;
+//   timerStartTime?: string;
+//   assignedUsers?: string[];
+//   tasks?: string[];
+//   currentTask?: string;
+// }
+
+// interface TimeEntry {
+//   id: string;
+//   date: string;
+//   project: string;
+//   projectId: string;
+//   task: string;
+//   time: string;
+//   timeInSeconds: number;
+//   employee: string;
+//   status: 'Billable' | 'Non-Bill';
+//   notes?: string;
+// }
+
+// type TabType = 'projects' | 'taskboard' | 'timetracker';
+// type ViewState = 'list' | 'detail' | 'edit' | 'create';
+
+// // ==================== CREATE PROJECT PAGE ====================
+// interface CreateProjectPageProps {
+//   onBack: () => void;
+//   onSave: (projectData: any) => void;
+//   currentUser?: string;
+// }
+
+// const CreateProjectPage: React.FC<CreateProjectPageProps> = ({ onBack, onSave, currentUser = '' }) => {
+//   const [formData, setFormData] = useState({
+//     projectName: '',
+//     customerName: currentUser,
+//     billingMethod: 'Based on Task Hours' as Project['billingMethod'],
+//     rate: 0,
+//     budget: 0,
+//     status: 'active' as 'active' | 'inactive' | 'completed',
+//     startDate: '',
+//     endDate: '',
+//     description: '',
+//     tasks: [] as string[],
+//   });
+
+//   const [taskInput, setTaskInput] = useState('');
+//   const [errors, setErrors] = useState<Record<string, string>>({});
+//   const [isSaving, setIsSaving] = useState(false);
+
+//   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+//     const { name, value } = e.target;
+//     setFormData(prev => ({ ...prev, [name]: value }));
+//     if (errors[name]) {
+//       setErrors(prev => ({ ...prev, [name]: '' }));
+//     }
+//   };
+
+//   const handleAddTask = () => {
+//     if (taskInput.trim()) {
+//       setFormData(prev => ({
+//         ...prev,
+//         tasks: [...prev.tasks, taskInput.trim()]
+//       }));
+//       setTaskInput('');
+//     }
+//   };
+
+//   const handleRemoveTask = (taskToRemove: string) => {
+//     setFormData(prev => ({
+//       ...prev,
+//       tasks: prev.tasks.filter(t => t !== taskToRemove)
+//     }));
+//   };
+
+//   const handleSubmit = () => {
+//     const newErrors: Record<string, string> = {};
+//     if (!formData.projectName.trim()) newErrors.projectName = 'Project name is required';
+//     if (!formData.customerName.trim()) newErrors.customerName = 'Employee name is required';
+
+//     if (Object.keys(newErrors).length > 0) {
+//       setErrors(newErrors);
+//       return;
+//     }
+
+//     setIsSaving(true);
+
+//     setTimeout(() => {
+//       onSave({
+//         ...formData,
+//         rate: Number(formData.rate) || 0,
+//         budget: Number(formData.budget) || 0,
+//         loggedHours: '00:00',
+//         createdAt: new Date().toISOString(),
+//         updatedAt: new Date().toISOString(),
+//         tasks: formData.tasks
+//       });
+//       setIsSaving(false);
+//     }, 500);
+//   };
+
+//   return (
+//     <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
+//       <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
+//         <div className="flex items-center gap-3">
+//           <button onClick={onBack} className="p-2 text-gray-600 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition">
+//             <ArrowLeft className="w-5 h-5" />
+//           </button>
+//           <div>
+//             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Create New Project</h1>
+//             <p className="text-sm text-gray-500">Fill in the details to create a new project</p>
+//           </div>
+//         </div>
+//         <div className="flex items-center gap-2">
+//           <button onClick={onBack} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm flex items-center">
+//             <X className="w-4 h-4 mr-1.5" /> Cancel
+//           </button>
+//           <button onClick={handleSubmit} disabled={isSaving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm flex items-center disabled:opacity-50 shadow-sm">
+//             <Save className="w-4 h-4 mr-1.5" />
+//             {isSaving ? 'Creating...' : 'Create Project'}
+//           </button>
+//         </div>
+//       </div>
+
+//       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 max-w-3xl mx-auto">
+//         <div className="space-y-5">
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Project Name <span className="text-red-500">*</span></label>
+//             <input type="text" name="projectName" value={formData.projectName} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 ${errors.projectName ? 'border-red-300' : 'border-gray-300'}`} placeholder="Enter project name" />
+//             {errors.projectName && <p className="text-xs text-red-500 mt-1">{errors.projectName}</p>}
+//           </div>
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Employee <span className="text-red-500">*</span></label>
+//             <input type="text" name="customerName" value={formData.customerName} onChange={handleChange} className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 ${errors.customerName ? 'border-red-300' : 'border-gray-300'}`} placeholder="Enter employee name" />
+//             {errors.customerName && <p className="text-xs text-red-500 mt-1">{errors.customerName}</p>}
+//           </div>
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Billing Method <span className="text-red-500">*</span></label>
+//             <select name="billingMethod" value={formData.billingMethod} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+//               <option value="Based on Task Hours">Based on Task Hours</option>
+//               <option value="Based on Project Hours">Based on Project Hours</option>
+//               <option value="Fixed Cost for Project">Fixed Cost for Project</option>
+//               <option value="Based on Staff Hours">Based on Staff Hours</option>
+//             </select>
+//           </div>
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Rate Per Hour</label>
+//               <div className="relative">
+//                 <span className="absolute left-3 top-2 text-gray-500">$</span>
+//                 <input type="number" name="rate" value={formData.rate} onChange={handleChange} className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="0.00" min="0" step="0.5" />
+//               </div>
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Budget</label>
+//               <div className="relative">
+//                 <span className="absolute left-3 top-2 text-gray-500">$</span>
+//                 <input type="number" name="budget" value={formData.budget} onChange={handleChange} className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="0.00" min="0" step="100" />
+//               </div>
+//             </div>
+//           </div>
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+//               <input type="date" name="startDate" value={formData.startDate} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+//               <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+//             </div>
+//           </div>
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Tasks</label>
+//             <div className="flex gap-2">
+//               <input
+//                 type="text"
+//                 value={taskInput}
+//                 onChange={(e) => setTaskInput(e.target.value)}
+//                 className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+//                 placeholder="Add task..."
+//                 onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
+//               />
+//               <button
+//                 onClick={handleAddTask}
+//                 className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition text-sm"
+//               >
+//                 Add
+//               </button>
+//             </div>
+//             <div className="flex flex-wrap gap-1 mt-2">
+//               {formData.tasks.map(task => (
+//                 <span key={task} className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs flex items-center gap-1">
+//                   {task}
+//                   <button onClick={() => handleRemoveTask(task)} className="text-gray-400 hover:text-red-500">
+//                     <X className="w-3 h-3" />
+//                   </button>
+//                 </span>
+//               ))}
+//             </div>
+//           </div>
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+//             <select name="status" value={formData.status} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+//               <option value="active">Active</option>
+//               <option value="inactive">Inactive</option>
+//               <option value="completed">Completed</option>
+//             </select>
+//           </div>
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+//             <textarea name="description" value={formData.description} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" rows={3} placeholder="Max 2000 characters" maxLength={2000} />
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// // ==================== PROJECTS TAB ====================
+// interface ProjectsTabProps {
+//   viewBy: 'all' | 'active' | 'inactive' | 'completed';
+//   setViewBy: (view: 'all' | 'active' | 'inactive' | 'completed') => void;
+//   searchTerm: string;
+//   setSearchTerm: (term: string) => void;
+//   projects: Project[];
+//   setProjects: (projects: Project[] | ((prev: Project[]) => Project[])) => void;
+//   selectedProjects: string[];
+//   setSelectedProjects: (ids: string[] | ((prev: string[]) => string[])) => void;
+//   currentPage: number;
+//   setCurrentPage: (page: number) => void;
+//   itemsPerPage: number;
+//   handleDeleteProject: (id: string) => void;
+//   onProjectClick: (projectId: string) => void;
+//   onEditClick: (project: Project) => void;
+//   onStartTimer: (projectId: string, task?: string) => void;
+//   onStopTimer: (projectId: string) => void;
+//   onCompleteProject: (projectId: string) => void;
+//   onLogTime: (projectName: string) => void;
+//   onOpenTimeTracker: (projectName?: string) => void;
+//   currentUser?: string;
+// }
+
+// const ProjectsTab: React.FC<ProjectsTabProps> = ({
+//   viewBy,
+//   setViewBy,
+//   searchTerm,
+//   setSearchTerm,
+//   projects,
+//   setProjects,
+//   selectedProjects,
+//   setSelectedProjects,
+//   currentPage,
+//   setCurrentPage,
+//   itemsPerPage,
+//   handleDeleteProject,
+//   onProjectClick,
+//   onEditClick,
+//   onStartTimer,
+//   onStopTimer,
+//   onCompleteProject,
+//   onLogTime,
+//   onOpenTimeTracker,
+//   currentUser = ''
+// }) => {
+//   const filteredProjects = projects.filter((project: Project) => {
+//     const matchesView = viewBy === 'all' || project.status === viewBy;
+//     const matchesSearch = project.projectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+//                          project.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+//     const matchesUser = project.assignedUsers?.includes(currentUser) || false;
+//     return matchesView && matchesSearch && matchesUser;
+//   });
+
+//   const paginatedProjects = filteredProjects.slice(
+//     (currentPage - 1) * itemsPerPage,
+//     currentPage * itemsPerPage
+//   );
+
+//   const totalPages = Math.ceil(filteredProjects.length / itemsPerPage);
+
+//   const getStatusColor = (status: string) => {
+//     switch(status) {
+//       case 'active': return 'bg-green-100 text-green-800 border-green-200';
+//       case 'inactive': return 'bg-gray-100 text-gray-800 border-gray-200';
+//       case 'completed': return 'bg-blue-100 text-blue-800 border-blue-200';
+//       default: return 'bg-gray-100 text-gray-800 border-gray-200';
+//     }
+//   };
+
+//   const handleBulkAction = (action: string) => {
+//     switch(action) {
+//       case 'active':
+//         setProjects((prev: Project[]) => prev.map((p: Project) => 
+//           selectedProjects.includes(p.id) ? { ...p, status: 'active' } : p
+//         ));
+//         break;
+//       case 'inactive':
+//         setProjects((prev: Project[]) => prev.map((p: Project) => 
+//           selectedProjects.includes(p.id) ? { ...p, status: 'inactive' } : p
+//         ));
+//         break;
+//       case 'delete':
+//         setProjects((prev: Project[]) => prev.filter((p: Project) => !selectedProjects.includes(p.id)));
+//         break;
+//     }
+//     setSelectedProjects([]);
+//   };
+
+//   const formatTimerDisplay = (seconds: number) => {
+//     const hrs = Math.floor(seconds / 3600);
+//     const mins = Math.floor((seconds % 3600) / 60);
+//     const secs = seconds % 60;
+//     return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+//   };
+
+//   const renderCardView = () => {
+//     const getInitials = (name: string) => name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+//     const getRandomColor = (name: string) => {
+//       const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500', 'bg-red-500'];
+//       return colors[name.length % colors.length];
+//     };
+//     return (
+//       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+//         {paginatedProjects.map((project: Project) => {
+//           const firstTask = project.tasks && project.tasks.length > 0 ? project.tasks[0] : '';
+          
+//           return (
+//             <div 
+//               key={project.id} 
+//               className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition p-3 sm:p-4"
+//             >
+//               <div className="flex items-start justify-between mb-3">
+//                 <div className="flex items-center space-x-2">
+//                   <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full ${getRandomColor(project.customerName)} text-white flex items-center justify-center text-[10px] sm:text-xs font-medium flex-shrink-0`}>
+//                     {getInitials(project.customerName)}
+//                   </div>
+//                   <div>
+//                     <div 
+//                       className="text-sm font-semibold text-gray-700 hover:text-purple-600 cursor-pointer transition-colors duration-200" 
+//                       onClick={() => onProjectClick(project.id)}
+//                     >
+//                       {project.customerName}
+//                     </div>
+//                     <p 
+//                       className="text-xs text-gray-500 hover:text-purple-600 cursor-pointer transition-colors duration-200"
+//                       onClick={() => onProjectClick(project.id)}
+//                     >
+//                       {project.projectName}
+//                     </p>
+//                   </div>
+//                 </div>
+//                 <span className={`px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded-full ${getStatusColor(project.status)}`}>
+//                   {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+//                 </span>
+//               </div>
+//               <p className="text-xs text-gray-600 line-clamp-2 mb-3">{project.description}</p>
+              
+//               <div className="grid grid-cols-2 gap-2 mb-3">
+//                 <div className="bg-gray-50 rounded p-1.5 sm:p-2">
+//                   <div className="text-[10px] text-gray-500">Billing</div>
+//                   <div className="text-[10px] sm:text-xs font-medium text-gray-700 truncate">{project.billingMethod}</div>
+//                 </div>
+//                 <div className="bg-gray-50 rounded p-1.5 sm:p-2">
+//                   <div className="text-[10px] text-gray-500">Rate</div>
+//                   <div className="text-[10px] sm:text-xs font-medium text-gray-700">
+//                     {project.rate ? `$${Number(project.rate).toFixed(2)}/hr` : '-'}
+//                   </div>
+//                 </div>
+//               </div>
+              
+//               <div className="flex items-center justify-between text-xs sm:text-sm mb-2">
+//                 <div className="flex items-center space-x-1">
+//                   <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+//                   <span className="font-mono">{project.loggedHours}</span>
+//                 </div>
+//                 <div className="flex items-center space-x-1">
+//                   <DollarSign className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+//                   <span>{project.budget ? `$${Number(project.budget).toFixed(2)}` : '$0'}</span>
+//                 </div>
+//               </div>
+              
+//               {project.status !== 'completed' ? (
+//                 <div className="mt-2 flex items-center justify-between bg-gray-50 rounded-lg p-1.5 sm:p-2">
+//                   <div className="flex items-center gap-1 sm:gap-1.5">
+//                     <Clock className={`w-3 h-3 sm:w-4 sm:h-4 ${project.timerRunning ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
+//                     <span className={`text-[10px] sm:text-xs font-mono font-medium ${project.timerRunning ? 'text-green-600' : 'text-gray-600'}`}>
+//                       {formatTimerDisplay(project.timerSeconds || 0)}
+//                     </span>
+//                   </div>
+//                   <div className="flex items-center gap-0.5 sm:gap-1">
+//                     {!project.timerRunning ? (
+//                       <button
+//                         onClick={(e) => { 
+//                           e.stopPropagation(); 
+//                           onStartTimer(project.id, firstTask); 
+//                         }}
+//                         className="p-0.5 sm:p-1 text-green-600 hover:bg-green-50 rounded transition"
+//                         title="Start Timer"
+//                       >
+//                         <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                       </button>
+//                     ) : (
+//                       <button
+//                         onClick={(e) => { e.stopPropagation(); onStopTimer(project.id); }}
+//                         className="p-0.5 sm:p-1 text-yellow-600 hover:bg-yellow-50 rounded transition"
+//                         title="Pause Timer"
+//                       >
+//                         <Pause className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                       </button>
+//                     )}
+//                     <button
+//                       onClick={(e) => { e.stopPropagation(); onCompleteProject(project.id); }}
+//                       className="p-0.5 sm:p-1 text-blue-600 hover:bg-blue-50 rounded transition"
+//                       title="Complete Project"
+//                     >
+//                       <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                     </button>
+//                   </div>
+//                 </div>
+//               ) : (
+//                 <div className="mt-2 flex items-center justify-center bg-green-50 rounded-lg p-1.5 sm:p-2">
+//                   <CheckCircle className="w-4 h-4 text-green-600 mr-1" />
+//                   <span className="text-xs font-medium text-green-600">Completed</span>
+//                 </div>
+//               )}
+              
+//               <div className="mt-2 sm:mt-3 flex items-center justify-between">
+//                 <div className="flex items-center gap-0.5 sm:gap-1">
+//                   <button 
+//                     onClick={(e) => { e.stopPropagation(); onEditClick(project); }}
+//                     className="p-0.5 sm:p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition"
+//                     title="Edit"
+//                   >
+//                     <Edit className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                   </button>
+//                   <button 
+//                     onClick={(e) => { e.stopPropagation(); onLogTime(project.projectName); }}
+//                     className="p-0.5 sm:p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition"
+//                     title="Log Time"
+//                   >
+//                     <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                   </button>
+//                   <button 
+//                     onClick={(e) => { e.stopPropagation(); 
+//                       const np = { ...project, id: String(Date.now()), projectName: `${project.projectName} (Copy)`, loggedHours: '00:00', timerSeconds: 0, timerRunning: false }; 
+//                       setProjects((prev: Project[]) => [...prev, np]); 
+//                     }}
+//                     className="p-0.5 sm:p-1 text-gray-400 hover:text-purple-600 rounded hover:bg-purple-50 transition"
+//                     title="Clone"
+//                   >
+//                     <Copy className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                   </button>
+//                   <button 
+//                     onClick={(e) => { e.stopPropagation(); handleDeleteProject(project.id); }}
+//                     className="p-0.5 sm:p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 transition"
+//                     title="Delete"
+//                   >
+//                     <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+//                   </button>
+//                 </div>
+//                 <button 
+//                   onClick={(e) => { e.stopPropagation(); onOpenTimeTracker(project.projectName); }}
+//                   className="text-[10px] sm:text-xs text-blue-600 hover:text-blue-700"
+//                 >
+//                   View in Tracker
+//                 </button>
+//               </div>
+//             </div>
+//           );
+//         })}
+//       </div>
+//     );
+//   };
+
+//   return (
+//     <>
+//       <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 mb-4 sm:mb-6 border border-gray-200">
+//         <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-3 sm:gap-4">
+//           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+//             <div className="relative flex-1 sm:flex-none">
+//               <select 
+//                 className="appearance-none bg-gray-50 border border-gray-300 rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 pr-7 sm:pr-8 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 w-full" 
+//                 value={viewBy} 
+//                 onChange={(e) => setViewBy(e.target.value as any)}
+//               >
+//                 <option value="all">All Projects</option>
+//                 <option value="active">Active</option>
+//                 <option value="inactive">Inactive</option>
+//                 <option value="completed">Completed</option>
+//               </select>
+//               <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4 absolute right-2 sm:right-3 top-2 sm:top-2.5 text-gray-500 pointer-events-none" />
+//             </div>
+//             <div className="relative flex-1 sm:flex-none">
+//               <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 absolute left-2.5 sm:left-3 top-1.5 sm:top-2.5 text-gray-400" />
+//               <input 
+//                 type="text" 
+//                 placeholder="Search projects..." 
+//                 className="pl-8 sm:pl-9 pr-3 sm:pr-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 w-full sm:w-40 md:w-56" 
+//                 value={searchTerm} 
+//                 onChange={(e) => setSearchTerm(e.target.value)} 
+//               />
+//             </div>
+//           </div>
+//           <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+//             <button className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center">
+//               <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />Filter
+//             </button>
+//             <button 
+//               onClick={() => onOpenTimeTracker()}
+//               className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 flex items-center"
+//             >
+//               <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />Tracker
+//             </button>
+//           </div>
+//         </div>
+//       </div>
+
+//       {selectedProjects.length > 0 && (
+//         <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4 flex flex-wrap items-center justify-between gap-2">
+//           <span className="text-xs sm:text-sm text-blue-700 font-medium">{selectedProjects.length} selected</span>
+//           <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+//             <button onClick={() => handleBulkAction('active')} className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm bg-green-600 text-white rounded hover:bg-green-700">Active</button>
+//             <button onClick={() => handleBulkAction('inactive')} className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm bg-gray-600 text-white rounded hover:bg-gray-700">Inactive</button>
+//             <button onClick={() => handleBulkAction('delete')} className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm bg-red-600 text-white rounded hover:bg-red-700">Delete</button>
+//             <button onClick={() => setSelectedProjects([])} className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm text-gray-600 hover:text-gray-800">Clear</button>
+//           </div>
+//         </div>
+//       )}
+
+//       {renderCardView()}
+
+//       {filteredProjects.length > 0 && (
+//         <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+//           <div className="text-[10px] sm:text-xs text-gray-700">
+//             {`${(currentPage - 1) * itemsPerPage + 1}-${Math.min(currentPage * itemsPerPage, filteredProjects.length)} of ${filteredProjects.length}`}
+//           </div>
+//           <div className="flex items-center gap-0.5">
+//             <button 
+//               onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))} 
+//               disabled={currentPage === 1} 
+//               className="px-2 sm:px-3 py-1 border border-gray-300 rounded text-[10px] sm:text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+//             >
+//               ←
+//             </button>
+//             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p: number) => (
+//               <button 
+//                 key={p} 
+//                 onClick={() => setCurrentPage(p)} 
+//                 className={`px-2 sm:px-3 py-1 rounded text-[10px] sm:text-sm ${currentPage === p ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+//               >
+//                 {p}
+//               </button>
+//             ))}
+//             {totalPages > 5 && <span className="text-[10px] sm:text-sm text-gray-500">…</span>}
+//             <button 
+//               onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))} 
+//               disabled={currentPage === totalPages} 
+//               className="px-2 sm:px-3 py-1 border border-gray-300 rounded text-[10px] sm:text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+//             >
+//               →
+//             </button>
+//           </div>
+//         </div>
+//       )}
+
+//       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mt-4 sm:mt-6">
+//         <div className="bg-white rounded-lg shadow-sm p-2 sm:p-4 border border-gray-200">
+//           <div className="text-[10px] sm:text-sm text-gray-500">Total</div>
+//           <div className="text-base sm:text-2xl font-bold text-gray-900">{projects.length}</div>
+//         </div>
+//         <div className="bg-white rounded-lg shadow-sm p-2 sm:p-4 border border-gray-200">
+//           <div className="text-[10px] sm:text-sm text-gray-500">Active</div>
+//           <div className="text-base sm:text-2xl font-bold text-green-600">{projects.filter((p: Project) => p.status === 'active').length}</div>
+//         </div>
+//         <div className="bg-white rounded-lg shadow-sm p-2 sm:p-4 border border-gray-200">
+//           <div className="text-[10px] sm:text-sm text-gray-500">Hours</div>
+//           <div className="text-base sm:text-2xl font-bold text-blue-600">455:48</div>
+//         </div>
+//         <div className="bg-white rounded-lg shadow-sm p-2 sm:p-4 border border-gray-200">
+//           <div className="text-[10px] sm:text-sm text-gray-500">Revenue</div>
+//           <div className="text-base sm:text-2xl font-bold text-purple-600">$29,500</div>
+//         </div>
+//       </div>
+//     </>
+//   );
+// };
+
+// // ==================== MAIN COMPONENT ====================
+// const ProjectList: React.FC = () => {
+//   const [activeTab, setActiveTab] = useState<TabType>('projects');
+//   const [viewBy, setViewBy] = useState<'all' | 'active' | 'inactive' | 'completed'>('all');
+//   const [searchTerm, setSearchTerm] = useState('');
+//   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+//   const [currentPage, setCurrentPage] = useState(1);
+//   const [itemsPerPage] = useState(6);
+//   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+//   const [view, setView] = useState<ViewState>('list');
+//   const [editProjectData, setEditProjectData] = useState<Project | null>(null);
+//   const [timerProjectName, setTimerProjectName] = useState<string>('');
+//   const [showLogTimePage, setShowLogTimePage] = useState(false);
+//   const [logTimeProject, setLogTimeProject] = useState('');
+
+//   const [currentUser] = useState('Patricia Boyle');
+
+//   // Each project has its own timer
+//   const timerRefs = useRef<Record<string, NodeJS.Timeout>>({});
+  
+//   // Store which project timer is currently active in Time Tracker
+//   const [activeTrackerProjectId, setActiveTrackerProjectId] = useState<string | null>(null);
+  
+//   // Store time entries
+//   const [entries, setEntries] = useState<TimeEntry[]>([]);
+
+//   const [projects, setProjects] = useState<Project[]>([]);
+
+//   // Load data from localStorage
+//   useEffect(() => {
+//     try {
+//       const savedProjects = localStorage.getItem('userProjects');
+//       if (savedProjects) {
+//         const parsed = JSON.parse(savedProjects);
+//         if (Array.isArray(parsed) && parsed.length > 0) {
+//           setProjects(parsed);
+//         }
+//       }
+//     } catch (error) {
+//       console.error('Failed to load projects:', error);
+//     }
+
+//     try {
+//       const savedTimers = localStorage.getItem('projectTimers');
+//       if (savedTimers) {
+//         const timerData = JSON.parse(savedTimers);
+//         setProjects(prev => prev.map(project => ({
+//           ...project,
+//           timerRunning: timerData[project.id]?.running || false,
+//           timerSeconds: timerData[project.id]?.seconds || 0,
+//           currentTask: timerData[project.id]?.currentTask || ''
+//         })));
+//         if (timerData.activeProjectId) {
+//           setActiveTrackerProjectId(timerData.activeProjectId);
+//         }
+//       }
+//     } catch (error) {
+//       console.error('Failed to load timer data:', error);
+//     }
+
+//     // Load entries
+//     try {
+//       const savedEntries = localStorage.getItem('timeEntries');
+//       if (savedEntries) {
+//         const parsed = JSON.parse(savedEntries);
+//         if (Array.isArray(parsed)) {
+//           setEntries(parsed);
+//         }
+//       }
+//     } catch (error) {
+//       console.error('Failed to load entries:', error);
+//     }
+//   }, []);
+
+//   // Save projects to localStorage
+//   useEffect(() => {
+//     try {
+//       localStorage.setItem('userProjects', JSON.stringify(projects));
+//     } catch (error) {
+//       console.error('Failed to save projects:', error);
+//     }
+//   }, [projects]);
+
+//   // Save timer data to localStorage
+//   useEffect(() => {
+//     try {
+//       const timerData: Record<string, any> = {
+//         activeProjectId: activeTrackerProjectId
+//       };
+//       projects.forEach(project => {
+//         timerData[project.id] = {
+//           running: project.timerRunning || false,
+//           seconds: project.timerSeconds || 0,
+//           currentTask: project.currentTask || ''
+//         };
+//       });
+//       localStorage.setItem('projectTimers', JSON.stringify(timerData));
+//     } catch (error) {
+//       console.error('Failed to save timer data:', error);
+//     }
+//   }, [projects, activeTrackerProjectId]);
+
+//   // Save entries to localStorage whenever they change
+//   useEffect(() => {
+//     try {
+//       localStorage.setItem('timeEntries', JSON.stringify(entries));
+//     } catch (error) {
+//       console.error('Failed to save entries:', error);
+//     }
+//   }, [entries]);
+
+//   // Clean up all timers on unmount
+//   useEffect(() => {
+//     return () => {
+//       Object.values(timerRefs.current).forEach(clearInterval);
+//     };
+//   }, []);
+
+//   // Format time
+//   const formatTime = (totalSeconds: number) => {
+//     const hours = Math.floor(totalSeconds / 3600);
+//     const minutes = Math.floor((totalSeconds % 3600) / 60);
+//     const secs = totalSeconds % 60;
+//     return `${String(hours).padStart(2, '0')}h : ${String(minutes).padStart(2, '0')}m : ${String(secs).padStart(2, '0')}s`;
+//   };
+
+//   // Create time entry
+//   const createTimeEntry = (projectId: string, seconds: number, task: string = 'Unspecified', notes: string = '') => {
+//     const project = projects.find(p => p.id === projectId);
+//     if (!project) return;
+
+//     const newEntry: TimeEntry = {
+//       id: Date.now().toString(),
+//       date: new Date().toISOString().split('T')[0],
+//       project: project.projectName,
+//       projectId: project.id,
+//       task: task || 'Unspecified',
+//       time: formatTime(seconds),
+//       timeInSeconds: seconds,
+//       employee: project.customerName || 'Unassigned',
+//       status: 'Billable',
+//       notes: notes || undefined
+//     };
+
+//     setEntries(prev => {
+//       const updated = [newEntry, ...prev];
+//       try {
+//         localStorage.setItem('timeEntries', JSON.stringify(updated));
+//       } catch (error) {
+//         console.error('Failed to save entries:', error);
+//       }
+//       return updated;
+//     });
+//   };
+
+//   // Start timer for a project - with task name
+//   const handleStartTimer = (projectId: string, task: string = '') => {
+//     const project = projects.find(p => p.id === projectId);
+//     if (project?.timerRunning) return;
+
+//     if (timerRefs.current[projectId]) {
+//       clearInterval(timerRefs.current[projectId]);
+//       delete timerRefs.current[projectId];
+//     }
+
+//     let taskToUse = task;
+//     if (!taskToUse && project?.tasks && project.tasks.length > 0) {
+//       taskToUse = project.tasks[0];
+//     }
+//     if (!taskToUse) {
+//       taskToUse = 'Unspecified';
+//     }
+
+//     setProjects(prev => prev.map(p => 
+//       p.id === projectId ? { 
+//         ...p, 
+//         timerRunning: true,
+//         currentTask: taskToUse
+//       } : p
+//     ));
+
+//     setActiveTrackerProjectId(projectId);
+
+//     timerRefs.current[projectId] = setInterval(() => {
+//       setProjects(prev => prev.map(p => 
+//         p.id === projectId && p.timerRunning ? { ...p, timerSeconds: (p.timerSeconds || 0) + 1 } : p
+//       ));
+//     }, 1000);
+//   };
+
+//   // Stop timer for a project - use the stored task
+//   const handleStopTimer = (projectId: string, task: string = '', notes: string = '') => {
+//     const project = projects.find(p => p.id === projectId);
+//     if (!project) return;
+
+//     const seconds = project.timerSeconds || 0;
+//     const taskToUse = task || project.currentTask || 'Unspecified';
+
+//     if (timerRefs.current[projectId]) {
+//       clearInterval(timerRefs.current[projectId]);
+//       delete timerRefs.current[projectId];
+//     }
+
+//     setProjects(prev => prev.map(p => 
+//       p.id === projectId ? { ...p, timerRunning: false, currentTask: '' } : p
+//     ));
+
+//     if (seconds > 0) {
+//       createTimeEntry(projectId, seconds, taskToUse, notes);
+//     }
+//   };
+
+//   const handleCompleteProject = (projectId: string) => {
+//     const project = projects.find(p => p.id === projectId);
+//     if (project?.timerRunning) {
+//       handleStopTimer(projectId);
+//     }
+
+//     setProjects(prev => prev.map(p => {
+//       if (p.id === projectId) {
+//         return { 
+//           ...p, 
+//           status: 'completed',
+//           timerRunning: false,
+//           timerSeconds: 0,
+//           currentTask: ''
+//         };
+//       }
+//       return p;
+//     }));
+//   };
+
+//   const handleDeleteProject = (id: string) => {
+//     if (window.confirm('Delete this project?')) {
+//       if (timerRefs.current[id]) {
+//         clearInterval(timerRefs.current[id]);
+//         delete timerRefs.current[id];
+//       }
+//       if (activeTrackerProjectId === id) {
+//         setActiveTrackerProjectId(null);
+//       }
+//       setEntries(prev => prev.filter(entry => entry.projectId !== id));
+//       setProjects((prev: Project[]) => prev.filter((p: Project) => p.id !== id));
+//     }
+//   };
+
+//   const handleProjectClick = (projectId: string) => {
+//     setSelectedProjectId(projectId);
+//     setView('detail');
+//   };
+
+//   const handleBackToList = () => {
+//     setSelectedProjectId(null);
+//     setView('list');
+//     setEditProjectData(null);
+//     setShowLogTimePage(false);
+//   };
+
+//   const handleEditClick = (project: Project) => {
+//     setEditProjectData(project);
+//     setView('edit');
+//   };
+
+//   const handleEditSave = (updatedData: any) => {
+//     const existingProject = projects.find(p => p.id === updatedData.id);
+//     if (!existingProject) return;
+
+//     const updatedProjects = projects.map((p: Project) => {
+//       if (p.id === updatedData.id) {
+//         return {
+//           ...p,
+//           projectName: updatedData.name,
+//           description: updatedData.description,
+//           billingMethod: updatedData.billingMethod as Project['billingMethod'],
+//           rate: updatedData.rate !== undefined ? Number(updatedData.rate) : p.rate,
+//           budget: updatedData.budget !== undefined ? Number(updatedData.budget) : p.budget,
+//           status: updatedData.status as Project['status'],
+//           startDate: updatedData.startDate,
+//           endDate: updatedData.endDate,
+//           customerName: updatedData.customerName,
+//           updatedAt: new Date().toISOString(),
+//           assignedUsers: updatedData.assignedUsers || [currentUser],
+//           tasks: updatedData.tasks || p.tasks || []
+//         };
+//       }
+//       return p;
+//     });
+
+//     setProjects(updatedProjects);
+//     setTimeout(() => {
+//       setView('list');
+//       setEditProjectData(null);
+//     }, 100);
+//   };
+
+//   const handleCreateProject = (projectData: any) => {
+//     const newProject: Project = {
+//       id: String(Date.now()),
+//       customerName: projectData.customerName,
+//       projectName: projectData.projectName,
+//       billingMethod: projectData.billingMethod as Project['billingMethod'],
+//       rate: Number(projectData.rate) || null,
+//       status: projectData.status as Project['status'],
+//       loggedHours: '00:00',
+//       budget: Number(projectData.budget) || null,
+//       startDate: projectData.startDate || '',
+//       endDate: projectData.endDate || '',
+//       description: projectData.description || '',
+//       createdAt: new Date().toISOString(),
+//       updatedAt: new Date().toISOString(),
+//       timerRunning: false,
+//       timerSeconds: 0,
+//       assignedUsers: [currentUser],
+//       tasks: projectData.tasks || [],
+//       currentTask: ''
+//     };
+//     setProjects([newProject, ...projects]);
+//     setView('list');
+//   };
+
+//   const handleHeaderStart = () => {
+//     setTimerProjectName('');
+//     setActiveTab('timetracker');
+//   };
+
+//   const handleLogTimeClick = (projectName: string) => {
+//     setLogTimeProject(projectName);
+//     setShowLogTimePage(true);
+//   };
+
+//   const handleLogTimeSave = (data: any) => {
+//     console.log('Time logged:', data);
+//     setShowLogTimePage(false);
+//     alert(`Time logged successfully!\nProject: ${data.project}\nTime: ${data.timeSpent}`);
+//   };
+
+//   const handleOpenTimeTracker = (projectName?: string) => {
+//     if (projectName) {
+//       setTimerProjectName(projectName);
+//     } else {
+//       setTimerProjectName('');
+//     }
+//     setActiveTab('timetracker');
+//   };
+
+//   if (view === 'create') {
+//     return <CreateProjectPage onBack={handleBackToList} onSave={handleCreateProject} currentUser={currentUser} />;
+//   }
+
+//   if (view === 'edit' && editProjectData) {
+//     const editData = {
+//       id: editProjectData.id,
+//       name: editProjectData.projectName,
+//       description: editProjectData.description,
+//       billingMethod: editProjectData.billingMethod,
+//       rate: editProjectData.rate || 0,
+//       budget: editProjectData.budget || 0,
+//       status: editProjectData.status,
+//       startDate: editProjectData.startDate,
+//       endDate: editProjectData.endDate,
+//       customerName: editProjectData.customerName,
+//       assignedUsers: editProjectData.assignedUsers || [currentUser],
+//       tasks: editProjectData.tasks || []
+//     };
+//     return (
+//       <ProjectEdit 
+//         projectId={editProjectData.id}
+//         projectName={editProjectData.projectName}
+//         onBack={handleBackToList}
+//         onSave={handleEditSave}
+//         initialData={editData}
+//       />
+//     );
+//   }
+
+//   if (view === 'detail' && selectedProjectId) {
+//     return <ProjectDetail projectId={selectedProjectId} onBack={handleBackToList} />;
+//   }
+
+//   if (showLogTimePage) {
+//     return (
+//       <LogTimePage 
+//         onBack={() => setShowLogTimePage(false)} 
+//         onSave={handleLogTimeSave}
+//         preselectedProject={logTimeProject}
+//       />
+//     );
+//   }
+
+//   // ==================== RENDER TAB CONTENT ====================
+//   const renderTabContent = () => {
+//     switch(activeTab) {
+//       case 'projects':
+//         return (
+//           <ProjectsTab
+//             viewBy={viewBy}
+//             setViewBy={setViewBy}
+//             searchTerm={searchTerm}
+//             setSearchTerm={setSearchTerm}
+//             projects={projects}
+//             setProjects={setProjects}
+//             selectedProjects={selectedProjects}
+//             setSelectedProjects={setSelectedProjects}
+//             currentPage={currentPage}
+//             setCurrentPage={setCurrentPage}
+//             itemsPerPage={itemsPerPage}
+//             handleDeleteProject={handleDeleteProject}
+//             onProjectClick={handleProjectClick}
+//             onEditClick={handleEditClick}
+//             onStartTimer={handleStartTimer}
+//             onStopTimer={handleStopTimer}
+//             onCompleteProject={handleCompleteProject}
+//             onLogTime={handleLogTimeClick}
+//             onOpenTimeTracker={handleOpenTimeTracker}
+//             currentUser={currentUser}
+//           />
+//         );
+//       case 'taskboard':
+//         // ✅ Pass projects to TaskBoard
+//         return <TaskBoard projects={projects} />;
+//       case 'timetracker':
+//         return (
+//           <TimeTracker 
+//             preselectedProject={timerProjectName}
+//             currentUser={currentUser}
+//             activeProjectId={activeTrackerProjectId}
+//             projects={projects}
+//             entries={entries}
+//             onStartTimer={handleStartTimer}
+//             onStopTimer={handleStopTimer}
+//           />
+//         );
+//       default:
+//         return null;
+//     }
+//   };
+
+//   return (
+//     <div className="p-3 sm:p-6 bg-gray-50 min-h-screen">
+//       {activeTab === 'projects' && (
+//         <div className="flex flex-wrap items-start sm:items-center justify-between mb-3 sm:mb-4 gap-3">
+//           <div>
+//             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Projects</h1>
+//             <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">Manage all your projects from one place</p>
+//           </div>
+//           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+//             <button 
+//               onClick={() => setView('create')} 
+//               className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+//             >
+//               <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               <span className="hidden xs:inline">New Project</span>
+//               <span className="xs:hidden">New</span>
+//             </button>
+//             <button 
+//               onClick={handleHeaderStart}
+//               className="px-3 sm:px-4 py-1.5 sm:py-2 bg-green-600 text-white rounded-lg flex items-center hover:bg-green-700 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+//             >
+//               <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               <span className="hidden xs:inline">Start</span>
+//             </button>
+//             <button 
+//               onClick={() => {
+//                 setLogTimeProject('');
+//                 setShowLogTimePage(true);
+//               }}
+//               className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+//             >
+//               <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               <span className="hidden xs:inline">Log Time</span>
+//               <span className="xs:hidden">Log</span>
+//             </button>
+//           </div>
+//         </div>
+//       )}
+
+//       {activeTab === 'taskboard' && (
+//         <div className="flex flex-wrap items-start sm:items-center justify-between mb-3 sm:mb-4 gap-3">
+//           <div>
+//             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Task Board</h1>
+//             <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">Manage and track tasks across your projects</p>
+//           </div>
+//           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+//             <button 
+//               className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+//             >
+//               <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               Edit
+//             </button>
+//             <button 
+//               className="px-3 sm:px-4 py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg flex items-center hover:bg-purple-700 text-xs sm:text-sm shadow-sm whitespace-nowrap"
+//             >
+//               <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+//               <span className="hidden xs:inline">Add Task</span>
+//               <span className="xs:hidden">Add</span>
+//             </button>
+//             <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm text-gray-500 bg-white px-2 sm:px-4 py-1 sm:py-2 rounded-lg shadow-sm border border-gray-200">
+//               <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+//               <span>10 Total</span>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+
+//       {activeTab === 'timetracker' && (
+//         <div className="flex flex-wrap items-start sm:items-center justify-between mb-3 sm:mb-4 gap-3">
+//           <div>
+//             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Time Tracker</h1>
+//             <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">Track and log time for your projects</p>
+//           </div>
+//           <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm text-gray-500 bg-white px-2 sm:px-4 py-1 sm:py-2 rounded-lg shadow-sm border border-gray-200">
+//             <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+//             <span>{entries.length} Entries</span>
+//           </div>
+//         </div>
+//       )}
+
+//       <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-2 sm:px-4 mb-4 sm:mb-6 overflow-x-auto">
+//         <nav className="flex space-x-3 sm:space-x-6 min-w-fit">
+//           <button 
+//             onClick={() => setActiveTab('projects')} 
+//             className={`py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-1 sm:space-x-2 whitespace-nowrap ${
+//               activeTab === 'projects' 
+//                 ? 'border-blue-600 text-blue-600' 
+//                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+//             }`}
+//           >
+//             <LayoutDashboard className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+//             <span>Projects</span>
+//           </button>
+//           <button 
+//             onClick={() => setActiveTab('taskboard')} 
+//             className={`py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-1 sm:space-x-2 whitespace-nowrap ${
+//               activeTab === 'taskboard' 
+//                 ? 'border-blue-600 text-blue-600' 
+//                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+//             }`}
+//           >
+//             <ClipboardList className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+//             <span>Task Board</span>
+//           </button>
+//           <button 
+//             onClick={() => setActiveTab('timetracker')} 
+//             className={`py-2.5 sm:py-3 px-1 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-1 sm:space-x-2 whitespace-nowrap ${
+//               activeTab === 'timetracker' 
+//                 ? 'border-blue-600 text-blue-600' 
+//                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+//             }`}
+//           >
+//             <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+//             <span>Time Tracker</span>
+//           </button>
+//         </nav>
+//       </div>
+
+//       <div>
+//         {renderTabContent()}
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default ProjectList;
+// ProjectList.tsx - Complete with proper persistence
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Search,
@@ -11108,22 +12303,25 @@ const ProjectList: React.FC = () => {
   // Store time entries
   const [entries, setEntries] = useState<TimeEntry[]>([]);
 
-  const [projects, setProjects] = useState<Project[]>([]);
-
-  // Load data from localStorage
-  useEffect(() => {
+  // ✅ Initialize projects from localStorage with lazy initialization
+  const [projects, setProjects] = useState<Project[]>(() => {
     try {
       const savedProjects = localStorage.getItem('userProjects');
       if (savedProjects) {
         const parsed = JSON.parse(savedProjects);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setProjects(parsed);
+          return parsed;
         }
       }
     } catch (error) {
-      console.error('Failed to load projects:', error);
+      console.error('Failed to load projects from localStorage:', error);
     }
+    return [];
+  });
 
+  // ✅ Load timer data and entries from localStorage
+  useEffect(() => {
+    // Load timer data
     try {
       const savedTimers = localStorage.getItem('projectTimers');
       if (savedTimers) {
@@ -11156,7 +12354,7 @@ const ProjectList: React.FC = () => {
     }
   }, []);
 
-  // Save projects to localStorage
+  // ✅ Save projects to localStorage whenever they change
   useEffect(() => {
     try {
       localStorage.setItem('userProjects', JSON.stringify(projects));
@@ -11165,7 +12363,7 @@ const ProjectList: React.FC = () => {
     }
   }, [projects]);
 
-  // Save timer data to localStorage
+  // ✅ Save timer data to localStorage
   useEffect(() => {
     try {
       const timerData: Record<string, any> = {
@@ -11184,7 +12382,7 @@ const ProjectList: React.FC = () => {
     }
   }, [projects, activeTrackerProjectId]);
 
-  // Save entries to localStorage whenever they change
+  // ✅ Save entries to localStorage whenever they change
   useEffect(() => {
     try {
       localStorage.setItem('timeEntries', JSON.stringify(entries));
@@ -11500,7 +12698,6 @@ const ProjectList: React.FC = () => {
           />
         );
       case 'taskboard':
-        // ✅ Pass projects to TaskBoard
         return <TaskBoard projects={projects} />;
       case 'timetracker':
         return (
