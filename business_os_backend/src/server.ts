@@ -24,6 +24,8 @@ import leaveRoutes from "./routes/leave.routes.js";
 import taskRoutes from './routes/task.routes.js';
 
 import expenseRoutes from './routes/expense.routes.js';
+import purchaseOrderRoutes from './routes/purchaseOrder.routes.js';
+import vendorRoutes from './routes/vendor.routes.js';
 
 
 const app = express();
@@ -52,6 +54,8 @@ app.use("/api/hrms/attendance", attendanceRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api', expenseRoutes);
+app.use('/api/vendors', vendorRoutes);
+app.use('/api/purchase-orders', purchaseOrderRoutes);
 
 
 // Interfaces for incoming requests

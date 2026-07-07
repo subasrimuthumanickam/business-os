@@ -310,3 +310,64 @@ export const getInventoryValuationSummary = async () => {
     inventory_value: Number(row.inventory_value),
   }));
 };
+
+export const getProductSalesReport = async () => {
+  const query = `
+    SELECT
+      p.id AS product_id,
+      p.name AS item_name,
+      SUM(ii.quantity) AS quantity_sold,
+      SUM(ii.amount) AS total_sales
+    FROM invoice_items ii
+    JOIN products p ON p.id = ii.product_id
+    GROUP BY p.id, p.name
+    ORDER BY total_sales DESC
+  `;
+
+  const rows: any = await db.execute(query, []);
+  const data = Array.isArray(rows[0]) ? rows[0] : rows;
+
+  return data.map((row: any) => {
+    const quantity = Number(row.quantity_sold);
+    const total = Number(row.total_sales);
+    return {
+      item_name: row.item_name,
+      quantity_sold: quantity,
+      total_sales: total,
+      average_price: quantity > 0 ? total / quantity : 0,
+    };
+  });
+};
+export const getLandedCostSummary = async () => {
+  const query = `
+    SELECT
+      p.id AS product_id,
+      p.name AS item_name,
+      SUM(poi.quantity) AS total_quantity,
+      SUM(poi.amount) AS total_base_cost,
+      SUM(
+        poi.amount + (poi.amount / NULLIF(po.subtotal, 0)) * (po.shipping_charge + po.customs_duty)
+      ) AS total_landed_cost
+    FROM purchase_order_items poi
+    JOIN purchase_orders po ON po.id = poi.po_id
+    JOIN products p ON p.id = poi.product_id
+    WHERE po.status = 'Received'
+    GROUP BY p.id, p.name
+    ORDER BY p.name ASC
+  `;
+
+  const rows: any = await db.execute(query, []);
+  const data = Array.isArray(rows[0]) ? rows[0] : rows;
+
+  return data.map((row: any) => {
+    const qty = Number(row.total_quantity);
+    const landed = Number(row.total_landed_cost);
+    return {
+      item_name: row.item_name,
+      quantity: qty,
+      base_cost: Number(row.total_base_cost),
+      landed_cost: landed,
+      landed_cost_per_unit: qty > 0 ? landed / qty : 0,
+    };
+  });
+};

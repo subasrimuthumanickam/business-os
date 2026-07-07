@@ -107,4 +107,21 @@ export const reportService = {
   
   getInventoryValuationSummary: () =>
   apiService.get('/reports/inventory-valuation-summary'),
+
+  getProductSalesReport: () =>
+  apiService.get('/reports/product-sales'),
+  
+};
+
+export const vendorService = {
+  getAll: () => apiService.get('/vendors'),
+  create: (data: { name: string; email?: string; phone?: string; address?: string }) =>
+    apiService.post('/vendors/create', data),
+};
+
+export const purchaseOrderService = {
+  getAll: () => apiService.get('/purchase-orders'),
+  getById: (id: number) => apiService.get(`/purchase-orders/${id}`),
+  create: (data: any) => apiService.post('/purchase-orders/create', data),
+  receive: (id: number) => apiService.put(`/purchase-orders/${id}/receive`),
 };

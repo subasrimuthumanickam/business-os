@@ -9,7 +9,9 @@ import {
   getSalesByItemReport,
   getSalesBySalesPersonReport,
   getInventorySummaryController,
-  getInventoryValuationSummaryController,  
+  getInventoryValuationSummaryController,
+  getProductSalesReportController,
+  getLandedCostSummaryController,  
 } from '../controllers/report.controller.js';
 
 const router = Router();
@@ -24,5 +26,7 @@ router.get('/sales-by-item', getSalesByItemReport);
 router.get('/sales-by-sales-person', getSalesBySalesPersonReport);
 router.get('/inventory-summary', getInventorySummaryController); 
 router.get('/inventory-valuation-summary', getInventoryValuationSummaryController);
+router.get('/product-sales', getProductSalesReportController);
+router.get('/landed-cost', getLandedCostSummaryController);
 
 export default router;

@@ -1,6 +1,8 @@
 import type { Request, Response } from 'express';
 import { getSalesSummary, getInventorySummary, getProfitAndLoss, getBalanceSheet, getCashFlow, 
-  getSalesByCustomer, getSalesByItem, getSalesBySalesPerson, getInventorySummaryReport, getInventoryValuationSummary } from '../services/report.service.js';
+  getSalesByCustomer, getSalesByItem, getSalesBySalesPerson, getInventorySummaryReport, getInventoryValuationSummary, 
+  getProductSalesReport,
+  getLandedCostSummary} from '../services/report.service.js';
 
 export const getSalesReport = async (req: Request, res: Response) => {
     try {
@@ -92,6 +94,24 @@ export const getInventorySummaryController = async (req: Request, res: Response)
 export const getInventoryValuationSummaryController = async (req: Request, res: Response): Promise<any> => {
   try {
     const data = await getInventoryValuationSummary();
+    res.status(200).json({ success: true, data });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getProductSalesReportController = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const data = await getProductSalesReport();
+    res.status(200).json({ success: true, data });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getLandedCostSummaryController = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const data = await getLandedCostSummary();
     res.status(200).json({ success: true, data });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
