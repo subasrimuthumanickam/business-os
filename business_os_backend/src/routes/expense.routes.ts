@@ -15,5 +15,6 @@ router.post('/expense-accounts', ExpenseController.addExpenseAccount);
 
 router.get('/payment-accounts', ExpenseController.listPaymentAccounts);
 router.post('/payment-accounts', ExpenseController.addPaymentAccount);
+router.patch('/expenses/:id/billable', ExpenseController.editExpenseBillable);
 
 export default router;

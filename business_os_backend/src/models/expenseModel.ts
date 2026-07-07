@@ -57,8 +57,8 @@ export const createExpense = async (companyId: number, data: any) => {
         (company_id, expense_number, expense_date, paid_by, expense_account_id, amount, currency,
          paid_through_id, vendor_name, reference_number, notes, receipt_path, customer_id, status,
          expense_type, sac_code, gst_treatment, vendor_gstin, destination_of_supply, reverse_charge,
-         tax_code, tax_rate, tax_amount, invoice_reference, is_itemized)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         tax_code, tax_rate, tax_amount, invoice_reference, is_itemized, is_billable)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         companyId, expenseNumber, data.expense_date, data.paid_by || null,
         data.is_itemized ? null : data.expense_account_id, data.amount, data.currency || 'INR',
@@ -72,6 +72,7 @@ export const createExpense = async (companyId: number, data: any) => {
         0, // tax_amount computed below if needed
         data.invoice_reference || null,
         data.is_itemized ? 1 : 0,
+        data.is_billable ? 1 : 0,          // 👈 added
       ]
     );
     const expenseId = result.insertId;
@@ -109,7 +110,7 @@ export const updateExpense = async (companyId: number, id: number, data: any) =>
         paid_through_id = ?, vendor_name = ?, reference_number = ?, notes = ?,
         customer_id = ?, status = ?, expense_type = ?, sac_code = ?, gst_treatment = ?,
         vendor_gstin = ?, destination_of_supply = ?, reverse_charge = ?, tax_code = ?,
-        tax_rate = ?, invoice_reference = ?, is_itemized = ?
+        tax_rate = ?, invoice_reference = ?, is_itemized = ?, is_billable = ?
        WHERE company_id = ? AND id = ?`,
       [
         data.expense_date, data.paid_by || null,
@@ -121,6 +122,7 @@ export const updateExpense = async (companyId: number, id: number, data: any) =>
         data.reverse_charge ? 1 : 0, data.is_itemized ? null : (data.tax_code || null),
         data.is_itemized ? 0 : (data.tax_rate || 0), data.invoice_reference || null,
         data.is_itemized ? 1 : 0,
+        data.is_billable ? 1 : 0,          // 👈 added
         companyId, id,
       ]
     );
@@ -157,4 +159,11 @@ export const updateExpenseStatus = async (companyId: number, id: number, status:
 
 export const deleteExpense = async (companyId: number, id: number) => {
   await pool.query('DELETE FROM expenses WHERE company_id = ? AND id = ?', [companyId, id]);
+};
+
+export const updateExpenseBillable = async (companyId: number, id: number, isBillable: boolean) => {
+  await pool.query(
+    'UPDATE expenses SET is_billable = ? WHERE company_id = ? AND id = ?',
+    [isBillable ? 1 : 0, companyId, id]
+  );
 };

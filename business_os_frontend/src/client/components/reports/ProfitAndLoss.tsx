@@ -7,7 +7,7 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react';
-
+import {reportService}from '../../services/api.service';
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -171,21 +171,37 @@ export default function ProfitAndLoss() {
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const customizeRef = useRef<HTMLDivElement>(null);
 
+  // const fetchData = useCallback(async () => {
+  //   setStatus('loading');
+  //   try {
+  //     const params = new URLSearchParams({ range: dateRange, basis });
+  //     const res = await fetch(`${PNL_ENDPOINT}?${params.toString()}`, { credentials: 'include' });
+  //     if (!res.ok) throw new Error(`Request failed with ${res.status}`);
+  //     const json: PnlResponse = await res.json();
+  //     setData(json.sections);
+  //     setStatus('ready');
+  //   } catch (err) {
+  //     console.error('Failed to load Profit and Loss report', err);
+  //     setStatus('error');
+  //   }
+  // }, [dateRange, basis]);
+   
   const fetchData = useCallback(async () => {
-    setStatus('loading');
-    try {
-      const params = new URLSearchParams({ range: dateRange, basis });
-      const res = await fetch(`${PNL_ENDPOINT}?${params.toString()}`, { credentials: 'include' });
-      if (!res.ok) throw new Error(`Request failed with ${res.status}`);
-      const json: PnlResponse = await res.json();
-      setData(json.sections);
-      setStatus('ready');
-    } catch (err) {
-      console.error('Failed to load Profit and Loss report', err);
-      setStatus('error');
-    }
-  }, [dateRange, basis]);
-
+  setStatus('loading');
+  try {
+    // Cast 'data' as 'PnlResponse'
+    const response = await reportService.getProfitAndLoss({ 
+      range: dateRange, 
+      basis 
+    }) as PnlResponse;
+    
+    setData(response.sections); 
+    setStatus('ready');
+  } catch (err) {
+    console.error('Failed to load Profit and Loss report', err);
+    setStatus('error');
+  }
+}, [dateRange, basis]);
   useEffect(() => {
     fetchData();
   }, [fetchData]);

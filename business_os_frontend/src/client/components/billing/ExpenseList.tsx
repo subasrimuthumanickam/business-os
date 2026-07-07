@@ -13,10 +13,8 @@ interface Expense {
   vendor_name?: string;
   reference_number?: string;
   notes?: string;
-  customer_name?: string;
   status: 'paid' | 'pending' | 'failed';
   is_billable?: boolean;
-  invoice_reference?: string;
 }
 
 interface ExpenseListProps {
@@ -26,7 +24,7 @@ interface ExpenseListProps {
 
 const API = 'http://localhost:5000/api';
 
-const DEFAULT_FILTERS = ['All', 'Unbilled', 'Invoiced', 'Reimbursed', 'Billable', 'Non-Billable', 'With Receipts', 'Without Receipts'];
+const DEFAULT_FILTERS = ['All', 'Billable', 'Non-Billable'];
 
 const COLUMN_DEFS = [
   { key: 'date', label: 'Date' },
@@ -34,12 +32,11 @@ const COLUMN_DEFS = [
   { key: 'reference', label: 'Reference#' },
   { key: 'vendor_name', label: 'Vendor Name' },
   { key: 'paid_through', label: 'Paid Through' },
-  { key: 'customer_name', label: 'Customer Name' },
   { key: 'status', label: 'Status' },
   { key: 'amount', label: 'Amount' },
 ];
 
-const SORT_OPTIONS = ['Created Time', 'Date', 'Expense Account', 'Vendor Name', 'Paid Through', 'Customer Name', 'Amount'];
+const SORT_OPTIONS = ['Created Time', 'Date', 'Expense Account', 'Vendor Name', 'Paid Through', 'Amount'];
 
 const ExpenseList: React.FC<ExpenseListProps> = ({ onNewExpense, onEditExpense }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -97,10 +94,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onNewExpense, onEditExpense }
         vendor_name: e.vendor_name || '',
         reference_number: e.reference_number || '',
         notes: e.notes || '',
-        customer_name: e.customer_name || '',
         status: (e.status || 'pending').toLowerCase(),
         is_billable: !!e.is_billable,
-        invoice_reference: e.invoice_reference || '',
       }));
       setExpenses(formatted);
     } catch (err) {
@@ -121,6 +116,19 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onNewExpense, onEditExpense }
     }
   };
 
+  const handleToggleBillable = async (expense: Expense) => {
+    const newValue = !expense.is_billable;
+    try {
+      await axios.patch(`${API}/expenses/${expense.id}/billable`, { is_billable: newValue });
+      setExpenses((prev) =>
+        prev.map((exp) => (exp.id === expense.id ? { ...exp, is_billable: newValue } : exp))
+      );
+    } catch (err) {
+      console.error('Error updating billable:', err);
+      alert('Failed to update');
+    }
+  };
+
   const toggleSelect = (id: number) => {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
@@ -133,16 +141,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onNewExpense, onEditExpense }
     }
   };
 
-  // Zoho-style billing status (Invoiced / Unbilled / Non-Billable)
-  const getBillingStatus = (expense: Expense): { label: string; className: string } => {
-    if (!expense.is_billable) {
-      return { label: 'Non-Billable', className: 'text-gray-500' };
-    }
-    if (expense.invoice_reference) {
-      return { label: 'Invoiced', className: 'text-red-500' };
-    }
-    return { label: 'Unbilled', className: 'text-gray-500' };
-  };
+  const getBillableLabel = (isBillable?: boolean) => (isBillable ? 'Billable' : 'Non-Billable');
+  const getBillableStyle = (isBillable?: boolean) => (isBillable ? 'text-green-600' : 'text-gray-500');
 
   const filteredExpenses = expenses
     .filter((expense) => {
@@ -150,28 +150,14 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onNewExpense, onEditExpense }
         !searchTerm ||
         expense.expense_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
         expense.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        expense.vendor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        expense.customer_name?.toLowerCase().includes(searchTerm.toLowerCase());
+        expense.vendor_name?.toLowerCase().includes(searchTerm.toLowerCase());
 
       if (!matchesSearch) return false;
 
-      const billing = getBillingStatus(expense);
-      switch (activeFilter) {
-        case 'All':
-          return true;
-        case 'Invoiced':
-          return billing.label === 'Invoiced';
-        case 'Unbilled':
-          return billing.label === 'Unbilled';
-        case 'Billable':
-          return !!expense.is_billable;
-        case 'Non-Billable':
-          return !expense.is_billable;
-        case 'Reimbursed':
-          return expense.status === 'paid';
-        default:
-          return true;
-      }
+      if (activeFilter === 'All') return true;
+      if (activeFilter === 'Billable') return !!expense.is_billable;
+      if (activeFilter === 'Non-Billable') return !expense.is_billable;
+      return true;
     })
     .sort((a, b) => {
       let cmp = 0;
@@ -187,9 +173,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onNewExpense, onEditExpense }
           break;
         case 'Paid Through':
           cmp = a.payment_method.localeCompare(b.payment_method);
-          break;
-        case 'Customer Name':
-          cmp = (a.customer_name || '').localeCompare(b.customer_name || '');
           break;
         case 'Amount':
         default:
@@ -210,9 +193,9 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onNewExpense, onEditExpense }
 
   const handleExport = () => {
     let csvContent =
-      'data:text/csv;charset=utf-8,Date,Expense Account,Reference#,Vendor Name,Paid Through,Customer Name,Status,Amount\n';
+      'data:text/csv;charset=utf-8,Date,Expense Account,Reference#,Vendor Name,Paid Through,Status,Amount\n';
     filteredExpenses.forEach((e) => {
-      csvContent += `${e.expense_date},"${e.category}","${e.reference_number || ''}","${e.vendor_name || ''}","${e.payment_method}","${e.customer_name || ''}","${getBillingStatus(e).label}",${e.amount}\n`;
+      csvContent += `${e.expense_date},"${e.category}","${e.reference_number || ''}","${e.vendor_name || ''}","${e.payment_method}","${getBillableLabel(e.is_billable)}",${e.amount}\n`;
     });
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
@@ -261,11 +244,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onNewExpense, onEditExpense }
                   {f}
                 </button>
               ))}
-              <div className="border-t mt-1 pt-1">
-                <button className="w-full text-left px-4 py-1.5 text-sm text-blue-600 hover:bg-gray-50">
-                  + New Custom View
-                </button>
-              </div>
             </div>
           )}
         </div>
@@ -373,9 +351,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onNewExpense, onEditExpense }
                   <button onClick={handleExport} className="w-full text-left px-4 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
                     ⬆ Export Expenses
                   </button>
-                  <button onClick={handleExport} className="w-full text-left px-4 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
-                    ⬆ Export Current View
-                  </button>
                   <button
                     onClick={() => {
                       fetchExpenses();
@@ -427,14 +402,11 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onNewExpense, onEditExpense }
                   Paid Through{arrow('Paid Through')}
                 </th>
               )}
-              {isColVisible('customer_name') && (
-                <th onClick={() => handleSortClick('Customer Name')} className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none">
-                  Customer Name{arrow('Customer Name')}
-                </th>
-              )}
-              {isColVisible('status') && (
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              )}
+              {/* {isColVisible('status') && (
+             <td className={`px-4 py-3 text-xs font-semibold uppercase ${getBillableStyle(expense.is_billable)}`}>
+              {getBillableLabel(expense.is_billable)}
+             </td>
+              )} */}
               {isColVisible('amount') && (
                 <th onClick={() => handleSortClick('Amount')} className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none">
                   Amount{arrow('Amount')}
@@ -455,7 +427,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onNewExpense, onEditExpense }
                   <input
                     autoFocus
                     type="text"
-                    placeholder="Search by vendor, account, customer..."
+                    placeholder="Search by vendor, account..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-72 px-3 py-1.5 border border-gray-300 rounded-md text-sm outline-none focus:border-blue-500"
@@ -478,61 +450,111 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ onNewExpense, onEditExpense }
                 </td>
               </tr>
             ) : (
-              filteredExpenses.map((expense) => {
-                const billing = getBillingStatus(expense);
-                return (
-                  <tr
-                    key={expense.id}
-                    className="hover:bg-gray-50 transition-colors cursor-pointer"
-                    onClick={() => onEditExpense && onEditExpense(expense)}
-                  >
-                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                      <input type="checkbox" checked={selectedIds.includes(expense.id)} onChange={() => toggleSelect(expense.id)} />
-                    </td>
-                    {isColVisible('date') && (
-                      <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
-                        {new Date(expense.expense_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      </td>
-                    )}
-                    {isColVisible('expense_account') && (
-                      <td className="px-4 py-3 text-sm text-blue-600 font-medium">{expense.category}</td>
-                    )}
-                    {isColVisible('reference') && (
-                      <td className="px-4 py-3 text-sm text-gray-600">{expense.reference_number || '—'}</td>
-                    )}
-                    {isColVisible('vendor_name') && (
-                      <td className="px-4 py-3 text-sm text-gray-700">{expense.vendor_name || '—'}</td>
-                    )}
-                    {isColVisible('paid_through') && (
-                      <td className="px-4 py-3 text-sm text-gray-700">{expense.payment_method}</td>
-                    )}
-                    {isColVisible('customer_name') && (
-                      <td className="px-4 py-3 text-sm text-gray-700">{expense.customer_name || '—'}</td>
-                    )}
-                    {isColVisible('status') && (
-                      <td className={`px-4 py-3 text-xs font-semibold uppercase ${billing.className}`}>
-                        {billing.label}
-                      </td>
-                    )}
-                    {isColVisible('amount') && (
-                      <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right">
-                        ₹{expense.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                      </td>
-                    )}
-                    <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => setShowDeleteModal(expense.id)}
-                        className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                        title="Delete"
-                      >
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2" />
-                        </svg>
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })
+              // filteredExpenses.map((expense) => (
+              //   <tr
+              //     key={expense.id}
+              //     className="hover:bg-gray-50 transition-colors cursor-pointer"
+              //     onClick={() => onEditExpense && onEditExpense(expense)}
+              //   >
+              //     <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+              //       <input type="checkbox" checked={selectedIds.includes(expense.id)} onChange={() => toggleSelect(expense.id)} />
+              //     </td>
+              //     {isColVisible('date') && (
+              //       <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+              //         {new Date(expense.expense_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+              //       </td>
+              //     )}
+              //     {isColVisible('expense_account') && (
+              //       <td className="px-4 py-3 text-sm text-blue-600 font-medium">{expense.category}</td>
+              //     )}
+              //     {isColVisible('reference') && (
+              //       <td className="px-4 py-3 text-sm text-gray-600">{expense.reference_number || '—'}</td>
+              //     )}
+              //     {isColVisible('vendor_name') && (
+              //       <td className="px-4 py-3 text-sm text-gray-700">{expense.vendor_name || '—'}</td>
+              //     )}
+              //     {isColVisible('paid_through') && (
+              //       <td className="px-4 py-3 text-sm text-gray-700">{expense.payment_method}</td>
+              //     )}
+              //     {isColVisible('status') && (
+              //       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+              //         <button
+              //           onClick={() => handleToggleBillable(expense)}
+              //           className={`text-xs font-semibold uppercase hover:underline ${getBillableStyle(expense.is_billable)}`}
+              //           title="Click to toggle"
+              //         >
+              //           {getBillableLabel(expense.is_billable)}
+              //         </button>
+              //       </td>
+              //     )}
+              //     {isColVisible('amount') && (
+              //       <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right">
+              //         ₹{expense.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              //       </td>
+              //     )}
+              //     <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+              //       <button
+              //         onClick={() => setShowDeleteModal(expense.id)}
+              //         className="text-gray-400 hover:text-red-500 transition-colors p-1"
+              //         title="Delete"
+              //       >
+              //         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              //           <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+              //         </svg>
+              //       </button>
+              //     </td>
+              //   </tr>
+              // ))
+
+              filteredExpenses.map((expense) => (
+  <tr
+    key={expense.id}
+    className="hover:bg-gray-50 transition-colors cursor-pointer"
+    onClick={() => onEditExpense && onEditExpense(expense)}
+  >
+    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+      <input type="checkbox" checked={selectedIds.includes(expense.id)} onChange={() => toggleSelect(expense.id)} />
+    </td>
+    {isColVisible('date') && (
+      <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+        {new Date(expense.expense_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+      </td>
+    )}
+    {isColVisible('expense_account') && (
+      <td className="px-4 py-3 text-sm text-blue-600 font-medium">{expense.category}</td>
+    )}
+    {isColVisible('reference') && (
+      <td className="px-4 py-3 text-sm text-gray-600">{expense.reference_number || '—'}</td>
+    )}
+    {isColVisible('vendor_name') && (
+      <td className="px-4 py-3 text-sm text-gray-700">{expense.vendor_name || '—'}</td>
+    )}
+    {isColVisible('paid_through') && (
+      <td className="px-4 py-3 text-sm text-gray-700">{expense.payment_method}</td>
+    )}
+    {isColVisible('status') && (
+      <td className={`px-4 py-3 text-xs font-semibold uppercase ${getBillableStyle(expense.is_billable)}`}>
+        {getBillableLabel(expense.is_billable)}
+      </td>
+    )}
+    {isColVisible('amount') && (
+      <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right">
+        ₹{expense.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+      </td>
+    )}
+    <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+      <button
+        onClick={() => setShowDeleteModal(expense.id)}
+        className="text-gray-400 hover:text-red-500 transition-colors p-1"
+        title="Delete"
+      >
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+        </svg>
+      </button>
+    </td>
+  </tr>
+))
             )}
           </tbody>
         </table>

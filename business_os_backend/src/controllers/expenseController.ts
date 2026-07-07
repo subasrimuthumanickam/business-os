@@ -112,3 +112,12 @@ export const addPaymentAccount = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+export const editExpenseBillable = async (req: Request, res: Response) => {
+  try {
+    await ExpenseModel.updateExpenseBillable(getCompanyId(req), Number(req.params.id), !!req.body.is_billable);
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error('❌ Expense API error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
