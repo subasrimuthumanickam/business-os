@@ -1,11 +1,9 @@
-import mysql from 'mysql2';
-import type { Pool } from 'mysql2';
+import { createPool, type Pool } from 'mysql2/promise';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Create a connection pool to MySQL
-const mysqlPool: Pool = mysql.createPool({
+const mysqlPool: Pool = createPool({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
@@ -15,46 +13,43 @@ const mysqlPool: Pool = mysql.createPool({
   queueLimit: 0
 });
 
-// Helper for promise-based queries
-const promisePool = mysqlPool.promise();
-
 const db = {
-  // Method to get a single row
   get: (sql: string, params: any[], callback: (err: any, row: any) => void) => {
-    mysqlPool.query(sql, params, (err, results: any) => {
-      if (err) return callback(err, null);
-      const row = results && results.length > 0 ? results[0] : null;
-      callback(null, row);
-    });
+    mysqlPool
+      .query(sql, params)
+      .then(([results]) => {
+        const row = Array.isArray(results) && results.length > 0 ? results[0] : null;
+        callback(null, row);
+      })
+      .catch((err) => callback(err, null));
   },
 
-  // Method to execute queries (UPDATE/INSERT/DELETE)
   run: function (sql: string, params: any[], callback: (this: any, err: any) => void) {
-    mysqlPool.query(sql, params, function (err, results: any) {
-      if (err) return callback(err);
-      
-      const context = {
-        lastID: results?.insertId || null,
-        changes: results?.affectedRows || 0
-      };
-      
-      callback.call(context, null);
-    });
+    mysqlPool
+      .query(sql, params)
+      .then(([results]) => {
+        const context = {
+          lastID: (results as any)?.insertId || null,
+          changes: (results as any)?.affectedRows || 0
+        };
+        callback.call(context, null);
+      })
+      .catch((err) => callback(err));
   },
 
-  // Method to get all rows
   all: (sql: string, params: any[], callback: (err: any, rows: any[]) => void) => {
-    mysqlPool.query(sql, params, (err, results: any) => {
-      if (err) return callback(err, []);
-      const rows = Array.isArray(results) ? results : [];
-      callback(null, rows);
-    });
+    mysqlPool
+      .query(sql, params)
+      .then(([results]) => {
+        const rows = Array.isArray(results) ? results : [];
+        callback(null, rows);
+      })
+      .catch((err) => callback(err, []));
   },
 
-  // 🎯 FIXED: Added the execute method using the promisePool
-  execute: async (sql: string, params: any[]) => {
+  execute: async (sql: string, params?: any[]) => {
     try {
-      const [results] = await promisePool.execute(sql, params);
+      const [results] = await mysqlPool.execute(sql, params);
       return results;
     } catch (err) {
       throw err;
@@ -62,5 +57,5 @@ const db = {
   }
 };
 
-export { promisePool as pool }; // Exporting the promise pool for model use
+export { mysqlPool as pool };
 export default db;

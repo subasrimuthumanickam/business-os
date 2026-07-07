@@ -12698,7 +12698,7 @@ const ProjectList: React.FC = () => {
           />
         );
       case 'taskboard':
-        return <TaskBoard projects={projects} />;
+        return <TaskBoard />;
       case 'timetracker':
         return (
           <TimeTracker 
