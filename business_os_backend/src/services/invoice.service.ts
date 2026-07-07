@@ -7,6 +7,7 @@ export const createInvoice = async (
 
   const {
   customer_id,
+  salesperson_id,
   invoice_number,
   invoice_date,
   due_date,
@@ -23,6 +24,7 @@ export const createInvoice = async (
       `
       INSERT INTO invoices (
         customer_id,
+        salesperson_id,
         invoice_number,
         invoice_date,
         due_date,
@@ -31,10 +33,11 @@ export const createInvoice = async (
         tax,
         total
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         customer_id,
+        salesperson_id,
         invoice_number,
         invoice_date,
         due_date,
@@ -240,6 +243,7 @@ export const updateInvoice = async (
 
   const {
     customer_id,
+    salesperson_id,
     invoice_number,
     invoice_date,
     due_date,
@@ -257,6 +261,7 @@ export const updateInvoice = async (
       UPDATE invoices
       SET
         customer_id=?,
+        salesperson_id=?,
         invoice_number=?,
         invoice_date=?,
         due_date=?,
@@ -268,6 +273,7 @@ export const updateInvoice = async (
       `,
       [
         customer_id,
+        salesperson_id,
         invoice_number,
         invoice_date,
         due_date,

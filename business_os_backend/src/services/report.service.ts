@@ -23,35 +23,59 @@ export const getInventorySummary = async () => {
     return await db.execute(query, []);
 };
 export const getProfitAndLoss = async (from?: string, to?: string) => {
-  // const invFilter = from && to ? `AND DATE(invoice_date) BETWEEN '${from}' AND '${to}'` : '';
-  // const expFilter = from && to ? `AND DATE(expense_date) BETWEEN '${from}' AND '${to}'` : '';
+  const hasRange = !!(from && to);
+  const invDateFilter = hasRange ? "AND DATE(invoice_date) BETWEEN ? AND ?" : "";
+  const itemDateFilter = hasRange ? "AND DATE(i.invoice_date) BETWEEN ? AND ?" : "";
+  const expDateFilter = hasRange ? "AND DATE(expense_date) BETWEEN ? AND ?" : "";
+  const rangeParams = hasRange ? [from, to] : [];
 
-  let invFilter = "";
-  let expFilter = "";
-  
+  // Revenue
   const revenueRows: any = await db.execute(
     `SELECT COALESCE(SUM(subtotal),0) AS subtotal, COALESCE(SUM(tax),0) AS tax, COALESCE(SUM(total),0) AS total
-     FROM invoices WHERE LOWER(status)='paid' ${invFilter}`,[]
+     FROM invoices WHERE LOWER(status)='paid' ${invDateFilter}`,
+    rangeParams
   );
 
- const expenseRows: any = await db.execute(
+  // COGS — from invoice_items linked to products, for paid invoices only
+ const cogsRows: any = await db.execute(
+  `SELECT COALESCE(SUM(ii.quantity * COALESCE(p.cost, 0)), 0) AS total
+   FROM invoice_items ii
+   JOIN invoices i ON ii.invoice_id = i.id
+   LEFT JOIN products p ON ii.product_id = p.id
+   WHERE LOWER(i.status) = 'paid' ${itemDateFilter}`,
+  rangeParams
+);
+
+  // Operating Expenses
+  const expenseRows: any = await db.execute(
     `SELECT ea.name AS category, COALESCE(SUM(e.amount),0) AS total
      FROM expenses e
      JOIN expense_accounts ea ON e.expense_account_id = ea.id
-     WHERE 1=1 ${expFilter}
-     GROUP BY ea.name ORDER BY total DESC`,[]
+     WHERE 1=1 ${expDateFilter}
+     GROUP BY ea.name ORDER BY total DESC`,
+    rangeParams
   );
 
   const rev = Array.isArray(revenueRows[0]) ? revenueRows[0][0] : revenueRows[0];
+  const cogsRow = Array.isArray(cogsRows[0]) ? cogsRows[0][0] : cogsRows[0];
   const exps = Array.isArray(expenseRows[0]) ? expenseRows[0] : expenseRows;
+
+  const totalRevenue = Number(rev?.subtotal || 0);
+  const cogs = Number(cogsRow?.total || 0);
   const totalExpenses = exps.reduce((s: number, e: any) => s + Number(e.total), 0);
-  const totalRevenue = Number(rev?.total || 0);
+
+  const grossProfit = totalRevenue - cogs;
+  const netProfit = grossProfit - totalExpenses;
 
   return {
-    revenue: { subtotal: Number(rev?.subtotal||0), tax: Number(rev?.tax||0), total: totalRevenue },
-    expenses: { breakdown: exps.map((e: any) => ({ category: e.category||'Uncategorized', total: Number(e.total) })), total: totalExpenses },
-    grossProfit: Number(rev?.subtotal||0),
-    netProfit: totalRevenue - totalExpenses,
+    revenue: { subtotal: totalRevenue, tax: Number(rev?.tax || 0), total: Number(rev?.total || 0) },
+    cogs,
+    expenses: {
+      breakdown: exps.map((e: any) => ({ category: e.category || 'Uncategorized', total: Number(e.total) })),
+      total: totalExpenses,
+    },
+    grossProfit,
+    netProfit,
   };
 };
 
@@ -108,4 +132,181 @@ export const getCashFlow = async (from?: string, to?: string) => {
   });
 
   return { timeline, summary: { totalCashIn, totalCashOut, netCashFlow: totalCashIn - totalCashOut } };
+};
+
+export const getSalesByCustomer = async (from?: string, to?: string) => {
+  const hasRange = !!(from && to);
+  const invDateFilter = hasRange ? "AND DATE(i.invoice_date) BETWEEN ? AND ?" : "";
+  const rangeParams = hasRange ? [from, to] : [];
+
+  const query = `
+    SELECT
+      c.id AS customer_id,
+      c.display_name AS customer,
+      COUNT(DISTINCT i.id) AS invoices,
+      COALESCE(SUM(i.total), 0) AS sales,
+      COALESCE((
+        SELECT SUM(p.amount) FROM payments p
+        WHERE p.invoice_id IN (
+          SELECT id FROM invoices WHERE customer_id = c.id ${hasRange ? "AND DATE(invoice_date) BETWEEN ? AND ?" : ""}
+        )
+      ), 0) AS received
+    FROM customers c
+    JOIN invoices i ON i.customer_id = c.id
+    WHERE 1=1 ${invDateFilter}
+    GROUP BY c.id, c.display_name
+    ORDER BY sales DESC
+  `;
+
+  // params: subquery range params first (inside SELECT), then outer WHERE range params
+  const params = hasRange ? [...rangeParams, ...rangeParams] : [];
+  const rows: any = await db.execute(query, params);
+  const data = Array.isArray(rows[0]) ? rows[0] : rows;
+
+  return data.map((row: any) => ({
+    id: row.customer_id,
+    customer: row.customer,
+    invoices: Number(row.invoices),
+    sales: Number(row.sales),
+    received: Number(row.received),
+    outstanding: Number(row.sales) - Number(row.received),
+  }));
+};
+
+export const getSalesByItem = async (from?: string, to?: string) => {
+  const hasRange = !!(from && to);
+  const itemDateFilter = hasRange ? "AND DATE(i.invoice_date) BETWEEN ? AND ?" : "";
+  const rangeParams = hasRange ? [from, to] : [];
+
+  // Hybrid grouping: use product_id when present, else fall back to
+  // normalized item_name so legacy rows (product_id NULL) still roll up.
+  const query = `
+    SELECT
+      ii.product_id,
+      COALESCE(p.name, ii.item_name) AS item,
+      SUM(ii.quantity) AS quantity,
+      SUM(ii.amount) AS amount
+    FROM invoice_items ii
+    JOIN invoices i ON i.id = ii.invoice_id
+    LEFT JOIN products p ON p.id = ii.product_id
+    WHERE 1=1 ${itemDateFilter}
+    GROUP BY COALESCE(ii.product_id, LOWER(TRIM(ii.item_name))), COALESCE(p.name, ii.item_name)
+    ORDER BY amount DESC
+  `;
+
+  const rows: any = await db.execute(query, rangeParams);
+  const data = Array.isArray(rows[0]) ? rows[0] : rows;
+
+  return data.map((row: any) => ({
+    id: row.product_id, // null for legacy name-only rows
+    item: row.item,
+    quantity: Number(row.quantity),
+    amount: Number(row.amount),
+  }));
+};
+
+// export const getSalesBySalesPerson = async (from?: string, to?: string) => {
+//   const hasRange = !!(from && to);
+//   const dateFilter = hasRange ? "AND DATE(i.invoice_date) BETWEEN ? AND ?" : "";
+//   const rangeParams = hasRange ? [from, to] : [];
+
+//   const query = `
+//     SELECT
+//       e.id AS employee_id,
+//       COALESCE(e.name, 'Unassigned') AS name,
+//       COUNT(i.id) AS invoices,
+//       COALESCE(SUM(i.total), 0) AS sales
+//     FROM invoices i
+//     LEFT JOIN hrms_employees e ON e.id = i.salesperson_id
+//     WHERE 1=1 ${dateFilter}
+//     GROUP BY e.id, e.name
+//     ORDER BY sales DESC
+//   `;
+
+//   const rows: any = await db.execute(query, rangeParams);
+//   const data = Array.isArray(rows[0]) ? rows[0] : rows;
+
+//   return data.map((row: any) => ({
+//     id: row.employee_id, // null for "Unassigned" group
+//     name: row.name,
+//     invoices: Number(row.invoices),
+//     sales: Number(row.sales),
+//   }));
+// };
+export const getSalesBySalesPerson = async (from?: string, to?: string) => {
+  const hasRange = !!(from && to);
+  const dateFilter = hasRange ? "AND DATE(i.invoice_date) BETWEEN ? AND ?" : "";
+  const rangeParams = hasRange ? [from, to] : [];
+
+  const query = `
+    SELECT
+      e.id AS employee_id,
+      COALESCE(e.name, 'Unassigned') AS name,
+      COUNT(i.id) AS invoices,
+      COALESCE(SUM(i.total), 0) AS sales
+    FROM invoices i
+    LEFT JOIN hrms_employees e ON e.id = i.salesperson_id
+    WHERE 1=1 ${dateFilter}
+    GROUP BY e.id, e.name
+    ORDER BY sales DESC
+  `;
+
+  const rows: any = await db.execute(query, rangeParams);
+  const data = Array.isArray(rows[0]) ? rows[0] : rows;
+
+  return data.map((row: any) => ({
+    id: row.employee_id,
+    name: row.name,
+    invoices: Number(row.invoices),
+    sales: Number(row.sales),
+  }));
+};
+
+export const getInventorySummaryReport = async () => {
+  const query = `
+    SELECT
+      id,
+      name AS item_name,
+      sku,
+      stock_quantity AS quantity_on_hand,
+      COALESCE(cost, 0) AS unit_price,
+      COALESCE(stock_quantity * cost, 0) AS stock_value
+    FROM products
+    ORDER BY name ASC
+  `;
+
+  const rows: any = await db.execute(query, []);
+  const data = Array.isArray(rows[0]) ? rows[0] : rows;
+
+  return data.map((row: any) => ({
+    id: row.id,
+    item_name: row.item_name,
+    sku: row.sku,
+    quantity_on_hand: Number(row.quantity_on_hand),
+    unit_price: Number(row.unit_price),
+    stock_value: Number(row.stock_value),
+  }));
+};
+export const getInventoryValuationSummary = async () => {
+  const query = `
+    SELECT
+      id,
+      name AS item_name,
+      stock_quantity AS stock,
+      COALESCE(cost, 0) AS purchase_price,
+      COALESCE(stock_quantity * cost, 0) AS inventory_value
+    FROM products
+    ORDER BY name ASC
+  `;
+
+  const rows: any = await db.execute(query, []);
+  const data = Array.isArray(rows[0]) ? rows[0] : rows;
+
+  return data.map((row: any) => ({
+    id: row.id,
+    item_name: row.item_name,
+    stock: Number(row.stock),
+    purchase_price: Number(row.purchase_price),
+    inventory_value: Number(row.inventory_value),
+  }));
 };

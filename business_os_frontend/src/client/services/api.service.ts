@@ -84,12 +84,27 @@ export class ApiService {
 export const apiService = ApiService.getInstance();
 
 export const reportService = {
-  getProfitAndLoss: (params: Record<string, any>) => 
+  getProfitAndLoss: (params: { from: string; to: string }) =>
     apiService.get(`/reports/profit-loss?${new URLSearchParams(params).toString()}`),
-  
-  getBalanceSheet: () => 
+
+  getBalanceSheet: () =>
     apiService.get('/reports/balance-sheet'),
-  
-  getCashFlow: (params: Record<string, any>) => 
+
+  getCashFlow: (params: { from: string; to: string }) =>
     apiService.get(`/reports/cash-flow?${new URLSearchParams(params).toString()}`),
+
+  getSalesByCustomer: () =>
+    apiService.get('/reports/sales-by-customer'),
+
+  getSalesByItem: () =>
+    apiService.get('/reports/sales-by-item'),
+
+  getSalesBySalesPerson: () =>
+    apiService.get('/reports/sales-by-sales-person'),
+
+  getInventorySummary: () =>
+    apiService.get('/reports/inventory-summary'),
+  
+  getInventoryValuationSummary: () =>
+  apiService.get('/reports/inventory-valuation-summary'),
 };

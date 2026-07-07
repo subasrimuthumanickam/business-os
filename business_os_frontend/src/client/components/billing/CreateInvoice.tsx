@@ -9,6 +9,8 @@ interface Invoice {
   items?: InvoiceItem[];
   status: string;
   total: number;
+  salesperson_id?: number | null;   
+
 }
 
 interface InvoiceItem {
@@ -82,12 +84,17 @@ const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, invoice, onClos
   const [productOptions, setProductOptions] = useState<Record<number, ProductOption[]>>({});
   const [productDropdownOpen, setProductDropdownOpen] = useState<Record<number, boolean>>({});
 
+
+  const [salespersonId, setSalespersonId] = useState<number | null>(null);
+const [employees, setEmployees] = useState<{ id: number; name: string }[]>([]);
+
   // Combined Initialization Effect
   useEffect(() => {
     if (invoice) {
       setInvoiceNumber(invoice.invoice_number);
       setInvoiceDate(invoice.invoice_date.split("T")[0]);
       setDueDate(invoice.due_date.split("T")[0]);
+      setSalespersonId(invoice.salesperson_id ?? null);
       if (invoice.items && invoice.items.length > 0) {
         // Normalize every field before it reaches a controlled input.
         // Older invoice_items rows (saved before product_id existed, or
@@ -121,6 +128,23 @@ const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, invoice, onClos
     }
   }, [customer, invoice]);
 
+
+  useEffect(() => {
+  const fetchEmployees = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/hrms/employees", {
+        headers: getAuthHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEmployees(data.data);
+      }
+    } catch (err) {
+      console.error("Employee fetch failed:", err);
+    }
+  };
+  fetchEmployees();
+}, []);
   const generateInvoiceNumber = () => {
     const random = Math.floor(10000 + Math.random() * 90000);
     setInvoiceNumber(`INV-${random}`);
@@ -371,6 +395,8 @@ const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, invoice, onClos
 
     const payload = {
       customer_id: customerId,
+        salesperson_id: salespersonId,
+
       invoice_number: invoiceNumber,
       invoice_date: invoiceDate,
       due_date: dueDate,
@@ -478,6 +504,21 @@ const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, invoice, onClos
             </ul>
           )}
         </div>
+
+        <div className="form-group">
+  <label>Sales Person</label>
+  <select
+    value={salespersonId ?? ""}
+    onChange={(e) => setSalespersonId(e.target.value ? Number(e.target.value) : null)}
+  >
+    <option value="">-- Select Sales Person --</option>
+    {employees.map((emp) => (
+      <option key={emp.id} value={emp.id}>
+        {emp.name}
+      </option>
+    ))}
+  </select>
+</div>
 
         {/* Items Table */}
         <table className="items-table">
