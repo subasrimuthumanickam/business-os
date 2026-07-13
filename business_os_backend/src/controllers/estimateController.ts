@@ -1,5 +1,3 @@
-// 
-
 import type { Request, Response } from "express";
 import db from "../config/db.js";
 
@@ -108,6 +106,35 @@ export const createEstimate = async (
     res.status(500).json({
       success: false,
       message: "Failed to create estimate",
+    });
+  }
+};
+
+// GET NEXT ESTIMATE NUMBER (for prefill on New Estimate page)
+export const getNextEstimateNumber = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const rows: any = await db.execute(
+      `SELECT AUTO_INCREMENT AS nextId
+       FROM information_schema.TABLES
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'estimates'`,
+      []
+    );
+
+    const nextId = rows?.[0]?.nextId || 1;
+    const estimateNumber = `EST-${String(nextId).padStart(5, "0")}`;
+
+    res.status(200).json({
+      success: true,
+      data: { estimate_number: estimateNumber },
+    });
+  } catch (error) {
+    console.error("Get Next Estimate Number Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to generate estimate number",
     });
   }
 };

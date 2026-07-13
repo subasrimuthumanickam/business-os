@@ -110,7 +110,24 @@ export const reportService = {
 
   getProductSalesReport: () =>
   apiService.get('/reports/product-sales'),
+
+  getLandedCostSummary: () =>
+    apiService.get('/reports/landed-cost'),
+
+  getFifoCostLotTracking: () =>
+    apiService.get('/reports/fifo-cost-lot-tracking'),
+
+  getCustomerSummary: () =>
+    apiService.get('/reports/customer-summary'),
   
+  getCustomerAging: () =>
+    apiService.get('/reports/customer-aging'),
+
+  getLeadSummary: () =>
+    apiService.get('/reports/lead-summary'),
+
+  getCustomerTransactions: () =>
+    apiService.get('/reports/customer-transactions'),
 };
 
 export const vendorService = {
@@ -124,4 +141,32 @@ export const purchaseOrderService = {
   getById: (id: number) => apiService.get(`/purchase-orders/${id}`),
   create: (data: any) => apiService.post('/purchase-orders/create', data),
   receive: (id: number) => apiService.put(`/purchase-orders/${id}/receive`),
+};
+
+export const productService = {
+  getAll: () => apiService.get('/products'),
+};
+
+export const companyService = {
+  getProfile: <T = any>() =>
+    apiService.get<T>('/company/profile'),
+
+  updateProfile: <T = any>(data: {
+    company_name: string;
+    address?: string | null;
+    city?: string | null;
+    state?: string | null;
+    country?: string | null;
+    pincode?: string | null;
+    gst_number?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    currency?: string | null;
+    timezone?: string | null;
+    fiscal_year_start?: string | null;
+    date_format?: string | null;
+    default_language?: string | null;
+    time_format?: string | null;
+  }) =>
+    apiService.put<T>('/company/profile', data),
 };

@@ -1,17 +1,9 @@
-// import express from "express";
-// import { createEstimate } from "../controllers/estimateController.js";
-
-// const router = express.Router();
-
-// router.post("/create", createEstimate);
-
-// export default router;
-
 import express from "express";
 import {
   createEstimate,
   getAllEstimates,
   getEstimateById,
+  getNextEstimateNumber,
   updateEstimate,
   deleteEstimate,
 } from "../controllers/estimateController.js";
@@ -19,6 +11,7 @@ import {
 const router = express.Router();
 
 router.get("/", getAllEstimates);
+router.get("/next-number", getNextEstimateNumber); // must come before /:id
 router.get("/:id", getEstimateById);
 router.post("/create", createEstimate);
 router.put("/:id", updateEstimate);

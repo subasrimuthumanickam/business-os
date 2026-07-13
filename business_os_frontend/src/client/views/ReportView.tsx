@@ -21,6 +21,11 @@ import InventorySummary from '../components/reports/InventorySummary';
 import InventoryValuationSummary from '../components/reports/InventoryValuationSummary';
 import ProductSalesReport from "../components/reports/ProductSalesReport";
 import LandedCostSummary from "../components/reports/LandedCostSummary";
+import FifoCostLotTracking from "../components/reports/Fifocostlottracking";
+import CustomerSummary from "../components/reports/Customersummary";
+import CustomerAgingReport from "../components/reports/Customeragingreport";
+import LeadSummary from "../components/reports/Leadsummary";
+import CustomerTransactions from "../components/reports/Customertransactions";
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -69,9 +74,14 @@ const REPORT_COMPONENTS: Record<string, React.ComponentType> = {
   "inv-valuation": InventoryValuationSummary,
   "product-sales": ProductSalesReport,
   "landed-cost": LandedCostSummary,
+  "fifo": FifoCostLotTracking,
+  "customer-summary": CustomerSummary,
+  "customer-aging": CustomerAgingReport,
+  "lead-summary": LeadSummary,
+  "customer-transactions": CustomerTransactions,
 };
 
-// ---------------------------------------------------------------------------
+// -----------------------------------------------+++++++++++++++++------------------------------
 // Static UI data — replace this with real data when you wire up the backend.
 // ---------------------------------------------------------------------------
 

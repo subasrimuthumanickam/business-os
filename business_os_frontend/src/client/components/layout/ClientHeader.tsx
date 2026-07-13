@@ -8,16 +8,10 @@ interface HeaderProps {
 }
 
 const ClientHeader: React.FC<HeaderProps> = ({ onMenuClick }) => {
-  // 1. Need to define state for the dropdown
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-
-  // 2. Need to define navigation
   const navigate = useNavigate();
-
-  // 3. Global search term — shared with every page via SearchContext
   const { searchTerm, setSearchTerm } = useSearch();
 
-  // 4. Define the logout handler
   const handleLogout = () => {
     navigate('/login');
   };
@@ -25,12 +19,9 @@ const ClientHeader: React.FC<HeaderProps> = ({ onMenuClick }) => {
   return (
     <header className="h-[56px] bg-[#1d2238] text-white flex items-center justify-between px-4">
       <div className="flex items-center gap-3">
-        {/* Menu Toggle - Only visible on Mobile/Tablet */}
         <button onClick={onMenuClick} className="md:hidden p-1">
           <Menu size={24} />
         </button>
-
-        {/* Search Input */}
         <div className="relative">
           <Search size={16} className="absolute left-3 top-2.5 text-gray-400" />
           <input
@@ -42,7 +33,6 @@ const ClientHeader: React.FC<HeaderProps> = ({ onMenuClick }) => {
         </div>
       </div>
 
-      {/* Right Actions */}
       <div className="flex items-center gap-5">
         <button className="bg-[#2c52ed] hover:bg-blue-600 w-8 h-8 rounded flex items-center justify-center">
           <Plus size={18} />
@@ -50,7 +40,6 @@ const ClientHeader: React.FC<HeaderProps> = ({ onMenuClick }) => {
         <Bell size={18} className="cursor-pointer text-gray-300" />
         <Settings size={18} className="cursor-pointer text-gray-300" />
 
-        {/* Profile Dropdown Container */}
         <div className="relative">
           <div
             className="flex items-center gap-2 cursor-pointer"
@@ -60,7 +49,6 @@ const ClientHeader: React.FC<HeaderProps> = ({ onMenuClick }) => {
             <ChevronDown size={14} />
           </div>
 
-          {/* Dropdown Menu */}
           {showProfileMenu && (
             <div className="absolute top-full right-0 mt-2 w-48 bg-white text-gray-800 rounded-lg shadow-xl border border-gray-100 py-1 z-50">
               <button onClick={() => { navigate('/profile'); setShowProfileMenu(false); }} className="flex items-center gap-2 px-4 py-2 hover:bg-gray-50 w-full text-sm">
@@ -77,7 +65,12 @@ const ClientHeader: React.FC<HeaderProps> = ({ onMenuClick }) => {
           )}
         </div>
 
-        <Grid3X3 size={18} className="cursor-pointer text-gray-300" />
+        {/* Grid icon → navigates to full page, no modal */}
+        <Grid3X3
+          size={18}
+          className="cursor-pointer text-gray-300 hover:text-white transition-colors"
+          onClick={() => navigate('/client/company-profile')}
+        />
       </div>
     </header>
   );

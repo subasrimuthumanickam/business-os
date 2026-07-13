@@ -34,7 +34,8 @@ const ProfileSettings: React.FC = () => {
   const fetchProfileData = async () => {
     try {
       const response = await fetch('/api/user/profile', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        cache: 'no-store',
+        headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
       });
       if (response.ok) {
         const data = await response.json();
@@ -174,7 +175,7 @@ const ProfileSettings: React.FC = () => {
       const response = await fetch('/api/user/profile', {
         method: 'PUT',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
+          Authorization: `Bearer ${localStorage.getItem('authToken')}`
         },
         body: formData
       });

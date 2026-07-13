@@ -63,7 +63,7 @@ const ClientRoutes: React.FC = () => {
       <Route path="profile" element={<ClientLayout><div>Profile Page - Coming Soon</div></ClientLayout>} />
       
       {/* 404 */}
-     
+      <Route path="*" element={<ClientLayout><div>404 - Page Not Found</div></ClientLayout>} />
     </Routes>
   );
 };

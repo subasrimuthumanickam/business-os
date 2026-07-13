@@ -19,6 +19,7 @@ import './styles/global.css';
 import ClientLayout from './client/components/layout/ClientLayout';
 import ProfilePage from './client/components/layout/Profile';
 import ProtectedRoute from './client/components/layout/ProtectedRoute';
+import CompleteCompanyProfile from './client/components/layout/CompleteCompanyProfile';
 
 function App() {
   return (
@@ -55,6 +56,13 @@ function App() {
       <ClientLayout><ProfilePage /></ClientLayout>
     </ProtectedRoute>
   } />
+
+  <Route path="/client/company-profile" element={
+  <ProtectedRoute>
+    <ClientLayout><CompleteCompanyProfile /></ClientLayout>
+  </ProtectedRoute>
+} />
+
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
