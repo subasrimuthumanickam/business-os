@@ -153,12 +153,14 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ section = 'product
   ];
 
   // Purchase Order / Manage Stock view
-const [showPurchaseOrdersPage, setShowPurchaseOrdersPage] = useState(false);
-const [showCreateVendorForm, setShowCreateVendorForm] = useState(false);
-const [showCreatePOForm, setShowCreatePOForm] = useState(false);
-const [vendorsList, setVendorsList] = useState<any[]>([]);
-const [purchaseOrdersList, setPurchaseOrdersList] = useState<any[]>([]);
-const [poLoading, setPoLoading] = useState(false);
+  const [showPurchaseOrdersPage, setShowPurchaseOrdersPage] = useState(false);
+  const [showCreateVendorForm, setShowCreateVendorForm] = useState(false);
+  const [showCreatePOForm, setShowCreatePOForm] = useState(false);
+  const [vendorsList, setVendorsList] = useState<any[]>([]);
+  const [purchaseOrdersList, setPurchaseOrdersList] = useState<any[]>([]);
+  const [poLoading, setPoLoading] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   // ============================================
   // TOGGLE HELPERS
   // ============================================
@@ -527,116 +529,117 @@ const [poLoading, setPoLoading] = useState(false);
     }
   };
 
+  // ============================================
+  // PURCHASE ORDER / MANAGE STOCK HANDLERS
+  // ============================================
   const loadVendorsAndPOs = async () => {
-  setPoLoading(true);
-  try {
-    const [vendors, pos] = await Promise.all([
-      vendorService.getAll(),
-      purchaseOrderService.getAll(),
-    ]);
-    setVendorsList(vendors as any[]);
-    setPurchaseOrdersList(pos as any[]);
-  } catch (error) {
-    console.error('Failed to load vendors/POs:', error);
-  } finally {
-    setPoLoading(false);
-  }
-};
-
-const handleManageStockClick = () => {
-  setShowPurchaseOrdersPage(true);
-  loadVendorsAndPOs();
-};
-
-const handleBackFromPurchaseOrders = () => {
-  setShowPurchaseOrdersPage(false);
-  setShowCreateVendorForm(false);
-  setShowCreatePOForm(false);
-};
-
-const handleReceivePO = async (poId: number) => {
-  if (!window.confirm('Mark this Purchase Order as Received? This will update stock.')) return;
-  try {
-    await purchaseOrderService.receive(poId);
-    await loadVendorsAndPOs();
-    await loadProducts(); // refresh stock in main inventory list too
-  } catch (error: any) {
-    alert(error.message || 'Failed to receive purchase order');
-  }
-};
-
-// ---- Export / Import (CSV) ----
-const handleExportProducts = () => {
-  const headers = ['id', 'name', 'sku', 'category_id', 'price', 'cost', 'stock_quantity', 'unit'];
-  const rows = products.map((p: any) =>
-    headers.map((h) => (p[h] !== undefined && p[h] !== null ? String(p[h]).replace(/,/g, '') : '')).join(',')
-  );
-  const csvContent = [headers.join(','), ...rows].join('\n');
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.setAttribute('download', `inventory-export-${new Date().toISOString().split('T')[0]}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-};
-
-const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-const handleImportClick = () => {
-  fileInputRef.current?.click();
-};
-
-const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-
-  const text = await file.text();
-  const lines = text.trim().split('\n');
-  const headers = lines[0].split(',').map((h) => h.trim());
-  const rows = lines.slice(1);
-
-  let successCount = 0;
-  let failCount = 0;
-
-  for (const line of rows) {
-    const values = line.split(',');
-    const row: Record<string, string> = {};
-    headers.forEach((h, idx) => {
-      row[h] = values[idx]?.trim() ?? '';
-    });
-
-    if (!row.name || !row.sku) {
-      failCount++;
-      continue;
-    }
-
+    setPoLoading(true);
     try {
-      await controller.handleCreateProduct({
-        name: row.name,
-        sku: row.sku,
-        category_id: row.category_id ? parseInt(row.category_id, 10) : undefined,
-        type: 'goods',
-        price: Number(row.price) || 0,
-        cost: Number(row.cost) || 0,
-        tax_preference: 'taxable',
-        stock_quantity: Number(row.stock_quantity) || 0,
-        unit: row.unit || 'pcs',
-        status: 'active',
-      } as CreateProductDTO);
-      successCount++;
-    } catch (err) {
-      console.error('Import row failed:', row, err);
-      failCount++;
+      const [vendors, pos] = await Promise.all([
+        vendorService.getAll(),
+        purchaseOrderService.getAll(),
+      ]);
+      setVendorsList(vendors as any[]);
+      setPurchaseOrdersList(pos as any[]);
+    } catch (error) {
+      console.error('Failed to load vendors/POs:', error);
+    } finally {
+      setPoLoading(false);
     }
-  }
+  };
 
-  await loadProducts();
-  alert(`Import complete: ${successCount} added, ${failCount} failed.`);
-  e.target.value = ''; // reset file input so the same file can be re-selected later
-};
+  const handleManageStockClick = () => {
+    setShowPurchaseOrdersPage(true);
+    loadVendorsAndPOs();
+  };
+
+  const handleBackFromPurchaseOrders = () => {
+    setShowPurchaseOrdersPage(false);
+    setShowCreateVendorForm(false);
+    setShowCreatePOForm(false);
+  };
+
+  const handleReceivePO = async (poId: number) => {
+    if (!window.confirm('Mark this Purchase Order as Received? This will update stock.')) return;
+    try {
+      await purchaseOrderService.receive(poId);
+      await loadVendorsAndPOs();
+      await loadProducts(); // refresh stock in main inventory list too
+    } catch (error: any) {
+      alert(error.message || 'Failed to receive purchase order');
+    }
+  };
+
+  // ---- Export / Import (CSV) ----
+  const handleExportProducts = () => {
+    const headers = ['id', 'name', 'sku', 'category_id', 'price', 'cost', 'stock_quantity', 'unit'];
+    const rows = products.map((p: any) =>
+      headers.map((h) => (p[h] !== undefined && p[h] !== null ? String(p[h]).replace(/,/g, '') : '')).join(',')
+    );
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `inventory-export-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const text = await file.text();
+    const lines = text.trim().split('\n');
+    const headers = lines[0].split(',').map((h) => h.trim());
+    const rows = lines.slice(1);
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const line of rows) {
+      const values = line.split(',');
+      const row: Record<string, string> = {};
+      headers.forEach((h, idx) => {
+        row[h] = values[idx]?.trim() ?? '';
+      });
+
+      if (!row.name || !row.sku) {
+        failCount++;
+        continue;
+      }
+
+      try {
+        await controller.handleCreateProduct({
+          name: row.name,
+          sku: row.sku,
+          category_id: row.category_id ? parseInt(row.category_id, 10) : undefined,
+          type: 'goods',
+          price: Number(row.price) || 0,
+          cost: Number(row.cost) || 0,
+          tax_preference: 'taxable',
+          stock_quantity: Number(row.stock_quantity) || 0,
+          unit: row.unit || 'pcs',
+          status: 'active',
+        } as CreateProductDTO);
+        successCount++;
+      } catch (err) {
+        console.error('Import row failed:', row, err);
+        failCount++;
+      }
+    }
+
+    await loadProducts();
+    alert(`Import complete: ${successCount} added, ${failCount} failed.`);
+    e.target.value = ''; // reset file input so the same file can be re-selected later
+  };
 
   // ============================================
   // CRUD OPERATIONS
@@ -791,8 +794,7 @@ const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
   // ============================================
   const renderCategoriesContent = () => {
     return (
-      // <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="bg-white overflow-hidden">
+      <div className="bg-white overflow-hidden">
 
         <div className="p-3 sm:p-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="relative flex-1 max-w-full sm:max-w-xs">
@@ -1388,41 +1390,187 @@ const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
       );
     }
 
+    // Purchase Orders / Manage Stock page
+    if (showPurchaseOrdersPage) {
+      if (showCreateVendorForm) {
+        return (
+          <CreateVendor
+            onClose={() => setShowCreateVendorForm(false)}
+            onCreated={loadVendorsAndPOs}
+          />
+        );
+      }
+
+      if (showCreatePOForm) {
+        return (
+          <CreatePurchaseOrder
+            onClose={() => setShowCreatePOForm(false)}
+            onCreated={loadVendorsAndPOs}
+          />
+        );
+      }
+
+      return (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleBackFromPurchaseOrders}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft size={20} className="text-gray-600" />
+              </button>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Purchase Orders</h1>
+                <p className="text-xs sm:text-sm text-gray-500">Vendors, purchase orders & stock receiving</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowCreateVendorForm(true)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center gap-1.5"
+              >
+                <Plus size={14} /> New Vendor
+              </button>
+              <button
+                onClick={() => setShowCreatePOForm(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center gap-1.5"
+              >
+                <Plus size={14} /> New Purchase Order
+              </button>
+            </div>
+          </div>
+
+          {poLoading ? (
+            <p className="text-sm text-gray-500">Loading...</p>
+          ) : (
+            <>
+              <h2 className="text-sm font-semibold text-gray-700 mb-2">Vendors ({vendorsList.length})</h2>
+              <div className="overflow-x-auto rounded-lg border mb-6">
+                <table className="min-w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Name</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Email</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Phone</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {vendorsList.length === 0 ? (
+                      <tr><td colSpan={3} className="px-4 py-6 text-center text-sm text-gray-400">No vendors yet</td></tr>
+                    ) : (
+                      vendorsList.map((v) => (
+                        <tr key={v.id}>
+                          <td className="px-4 py-2 text-sm">{v.name}</td>
+                          <td className="px-4 py-2 text-sm text-gray-500">{v.email || '-'}</td>
+                          <td className="px-4 py-2 text-sm text-gray-500">{v.phone || '-'}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <h2 className="text-sm font-semibold text-gray-700 mb-2">Purchase Orders ({purchaseOrdersList.length})</h2>
+              <div className="overflow-x-auto rounded-lg border">
+                <table className="min-w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">PO Number</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Vendor</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Date</th>
+                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Total</th>
+                      <th className="px-4 py-2 text-center text-xs font-medium text-gray-500">Status</th>
+                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {purchaseOrdersList.length === 0 ? (
+                      <tr><td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-400">No purchase orders yet</td></tr>
+                    ) : (
+                      purchaseOrdersList.map((po) => (
+                        <tr key={po.id}>
+                          <td className="px-4 py-2 text-sm font-medium">{po.po_number}</td>
+                          <td className="px-4 py-2 text-sm">{po.vendor_name}</td>
+                          <td className="px-4 py-2 text-sm text-gray-500">{po.po_date?.split?.('T')?.[0] ?? po.po_date}</td>
+                          <td className="px-4 py-2 text-sm text-right">₹{Number(po.total).toLocaleString()}</td>
+                          <td className="px-4 py-2 text-center">
+                            <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                              po.status === 'Received' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {po.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            {po.status !== 'Received' && (
+                              <button
+                                onClick={() => handleReceivePO(po.id)}
+                                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                              >
+                                Mark Received
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </div>
+      );
+    }
+
     // Default - Main Inventory View (Two-pane Zoho-style layout)
     return (
       <div className="bg-white border-gray-200 overflow-hidden">
-{/* Merged header row: Active Items (left, matching the list pane's width) + Manage Stock/Export/Import (right) — Zoho-style single row */}
-      <div className="flex items-center border-b border-gray-200">
-        <div className="w-[280px] sm:w-[320px] shrink-0 flex items-center justify-between gap-2 px-3 py-2.5">
-        <span className="text-sm font-semibold text-gray-700">Active Items</span>
-    <button
-      onClick={handleNewProduct}
-      className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
-    >
-      <Plus size={14} /> New
-    </button>
-  </div>
-  <div className="flex-1 flex justify-end items-center gap-2 px-4 sm:px-6 py-2">
-    <button
-      onClick={() => alert('Manage Stock')}
-      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors"
-    >
-      <Package size={15} /> Manage Stock
-    </button>
-    <div className="h-5 w-px bg-gray-300"></div>
-    <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors">
-      Export
-    </button>
-    <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors">
-      Import
-    </button>
-  </div>
-</div>
-      
+        {/* Merged header row: Active Items (left, matching the list pane's width) + Manage Stock/Export/Import (right) — Zoho-style single row */}
+        <div className="flex items-center border-b border-gray-200">
+          <div className="w-[280px] sm:w-[320px] shrink-0 flex items-center justify-between gap-2 px-3 py-2.5">
+            <span className="text-sm font-semibold text-gray-700">Active Items</span>
+            <button
+              onClick={handleNewProduct}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              <Plus size={14} /> New
+            </button>
+          </div>
+          <div className="flex-1 flex justify-end items-center gap-2 px-4 sm:px-6 py-2">
+            <button
+              onClick={handleManageStockClick}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors"
+            >
+              <Package size={15} /> Purchase Orders
+            </button>
+            <div className="h-5 w-px bg-gray-300"></div>
+            <button
+              onClick={handleExportProducts}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors"
+            >
+              Export
+            </button>
+            <button
+              onClick={handleImportClick}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 transition-colors"
+            >
+              Import
+            </button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept=".csv"
+              onChange={handleImportFile}
+              style={{ display: 'none' }}
+            />
+          </div>
+        </div>
 
         {/* Two-pane master-detail: item list (left) + item detail (right) */}
-        {/* <div className="flex h-[calc(100vh-260px)] min-h-[480px]">
-          <div className="w-[280px] sm:w-[320px] shrink-0">
+        <div className="flex h-[calc(100vh-260px)] min-h-[480px]">
+          {/* List pane — full width on mobile when nothing selected, hidden on mobile once an item is selected. Always visible + fixed width from md breakpoint up. */}
+          <div className={`${foundProduct ? 'hidden md:block' : 'block'} w-full md:w-[280px] lg:w-[320px] shrink-0`}>
             <InventoryItemList
               products={products}
               selectedProductId={selectedProductId}
@@ -1433,7 +1581,8 @@ const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
             />
           </div>
 
-          <div className="flex-1 min-w-0">
+          {/* Detail pane — full width on mobile when an item IS selected, hidden on mobile otherwise. Always visible from md breakpoint up. */}
+          <div className={`${foundProduct ? 'block' : 'hidden md:block'} flex-1 min-w-0`}>
             {foundProduct ? (
               <ItemDetailPane
                 product={foundProduct}
@@ -1441,6 +1590,7 @@ const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
                 onDelete={() => handleDelete(foundProduct.id)}
                 onAddStock={() => handleAddStock(foundProduct.id)}
                 onRemoveStock={() => handleRemoveStock(foundProduct.id)}
+                onBack={handleBackToList}
               />
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center px-6">
@@ -1452,42 +1602,7 @@ const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
               </div>
             )}
           </div>
-        </div> */}
-        <div className="flex h-[calc(100vh-260px)] min-h-[480px]">
-  {/* List pane — full width on mobile when nothing selected, hidden on mobile once an item is selected. Always visible + fixed width from md breakpoint up. */}
-  <div className={`${foundProduct ? 'hidden md:block' : 'block'} w-full md:w-[280px] lg:w-[320px] shrink-0`}>
-    <InventoryItemList
-      products={products}
-      selectedProductId={selectedProductId}
-      searchTerm={listSearchTerm}
-      onSearchChange={handleListSearchChange}
-      onSelectProduct={handleProductClick}
-      onNewItem={handleNewProduct}
-    />
-  </div>
-
-  {/* Detail pane — full width on mobile when an item IS selected, hidden on mobile otherwise. Always visible from md breakpoint up. */}
-  <div className={`${foundProduct ? 'block' : 'hidden md:block'} flex-1 min-w-0`}>
-    {foundProduct ? (
-      <ItemDetailPane
-        product={foundProduct}
-        onEdit={() => handleEdit(foundProduct.id)}
-        onDelete={() => handleDelete(foundProduct.id)}
-        onAddStock={() => handleAddStock(foundProduct.id)}
-        onRemoveStock={() => handleRemoveStock(foundProduct.id)}
-        onBack={handleBackToList}
-      />
-    ) : (
-      <div className="flex flex-col items-center justify-center h-full text-center px-6">
-        <Package size={40} className="text-gray-300 mb-3" />
-        <h3 className="text-base font-medium text-gray-600">Select an item</h3>
-        <p className="text-sm text-gray-400 mt-1">
-          Choose an item from the list, or create a new one to see its details here.
-        </p>
-      </div>
-    )}
-  </div>
-</div>
+        </div>
         {/* Pagination inside card */}
         <div className="px-4 sm:px-6 py-3 border-t border-gray-200">
           <InventoryPagination
@@ -1501,138 +1616,6 @@ const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
       </div>
     );
   };
-
-  if (showPurchaseOrdersPage) {
-  if (showCreateVendorForm) {
-    return (
-      <CreateVendor
-        onClose={() => setShowCreateVendorForm(false)}
-        onCreated={loadVendorsAndPOs}
-      />
-    );
-  }
-
-  if (showCreatePOForm) {
-    return (
-      <CreatePurchaseOrder
-        onClose={() => setShowCreatePOForm(false)}
-        onCreated={loadVendorsAndPOs}
-      />
-    );
-  }
-
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleBackFromPurchaseOrders}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ArrowLeft size={20} className="text-gray-600" />
-          </button>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Purchase Orders</h1>
-            <p className="text-xs sm:text-sm text-gray-500">Vendors, purchase orders & stock receiving</p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowCreateVendorForm(true)}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center gap-1.5"
-          >
-            <Plus size={14} /> New Vendor
-          </button>
-          <button
-            onClick={() => setShowCreatePOForm(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center gap-1.5"
-          >
-            <Plus size={14} /> New Purchase Order
-          </button>
-        </div>
-      </div>
-
-      {poLoading ? (
-        <p className="text-sm text-gray-500">Loading...</p>
-      ) : (
-        <>
-          <h2 className="text-sm font-semibold text-gray-700 mb-2">Vendors ({vendorsList.length})</h2>
-          <div className="overflow-x-auto rounded-lg border mb-6">
-            <table className="min-w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Name</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Email</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Phone</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {vendorsList.length === 0 ? (
-                  <tr><td colSpan={3} className="px-4 py-6 text-center text-sm text-gray-400">No vendors yet</td></tr>
-                ) : (
-                  vendorsList.map((v) => (
-                    <tr key={v.id}>
-                      <td className="px-4 py-2 text-sm">{v.name}</td>
-                      <td className="px-4 py-2 text-sm text-gray-500">{v.email || '-'}</td>
-                      <td className="px-4 py-2 text-sm text-gray-500">{v.phone || '-'}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <h2 className="text-sm font-semibold text-gray-700 mb-2">Purchase Orders ({purchaseOrdersList.length})</h2>
-          <div className="overflow-x-auto rounded-lg border">
-            <table className="min-w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">PO Number</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Vendor</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Date</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Total</th>
-                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500">Status</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {purchaseOrdersList.length === 0 ? (
-                  <tr><td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-400">No purchase orders yet</td></tr>
-                ) : (
-                  purchaseOrdersList.map((po) => (
-                    <tr key={po.id}>
-                      <td className="px-4 py-2 text-sm font-medium">{po.po_number}</td>
-                      <td className="px-4 py-2 text-sm">{po.vendor_name}</td>
-                      <td className="px-4 py-2 text-sm text-gray-500">{po.po_date?.split?.('T')?.[0] ?? po.po_date}</td>
-                      <td className="px-4 py-2 text-sm text-right">₹{Number(po.total).toLocaleString()}</td>
-                      <td className="px-4 py-2 text-center">
-                        <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                          po.status === 'Received' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {po.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2 text-right">
-                        {po.status !== 'Received' && (
-                          <button
-                            onClick={() => handleReceivePO(po.id)}
-                            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                          >
-                            Mark Received
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
 
   // ============================================
   // MAIN RENDER

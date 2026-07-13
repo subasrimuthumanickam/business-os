@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { vendorService, purchaseOrderService } from "../../services/api.service"; // adjust path
+import { vendorService, purchaseOrderService, productService } from "../../services/api.service"; // adjust path
 
 interface VendorOption {
   id: number;
@@ -48,20 +48,25 @@ const CreatePurchaseOrder: React.FC<CreatePurchaseOrderProps> = ({ onClose, onCr
   // Reuses the existing product search endpoint from CreateInvoice, but
   // fetched once here since PO item rows are typically fewer and the
   // product list is small enough to filter client-side.
-  useEffect(() => {
-    fetch("http://localhost:5000/api/products/search?q=", {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-      },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) setProducts(data.data);
-      })
-      .catch((err) => console.error("Product fetch failed:", err));
-  }, []);
+  // useEffect(() => {
+  //   fetch("http://localhost:5000/api/products/search?q=", {
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //       Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+  //     },
+  //   })
+  //     .then((res) => res.json())
+  //     .then((data) => {
+  //       if (data.success) setProducts(data.data);
+  //     })
+  //     .catch((err) => console.error("Product fetch failed:", err));
+  // }, []);
 
+  useEffect(() => {
+  productService.getAll()
+    .then((data: any) => setProducts(data))
+    .catch((err) => console.error("Product fetch failed:", err));
+}, []);
   const handleItemChange = (index: number, field: keyof POItem, value: string | number) => {
     const updated = [...items];
     updated[index] = { ...updated[index], [field]: value } as POItem;

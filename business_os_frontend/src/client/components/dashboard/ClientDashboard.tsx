@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import './clientdashboard.css';
+import React, { useState, useEffect } from "react";
 
 interface Activity {
   id: string;
@@ -20,7 +19,7 @@ interface Task {
   id: string;
   title: string;
   dueDate: string;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
 }
 
 interface SalesData {
@@ -36,102 +35,289 @@ interface StatsCardProps {
   changeLabel?: string;
   alert?: boolean;
   alertText?: string;
-  type?: 'revenue' | 'customers' | 'products' | 'invoices';
+  type?: "revenue" | "customers" | "products" | "invoices";
 }
 
 const StatsCard: React.FC<StatsCardProps> = ({
-  title, value, change, changeLabel, alert, alertText, type = 'revenue'
+  title,
+  value,
+  change,
+  changeLabel,
+  alert,
+  alertText,
+  type = "revenue",
 }) => {
-  // Determine percentage stroke configurations matching the visual design tokens
-  let strokeClass = 'progress-ring-revenue';
+  let strokeColor = "#4318ff";
   let percentage = 75;
 
-  if (type === 'customers') {
-    strokeClass = 'progress-ring-customer';
+  if (type === "customers") {
+    strokeColor = "#05cd99";
     percentage = 62;
-  } else if (type === 'products') {
-    strokeClass = 'progress-ring-orders';
+  } else if (type === "products") {
+    strokeColor = "#ffb547";
     percentage = 85;
-  } else if (type === 'invoices') {
-    strokeClass = 'progress-ring-cancel';
+  } else if (type === "invoices") {
+    strokeColor = "#ee5d50";
     percentage = 40;
   }
 
-  // Calculate SVG stroke dashes based on a radius of 26
   const radius = 26;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+  const strokeDashoffset =
+    circumference - (percentage / 100) * circumference;
 
   return (
-    <div className="premium-metric-card">
-      <div className="metric-left-visual">
-        <svg className="metric-svg-ring" viewBox="0 0 64 64">
-          <circle className="progress-ring-bg" cx="32" cy="32" r={radius} strokeWidth="6" />
-          <circle 
-            className={`progress-ring-indicator ${strokeClass}`} 
-            cx="32" 
-            cy="32" 
-            r={radius} 
-            strokeWidth="6" 
+    <div
+      className="
+        flex items-center gap-5
+        rounded-[20px]
+        border border-[rgba(244,247,254,0.8)]
+        bg-white
+        p-[20px_22px]
+        shadow-[0px_18px_40px_rgba(112,144,176,0.05)]
+      "
+    >
+      {/* Left Ring */}
+      <div
+        className="
+          relative
+          flex
+          h-[60px]
+          w-[60px]
+          shrink-0
+          items-center
+          justify-center
+        "
+      >
+        <svg
+          viewBox="0 0 64 64"
+          className="h-full w-full -rotate-90"
+        >
+          <circle
+            cx="32"
+            cy="32"
+            r={radius}
+            strokeWidth="6"
+            fill="none"
+            stroke="#f4f7fe"
+          />
+
+          <circle
+            cx="32"
+            cy="32"
+            r={radius}
+            strokeWidth="6"
+            fill="none"
+            stroke={strokeColor}
+            strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
+            style={{
+              transition: "stroke-dashoffset .4s ease-in-out",
+            }}
           />
         </svg>
-        <span className="metric-inner-percentage">{percentage}%</span>
+
+        <span
+          className="
+            absolute
+            text-[11px]
+            font-bold
+            text-[#1b2559]
+          "
+        >
+          {percentage}%
+        </span>
       </div>
 
-      <div className="metric-right-data">
-        <span className="premium-metric-label">{title}</span>
-        <h2 className="premium-metric-value">{value}</h2>
-        
+      {/* Right Content */}
+      <div className="flex flex-col justify-center">
+        <span
+          className="
+            text-[13px]
+            font-bold
+            uppercase
+            tracking-[0.5px]
+            text-[#a3aed0]
+          "
+        >
+          {title}
+        </span>
+
+        <h2
+          className="
+            mt-[2px]
+            text-[24px]
+            font-bold
+            leading-none
+            tracking-[-0.5px]
+            text-[#1b2559]
+          "
+        >
+          {value}
+        </h2>
+
         {change !== undefined && (
-          <div className="stats-card-change">
-            <span className={change >= 0 ? 'change-positive' : 'change-negative'}>
-              {change >= 0 ? '↑' : '↓'} {Math.abs(change)}%
+          <div
+            className="
+              mt-[6px]
+              flex
+              items-center
+              gap-[6px]
+              text-[12px]
+              font-semibold
+            "
+          >
+            <span
+              className={
+                change >= 0
+                  ? "font-bold text-[#05cd99]"
+                  : "font-bold text-[#ee5d50]"
+              }
+            >
+              {change >= 0 ? "↑" : "↓"} {Math.abs(change)}%
             </span>
-            <span className="change-label"> {changeLabel}</span>
+
+            <span className="font-medium text-[#a3aed0]">
+              {changeLabel}
+            </span>
           </div>
         )}
+
         {alert && alertText && (
-          <div className="stats-card-alert">⚠️ {alertText}</div>
+          <div
+            className="
+              mt-[6px]
+              w-max
+              rounded-md
+              bg-[#fff9f0]
+              px-2
+              py-[2px]
+              text-[11px]
+              font-semibold
+              text-[#ffb547]
+            "
+          >
+            ⚠️ {alertText}
+          </div>
         )}
       </div>
     </div>
   );
 };
-
 // ─────────────────────────────────────────────
 // RECENT ACTIVITIES
 // ─────────────────────────────────────────────
+
 const ACTIVITY_ICONS: Record<string, string> = {
-  customer: '👥', invoice: '💰', payment: '💳', stock: '📦', lead: '📋',
+  customer: "👥",
+  invoice: "💰",
+  payment: "💳",
+  stock: "📦",
+  lead: "📋",
 };
 
 const formatTime = (ts: string): string => {
   const diff = Date.now() - new Date(ts).getTime();
+
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return mins + ' min ago';
-  const h = Math.floor(mins / 60);
-  if (h < 24) return h + 'h ago';
-  return Math.floor(h / 24) + 'd ago';
+
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins} min ago`;
+
+  const hrs = Math.floor(mins / 60);
+
+  if (hrs < 24) return `${hrs}h ago`;
+
+  return `${Math.floor(hrs / 24)}d ago`;
 };
 
-const RecentActivities: React.FC<{ activities: Activity[] }> = ({ activities }) => (
-  <div className="dashboard-card">
-    <div className="card-header">
-      <h3 className="card-title">Recent Activity</h3>
-      <button className="view-all-btn">View All</button>
+const RecentActivities: React.FC<{ activities: Activity[] }> = ({
+  activities,
+}) => (
+  <div
+    className="
+      flex flex-col
+      rounded-[20px]
+      border border-[rgba(244,247,254,0.7)]
+      bg-white
+      p-6
+      shadow-[0px_18px_40px_rgba(112,144,176,0.06)]
+    "
+  >
+    {/* Header */}
+    <div
+      className="
+        mb-4
+        flex
+        items-center
+        justify-between
+        border-b border-[#f4f7fe]
+        pb-4
+      "
+    >
+      <h3 className="text-[16px] font-bold text-[#1b2559]">
+        Recent Activity
+      </h3>
+
+      <button
+        className="
+          rounded-[10px]
+          bg-[#f4f0ff]
+          px-[14px]
+          py-[6px]
+          text-[12px]
+          font-bold
+          text-[#4318ff]
+          transition
+          hover:-translate-y-[1px]
+          hover:bg-[#e1d8ff]
+        "
+      >
+        View All
+      </button>
     </div>
-    <div className="activity-list">
-      {activities.map(a => (
-        <div key={a.id} className="activity-item">
-          <div className="activity-icon">{ACTIVITY_ICONS[a.type] ?? '📌'}</div>
-          <div className="activity-content">
-            <div className="activity-title">{a.title}</div>
-            <div className="activity-desc">{a.description}</div>
+
+    {/* List */}
+    <div className="flex flex-col">
+      {activities.map((activity, index) => (
+        <div
+          key={activity.id}
+          className={`flex items-center py-[14px] ${
+            index !== activities.length - 1
+              ? "border-b border-[#f4f7fe]"
+              : ""
+          }`}
+        >
+          <div
+            className="
+              mr-[14px]
+              flex
+              h-[38px]
+              w-[38px]
+              items-center
+              justify-center
+              rounded-full
+              bg-[#f4f7fe]
+              text-[15px]
+            "
+          >
+            {ACTIVITY_ICONS[activity.type] ?? "📌"}
           </div>
-          <div className="activity-time">{formatTime(a.timestamp)}</div>
+
+          <div className="flex-1">
+            <div className="text-[14px] font-bold text-[#1b2559]">
+              {activity.title}
+            </div>
+
+            <div className="mt-[2px] text-[12px] font-medium text-[#a3aed0]">
+              {activity.description}
+            </div>
+          </div>
+
+          <div className="text-[12px] font-semibold text-[#a3aed0]">
+            {formatTime(activity.timestamp)}
+          </div>
         </div>
       ))}
     </div>
@@ -141,65 +327,231 @@ const RecentActivities: React.FC<{ activities: Activity[] }> = ({ activities }) 
 // ─────────────────────────────────────────────
 // SALES CHART
 // ─────────────────────────────────────────────
+
 const DEFAULT_SALES: SalesData[] = [
-  { month: 'Jan', revenue: 24000 },
-  { month: 'Feb', revenue: 18000 },
-  { month: 'Mar', revenue: 30000 },
-  { month: 'Apr', revenue: 27000 },
-  { month: 'May', revenue: 36000 },
-  { month: 'Jun', revenue: 33000 },
+  { month: "Jan", revenue: 24000 },
+  { month: "Feb", revenue: 18000 },
+  { month: "Mar", revenue: 30000 },
+  { month: "Apr", revenue: 27000 },
+  { month: "May", revenue: 36000 },
+  { month: "Jun", revenue: 33000 },
 ];
 
-const SalesChart: React.FC<{ data?: SalesData[] }> = ({ data = DEFAULT_SALES }) => {
-  const max = Math.max(...data.map(d => d.revenue));
+const SalesChart: React.FC<{ data?: SalesData[] }> = ({
+  data = DEFAULT_SALES,
+}) => {
+  const max = Math.max(...data.map((d) => d.revenue));
+
   return (
-    <div className="dashboard-card">
-      <div className="card-header">
-        <h3 className="card-title">Sales Overview</h3>
-        <select className="chart-select">
+    <div
+      className="
+        flex flex-col
+        rounded-[20px]
+        border border-[rgba(244,247,254,0.7)]
+        bg-white
+        p-6
+        shadow-[0px_18px_40px_rgba(112,144,176,0.06)]
+      "
+    >
+      {/* Header */}
+      <div
+        className="
+          mb-4
+          flex
+          items-center
+          justify-between
+          border-b border-[#f4f7fe]
+          pb-4
+        "
+      >
+        <h3 className="text-[16px] font-bold text-[#1b2559]">
+          Sales Overview
+        </h3>
+
+        <select
+          className="
+            cursor-pointer
+            rounded-[10px]
+            bg-[#f4f7fe]
+            px-[14px]
+            py-[6px]
+            text-[12px]
+            font-semibold
+            text-[#1b2559]
+            outline-none
+          "
+        >
           <option>Last 6 months</option>
           <option>Last year</option>
         </select>
       </div>
-      <div className="chart-container">
-        {data.map((item, i) => (
-          <div key={i} className="chart-bar-group">
-            <div className="chart-bar-wrap">
-              <span className="chart-bar-label">&#8377;{Math.round(item.revenue / 1000)}K</span>
+
+      {/* Chart */}
+      <div className="flex h-[220px] items-end justify-between px-[10px] pt-[10px]">
+        {data.map((item) => (
+          <div
+            key={item.month}
+            className="flex flex-1 flex-col items-center gap-3"
+          >
+            <div
+              className="
+                relative
+                flex
+                h-[180px]
+                w-[14px]
+                flex-col
+                justify-end
+                rounded-full
+                bg-[#f4f7fe]
+              "
+            >
+              <span
+                className="
+                  absolute
+                  -top-6
+                  left-1/2
+                  -translate-x-1/2
+                  whitespace-nowrap
+                  rounded
+                  bg-white
+                  px-1
+                  py-[2px]
+                  text-[10px]
+                  font-bold
+                  text-[#1b2559]
+                  shadow
+                "
+              >
+                ₹{Math.round(item.revenue / 1000)}K
+              </span>
+
               <div
-                className="chart-bar"
-                style={{ height: Math.round((item.revenue / max) * 160) + 'px' }}
-                title={'&#8377;' + item.revenue.toLocaleString()}
+                className="w-full rounded-t-full bg-[#4318ff] transition-all duration-300"
+                style={{
+                  height: `${Math.round(
+                    (item.revenue / max) * 160
+                  )}px`,
+                }}
+                title={`₹${item.revenue.toLocaleString()}`}
               />
             </div>
-            <span className="chart-month">{item.month}</span>
+
+            <span className="text-[12px] font-semibold text-[#a3aed0]">
+              {item.month}
+            </span>
           </div>
         ))}
       </div>
     </div>
   );
 };
-
 // ─────────────────────────────────────────────
 // TOP PRODUCTS
 // ─────────────────────────────────────────────
+
 const TopProducts: React.FC<{ products: TopProduct[] }> = ({ products }) => {
-  const maxRevenue = Math.max(...products.map(p => p.revenue));
+  const maxRevenue = Math.max(...products.map((p) => p.revenue));
+
   return (
-    <div className="dashboard-card">
-      <div className="card-header">
-        <h3 className="card-title">Top Products</h3>
-        <button className="view-all-btn">View All</button>
+    <div
+      className="
+        flex flex-col
+        rounded-[20px]
+        border border-[rgba(244,247,254,0.7)]
+        bg-white
+        p-6
+        shadow-[0px_18px_40px_rgba(112,144,176,0.06)]
+      "
+    >
+      {/* Header */}
+      <div
+        className="
+          mb-4
+          flex items-center justify-between
+          border-b border-[#f4f7fe]
+          pb-4
+        "
+      >
+        <h3 className="text-[16px] font-bold text-[#1b2559]">
+          Top Products
+        </h3>
+
+        <button
+          className="
+            rounded-[10px]
+            bg-[#f4f0ff]
+            px-[14px]
+            py-[6px]
+            text-[12px]
+            font-bold
+            text-[#4318ff]
+            transition-all
+            hover:-translate-y-[1px]
+            hover:bg-[#e1d8ff]
+          "
+        >
+          View All
+        </button>
       </div>
-      <div className="products-list">
-        {products.map((p, i) => (
-          <div key={p.id} className="product-item">
-            <div className="product-rank">{i + 1}</div>
-            <span className="product-name">{p.name}</span>
-            <div className="product-bar-wrap">
-              <div className="product-bar" style={{ width: Math.round((p.revenue / maxRevenue) * 100) + '%' }} />
+
+      {/* Product List */}
+      <div className="flex flex-col">
+        {products.map((product, index) => (
+          <div
+            key={product.id}
+            className={`flex items-center py-[14px] ${
+              index !== products.length - 1
+                ? "border-b border-[#f4f7fe]"
+                : ""
+            }`}
+          >
+            <div className="w-6 text-[14px] font-bold text-[#a3aed0]">
+              {index + 1}
             </div>
-            <span className="product-revenue">&#8377;{p.revenue.toLocaleString()}</span>
+
+            <div
+              className="
+                w-[120px]
+                truncate
+                text-[14px]
+                font-bold
+                text-[#1b2559]
+              "
+            >
+              {product.name}
+            </div>
+
+            <div
+              className="
+                mx-4
+                h-2
+                flex-1
+                overflow-hidden
+                rounded-full
+                bg-[#f4f7fe]
+              "
+            >
+              <div
+                className="h-full rounded-full bg-[#4318ff]"
+                style={{
+                  width: `${Math.round(
+                    (product.revenue / maxRevenue) * 100
+                  )}%`,
+                }}
+              />
+            </div>
+
+            <div
+              className="
+                min-w-[70px]
+                text-right
+                text-[14px]
+                font-bold
+                text-[#1b2559]
+              "
+            >
+              ₹{product.revenue.toLocaleString()}
+            </div>
           </div>
         ))}
       </div>
@@ -210,41 +562,140 @@ const TopProducts: React.FC<{ products: TopProduct[] }> = ({ products }) => {
 // ─────────────────────────────────────────────
 // UPCOMING TASKS
 // ─────────────────────────────────────────────
+
 const formatDue = (dueDate: string): string => {
   const diff = new Date(dueDate).getTime() - Date.now();
   const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-  if (days < 0) return 'Overdue';
-  if (days === 0) return 'Due Today';
-  if (days === 1) return 'Tomorrow';
-  return days + ' days left';
+
+  if (days < 0) return "Overdue";
+  if (days === 0) return "Due Today";
+  if (days === 1) return "Tomorrow";
+
+  return `${days} days left`;
 };
 
 const UpcomingTasks: React.FC<{ tasks: Task[] }> = ({ tasks }) => {
   const [done, setDone] = useState<Set<string>>(new Set());
-  const toggle = (id: string) =>
-    setDone(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  const toggle = (id: string) => {
+    setDone((prev) => {
+      const updated = new Set(prev);
+
+      if (updated.has(id)) {
+        updated.delete(id);
+      } else {
+        updated.add(id);
+      }
+
+      return updated;
+    });
+  };
 
   return (
-    <div className="dashboard-card">
-      <div className="card-header">
-        <h3 className="card-title">Upcoming Tasks</h3>
-        <button className="view-all-btn">View All</button>
+    <div
+      className="
+        flex flex-col
+        rounded-[20px]
+        border border-[rgba(244,247,254,0.7)]
+        bg-white
+        p-6
+        shadow-[0px_18px_40px_rgba(112,144,176,0.06)]
+      "
+    >
+      {/* Header */}
+      <div
+        className="
+          mb-4
+          flex items-center justify-between
+          border-b border-[#f4f7fe]
+          pb-4
+        "
+      >
+        <h3 className="text-[16px] font-bold text-[#1b2559]">
+          Upcoming Tasks
+        </h3>
+
+        <button
+          className="
+            rounded-[10px]
+            bg-[#f4f0ff]
+            px-[14px]
+            py-[6px]
+            text-[12px]
+            font-bold
+            text-[#4318ff]
+            transition-all
+            hover:-translate-y-[1px]
+            hover:bg-[#e1d8ff]
+          "
+        >
+          View All
+        </button>
       </div>
-      <div className="tasks-list">
-        {tasks.map(t => {
-          const due = formatDue(t.dueDate);
+
+      {/* Task List */}
+      <div className="flex flex-col">
+        {tasks.map((task, index) => {
+          const due = formatDue(task.dueDate);
+
           return (
-            <div key={t.id} className="task-item">
-              <input type="checkbox" className="task-checkbox"
-                checked={done.has(t.id)} onChange={() => toggle(t.id)} />
-              <div className="task-content">
-                <div className="task-title"
-                  style={{ textDecoration: done.has(t.id) ? 'line-through' : 'none', opacity: done.has(t.id) ? 0.5 : 1 }}>
-                  {t.title}
+            <div
+              key={task.id}
+              className={`flex items-center py-[14px] ${
+                index !== tasks.length - 1
+                  ? "border-b border-[#f4f7fe]"
+                  : ""
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={done.has(task.id)}
+                onChange={() => toggle(task.id)}
+                className="
+                  mr-[14px]
+                  h-[18px]
+                  w-[18px]
+                  cursor-pointer
+                  accent-[#4318ff]
+                "
+              />
+
+              <div className="flex-1">
+                <div
+                  className="text-[14px] font-bold text-[#1b2559] transition-all"
+                  style={{
+                    textDecoration: done.has(task.id)
+                      ? "line-through"
+                      : "none",
+                    opacity: done.has(task.id) ? 0.5 : 1,
+                  }}
+                >
+                  {task.title}
                 </div>
-                <div className={'task-due' + (due === 'Due Today' || due === 'Overdue' ? ' urgent' : '')}>{due}</div>
+
+                <div
+                  className={`mt-[2px] text-[12px] font-semibold ${
+                    due === "Due Today" || due === "Overdue"
+                      ? "text-[#ee5d50]"
+                      : "text-[#a3aed0]"
+                  }`}
+                >
+                  {due}
+                </div>
               </div>
-              <span className={'task-priority priority-' + t.priority}>{t.priority}</span>
+
+              <span
+                className={`min-w-[75px] rounded-[8px] px-3 py-1 text-center text-[11px] font-bold uppercase tracking-[0.5px]
+                ${
+                  task.priority === "high"
+                    ? "bg-[#ffebeb] text-[#ee5d50]"
+                    : task.priority === "medium"
+                    ? "bg-[#fff5e6] text-[#ffb547]"
+                    : "bg-[#e6fcf5] text-[#05cd99]"
+                }`}
+              >
+                {task.priority}
+              </span>
             </div>
           );
         })}
@@ -252,72 +703,139 @@ const UpcomingTasks: React.FC<{ tasks: Task[] }> = ({ tasks }) => {
     </div>
   );
 };
-
 // ─────────────────────────────────────────────
 // MAIN CLIENT DASHBOARD
 // ─────────────────────────────────────────────
+
 const ClientDashboard: React.FC = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    setTimeout(() => {
-      setData({
-        stats: {
-          revenue:   { thisMonth: 45000, growth: 18.4 },
-          customers: { total: 156, newThisMonth: 12 },
-          products:  { total: 48, lowStock: 5 },
-          invoices:  { total: 89, pending: 12 },
-        },
-        activities: [
-          { id: '1', type: 'customer', title: 'New customer added',   description: 'ABC Corp was added',            timestamp: new Date().toISOString() },
-          { id: '2', type: 'invoice',  title: 'Invoice created',      description: 'Invoice #INV-001 for ₹10,000', timestamp: new Date().toISOString() },
-          { id: '3', type: 'payment',  title: 'Payment received',     description: 'Payment of ₹5,000 received',   timestamp: new Date().toISOString() },
-          { id: '4', type: 'stock',    title: 'Low stock alert',      description: 'Laptop Pro below 5 units',     timestamp: new Date(Date.now() - 3600000).toISOString() },
-        ],
-        topProducts: [
-          { id: '1', name: 'Laptop Pro',     revenue: 65000, quantity: 42 },
-          { id: '2', name: 'Office Chair',   revenue: 38500, quantity: 28 },
-          { id: '3', name: 'Wireless Mouse', revenue: 12000, quantity: 95 },
-          { id: '4', name: 'Standing Desk',  revenue: 9400,  quantity: 14 },
-        ],
-        tasks: [
-          { id: '1', title: 'Follow up with ABC Corp',    dueDate: new Date().toISOString(),                       priority: 'high'   as const },
-          { id: '2', title: 'Send quotation to XYZ Ltd',  dueDate: new Date(Date.now() + 86400000).toISOString(),  priority: 'medium' as const },
-          { id: '3', title: 'Review Q2 inventory report', dueDate: new Date(Date.now() + 172800000).toISOString(), priority: 'low'    as const },
-        ],
-      });
+ useEffect(() => {
+  const fetchDashboard = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/dashboard'); // your backend port
+      if (!res.ok) throw new Error('Failed to fetch');
+      const json = await res.json();
+      setData(json);
+    } catch (err) {
+      console.error('Dashboard fetch error:', err);
+    } finally {
       setLoading(false);
-    }, 500);
-  }, []);
+    }
+  };
 
-  if (loading) return <div className="loading">Loading Dashboard…</div>;
-  if (!data)   return <div className="loading">No data available</div>;
+  fetchDashboard();
+}, []);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[350px] items-center justify-center text-lg font-semibold text-slate-500">
+        Loading Dashboard...
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="flex min-h-[350px] items-center justify-center text-lg font-semibold text-slate-500">
+        No data available
+      </div>
+    );
+  }
 
   const { stats, activities, topProducts, tasks } = data;
 
   return (
-    <div className="client-dashboard">
+    <div className="space-y-6">
 
-      <div className="page-header">
-        <h1>Dashboard</h1>
-        <p>Welcome back! Here's your business overview</p>
+      {/* ================= Header ================= */}
+
+      <div className="mb-7">
+        <h1 className="text-[26px] font-bold tracking-[-0.6px] text-[#1b2559]">
+          Dashboard
+        </h1>
+
+        <p className="mt-1 text-[14px] font-medium text-[#a3aed0]">
+          Welcome back! Here's your business overview
+        </p>
       </div>
 
-      <div className="stats-grid">
-        <StatsCard type="revenue" title="Revenue" value={'₹' + stats.revenue.thisMonth.toLocaleString()} icon="💰" change={stats.revenue.growth} changeLabel="vs last month" />
-        <StatsCard type="customers" title="Customers" value={stats.customers.total} icon="👥" change={stats.customers.newThisMonth} changeLabel="new this month" />
-        <StatsCard type="products" title="Products" value={stats.products.total} icon="📦" alert={stats.products.lowStock > 0} alertText={stats.products.lowStock + ' items low stock'} />
-        <StatsCard type="invoices" title="Invoices" value={stats.invoices.total} icon="📄" change={stats.invoices.pending} changeLabel="pending" />
+      {/* ================= Stats ================= */}
+
+      <div
+        className="
+          grid
+          grid-cols-1
+          gap-5
+          md:grid-cols-2
+          xl:grid-cols-4
+        "
+      >
+        <StatsCard
+          type="revenue"
+          title="Revenue"
+          value={`₹${stats.revenue.thisMonth.toLocaleString()}`}
+          icon="💰"
+          change={stats.revenue.growth}
+          changeLabel="vs last month"
+        />
+
+        <StatsCard
+          type="customers"
+          title="Customers"
+          value={stats.customers.total}
+          icon="👥"
+          change={stats.customers.newThisMonth}
+          changeLabel="new this month"
+        />
+
+        <StatsCard
+          type="products"
+          title="Products"
+          value={stats.products.total}
+          icon="📦"
+          alert={stats.products.lowStock > 0}
+          alertText={`${stats.products.lowStock} items low stock`}
+        />
+
+        <StatsCard
+          type="invoices"
+          title="Invoices"
+          value={stats.invoices.total}
+          icon="📄"
+          change={stats.invoices.pending}
+          changeLabel="pending"
+        />
       </div>
 
-      <div className="dashboard-grid">
+      {/* ================= Row 1 ================= */}
+
+      <div
+        className="
+          grid
+          grid-cols-1
+          gap-6
+          xl:grid-cols-2
+        "
+      >
         <RecentActivities activities={activities} />
+
         <SalesChart />
       </div>
 
-      <div className="dashboard-grid">
+      {/* ================= Row 2 ================= */}
+
+      <div
+        className="
+          grid
+          grid-cols-1
+          gap-6
+          xl:grid-cols-2
+        "
+      >
         <TopProducts products={topProducts} />
+
         <UpcomingTasks tasks={tasks} />
       </div>
 

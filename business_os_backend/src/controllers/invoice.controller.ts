@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import fs from "fs";
 import path from "path";
+import db from "../config/db.js";
 
 import { createInvoice, getInvoiceById, updateInvoice, deleteInvoice, getAllInvoices } from "../services/invoice.service.js";
 import { createInvoicePDF } from "../utils/pdf.js";
@@ -175,3 +176,61 @@ export const getAllInvoicesController = async (
   }
 
 };
+
+
+
+export const getNextInvoiceNumberController = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+
+  try {
+
+    // ✅ ADDED — without this, the browser was caching this GET response
+    // and returning it via 304 on every subsequent call, so the invoice
+    // number never actually incremented on screen.
+    res.set("Cache-Control", "no-store");
+
+    // ✅ CHANGED — previously parsed the digits out of the last saved
+    // invoice_number string and added 1 to that. That worked fine in
+    // theory, but every invoice created before this feature existed has
+    // a random 5-digit invoice_number (INV-89648, INV-67466, ...), so
+    // "last number + 1" just kept continuing that random sequence
+    // forever instead of ever producing a clean INV-00001 style series.
+    //
+    // Basing it on MAX(id) instead sidesteps the legacy data completely —
+    // id is a real auto-incrementing counter regardless of what text is
+    // in invoice_number, so this always produces a clean, ever-increasing
+    // sequence from here on: INV-00001, INV-00002, INV-00003 ...
+    (db as any).get(
+      `SELECT MAX(id) AS lastId FROM invoices`,
+      [],
+      (err: any, row: any) => {
+
+        if (err) {
+          console.error("Next invoice number fetch failed:", err);
+          return res.status(500).json({ success: false, message: err.message });
+        }
+
+        const lastId = row && row.lastId ? Number(row.lastId) : 0;
+        const nextNumber = lastId + 1;
+
+        // Zero-padded to 5 digits: INV-00001, INV-00002, ... INV-99999
+        const invoiceNumber = `INV-${String(nextNumber).padStart(5, "0")}`;
+
+        return res.status(200).json({ success: true, invoiceNumber });
+      }
+    );
+
+  } catch (error: any) {
+
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+
+  }
+
+};
+
+

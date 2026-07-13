@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import CustomerForm from './CustomerForm';
 import CustomerDetails from './CustomerDetails';
 import * as customerService from '../../services/customerService';
-import './CustomerList.css';
 import { Search } from "lucide-react";
 import { useParams, useNavigate } from 'react-router-dom';
 
@@ -29,36 +28,42 @@ interface Customer {
   name?: string; // Kept for rendering fallback structures if needed
 }
 
+// Shared Tailwind fragments (theme: primary #6342e8, hover #5130d4)
+const btnPrimary =
+  "bg-[#6342e8] hover:bg-[#5130d4] text-white border-none px-4 py-2 rounded-lg font-medium text-sm cursor-pointer transition-colors";
+const btnSecondary =
+  "bg-transparent text-[#1a1d20] border border-[#ededee] px-3.5 py-2 rounded-lg text-sm cursor-pointer hover:bg-[#f9fafb] transition-colors";
+
 export const CustomerList: React.FC = () => {
-  const { id } = useParams();          
-  const navigate = useNavigate(); 
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
-  
+
   const [showForm, setShowForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [viewingCustomer, setViewingCustomer] = useState<Customer | null>(null);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load customers ONCE on mount
-useEffect(() => {
-  loadCustomers();
-}, []);
+  useEffect(() => {
+    loadCustomers();
+  }, []);
 
-// Sync viewingCustomer with URL id, whenever id or customers list changes
-useEffect(() => {
-  if (id && customers.length > 0) {
-    const found = customers.find((c) => c.id === Number(id));
-    if (found) {
-      setViewingCustomer((prev) => (prev?.id === found.id ? prev : found));
+  // Sync viewingCustomer with URL id, whenever id or customers list changes
+  useEffect(() => {
+    if (id && customers.length > 0) {
+      const found = customers.find((c) => c.id === Number(id));
+      if (found) {
+        setViewingCustomer((prev) => (prev?.id === found.id ? prev : found));
+      }
+    } else if (!id) {
+      setViewingCustomer(null);
     }
-  } else if (!id) {
-    setViewingCustomer(null);
-  }
-}, [id, customers]);
+  }, [id, customers]);
 
   const loadCustomers = async () => {
     try {
@@ -92,7 +97,7 @@ useEffect(() => {
     setActiveDropdownId(null);
   };
 
-  // 🎯 FIXED TS2322 TYPE MATRIX MATCH: Now safely accepting the Enhanced Form values mapping layout 
+  // 🎯 FIXED TS2322 TYPE MATRIX MATCH: Now safely accepting the Enhanced Form values mapping layout
   const handleFormSubmit = async (formData: any) => {
     try {
       if (editingCustomer) {
@@ -149,8 +154,8 @@ useEffect(() => {
   });
 
   const editingCustomerData = editingCustomer
-    ? { 
-        ...editingCustomer, 
+    ? {
+        ...editingCustomer,
         tax_rule: editingCustomer.tax_rule ?? '',
         billing_address: editingCustomer.billing_address ?? '',
         shipping_address: editingCustomer.shipping_address ?? '',
@@ -160,190 +165,174 @@ useEffect(() => {
     : undefined;
 
   if (loading) {
-    return <div className="customer-container"><h3>Loading tenant records from database...</h3></div>;
+    return (
+      <div className="p-4 sm:p-6 bg-white font-serif text-[#1a1d20]">
+        <h3 className="text-base font-medium">Loading tenant records from database...</h3>
+      </div>
+    );
   }
 
   return (
-    <div className="customer-container">
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        style={{ display: 'none' }} 
-        accept=".csv" 
+    <div className="p-4 sm:p-6 bg-white font-serif text-[#1a1d20]">
+      <input
+        type="file"
+        ref={fileInputRef}
+        style={{ display: 'none' }}
+        accept=".csv"
         onChange={handleFileImport}
       />
 
       {showForm || editingCustomer ? (
         <div>
-          <button className="btn-secondary back-btn" onClick={() => { setShowForm(false); setEditingCustomer(null); }}>
+          <button
+            className={`${btnSecondary} mb-5`}
+            onClick={() => { setShowForm(false); setEditingCustomer(null); }}
+          >
             ← Back to Customer Registry
           </button>
-          <CustomerForm 
-            onSubmit={handleFormSubmit} 
-            onCancel={() => { setShowForm(false); setEditingCustomer(null); }} 
+          <CustomerForm
+            onSubmit={handleFormSubmit}
+            onCancel={() => { setShowForm(false); setEditingCustomer(null); }}
             initialData={editingCustomerData}
           />
         </div>
       ) : viewingCustomer ? (
         <div>
-          {/* <button className="btn-secondary back-btn" onClick={() => setViewingCustomer(null)}>
-            ← Back to Registry Table
-          </button> */}
           <button
-      className="btn-secondary back-btn"
-      onClick={() => {
-        setViewingCustomer(null);
-        navigate('/client/customers');   
-      }}
-    >
-      ← Back to Registry Table
-    </button>
-          <CustomerDetails 
-  customer={{ 
-    ...viewingCustomer, 
-    id: viewingCustomer.id.toString(),
-    name: viewingCustomer.display_name || viewingCustomer.name || "" 
-  } as any} 
-/>
+            className={`${btnSecondary} mb-5`}
+            onClick={() => {
+              setViewingCustomer(null);
+              navigate('/client/customers');
+            }}
+          >
+            ← Back to Registry Table
+          </button>
+          <CustomerDetails
+            customer={{
+              ...viewingCustomer,
+              id: viewingCustomer.id.toString(),
+              name: viewingCustomer.display_name || viewingCustomer.name || ""
+            } as any}
+            onEdit={() => {
+              setEditingCustomer(viewingCustomer);
+              setViewingCustomer(null);
+            }}
+          />
         </div>
       ) : (
         <>
-          <div className="customer-header">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-2">
             <div>
-              <h2>Customers</h2>
-              <p className="subtitle">
+              <h2 className="text-2xl font-semibold m-0 mb-1.5">Customers</h2>
+              <p className="text-[#71777d] text-sm m-0 max-w-[750px] leading-snug">
                 BusinessOS - Multi-Tenant ERP SaaS Platform: Manage isolated domains.
               </p>
             </div>
-            <div className="header-actions">
-              <button className="btn-secondary" onClick={triggerImportClick}>⬇ Import CSV</button>
-              <button className="btn-secondary" onClick={handleExport}>⬆ Export CSV</button>
-              <button className="btn-primary" onClick={() => setShowForm(true)}>Add Customers</button>
+            <div className="flex flex-wrap gap-2.5">
+              <button className={btnSecondary} onClick={triggerImportClick}>⬇ Import CSV</button>
+              <button className={btnSecondary} onClick={handleExport}>⬆ Export CSV</button>
+              <button className={btnPrimary} onClick={() => setShowForm(true)}>Add Customers</button>
             </div>
           </div>
 
-          <div className="customer-kpi">
-            <span className="kpi-count"><strong>{filteredCustomers.length}</strong> customer{filteredCustomers.length !== 1 ? 's' : ''}</span>
+          <div className="flex gap-4 border-b border-[#ededee] py-4 text-[15px]">
+            <span className="border-b-2 border-[#1a1d20] pb-3.5 -mb-[17px]">
+              <strong>{filteredCustomers.length}</strong> customer{filteredCustomers.length !== 1 ? 's' : ''}
+            </span>
           </div>
 
-          <div className="filter-bar">
-            <div className="search-wrapper">
-  <Search size={16} className="search-icon" />
-  <input
-    type="text"
-    placeholder="Search customers"
-    value={searchTerm}
-    onChange={(e) => setSearchTerm(e.target.value)}
-  />
-</div>
+          <div className="flex justify-between items-center my-6">
+            <div className="relative w-full sm:w-[260px]">
+              <Search size={16} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#71777d]" />
+              <input
+                type="text"
+                placeholder="Search customers"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-8 pr-2 py-2 border border-[#ededee] rounded-lg text-sm font-serif outline-none focus:border-[#6342e8]"
+              />
+            </div>
           </div>
 
-          <div className="table-responsive">
-            <table className="customer-table">
+          <div className="overflow-x-auto border border-[#ededee] rounded-xl">
+            <table className="w-full min-w-[820px] border-collapse text-left text-[15px]">
               <thead>
-              <tr>
-                <th>Customer Name</th>
-                <th>Company Name</th>
-                <th>Mobile Number</th>
-                <th>Email Address</th>
-                <th>Receivables</th>
-                <th>Location</th>
-                <th>Action</th>
+                <tr>
+                  <th className="bg-[#f9fafb] text-[#71777d] font-medium px-4 py-3 border-b border-[#ededee]">Customer Name</th>
+                  <th className="bg-[#f9fafb] text-[#71777d] font-medium px-4 py-3 border-b border-[#ededee]">Company Name</th>
+                  <th className="bg-[#f9fafb] text-[#71777d] font-medium px-4 py-3 border-b border-[#ededee]">Mobile Number</th>
+                  <th className="bg-[#f9fafb] text-[#71777d] font-medium px-4 py-3 border-b border-[#ededee]">Email Address</th>
+                  <th className="bg-[#f9fafb] text-[#71777d] font-medium px-4 py-3 border-b border-[#ededee]">Receivables</th>
+                  <th className="bg-[#f9fafb] text-[#71777d] font-medium px-4 py-3 border-b border-[#ededee]">Location</th>
+                  <th className="bg-[#f9fafb] text-[#71777d] font-medium px-4 py-3 border-b border-[#ededee]">Action</th>
                 </tr>
               </thead>
-              {/* <tbody>
+              <tbody>
                 {filteredCustomers.map((customer) => (
-                  <tr key={customer.id}>
-                    <td 
-                      className="customer-name-cell clickable-name" 
+                  <tr key={customer.id} className="hover:bg-[#f9fafb]">
+                    <td
+                      className="px-4 py-3.5 border-b border-[#ededee] align-middle font-bold text-[#1a1d20] cursor-pointer !text-[#4b5563] transition-colors hover:!text-[#5130d4]"
                       onClick={() => setViewingCustomer(customer)}
                     >
-                      {customer.display_name || customer.name}
+                      {customer.display_name}
                     </td>
-                    <td className="customer-email-cell">{customer.email}</td>
-                    <td>{customer.location || '—'}</td>
-                    <td style={{ textAlign: 'center' }} className="action-cell">
-                      <button className="btn-dots" onClick={() => toggleDropdown(customer.id)}>•••</button>
-                      
+
+                    <td className="px-4 py-3.5 border-b border-[#ededee] align-middle">{customer.company_name || "-"}</td>
+
+                    <td className="px-4 py-3.5 border-b border-[#ededee] align-middle">
+                      {customer.phone_mobile || customer.phone_work || "-"}
+                    </td>
+
+                    <td className="px-4 py-3.5 border-b border-[#ededee] align-middle text-[#4b5563]">{customer.email}</td>
+
+                    <td className="px-4 py-3.5 border-b border-[#ededee] align-middle">
+                      ₹ {Number(customer.amountSpent || 0).toFixed(2)}
+                    </td>
+
+                    <td className="px-4 py-3.5 border-b border-[#ededee] align-middle">{customer.location || "-"}</td>
+
+                    <td style={{ textAlign: "center" }} className="px-4 py-3.5 border-b border-[#ededee] align-middle relative">
+                      <button
+                        className="bg-transparent border-none cursor-pointer text-base text-[#71777d] px-2 py-1"
+                        onClick={() => toggleDropdown(customer.id)}
+                      >
+                        •••
+                      </button>
+
                       {activeDropdownId === customer.id && (
-                        <div className="action-dropdown">
-                          <button className="dropdown-item" onClick={() => { setViewingCustomer(customer); setActiveDropdownId(null); }}>👁 View</button>
-                          <button className="dropdown-item" onClick={() => { setEditingCustomer(customer); setActiveDropdownId(null); }}>✏ Edit</button>
-                          <button className="dropdown-item delete-item" onClick={() => handleDelete(customer.id)}>🗑 Delete</button>
+                        <div className="absolute right-4 top-10 bg-white border border-[#ededee] rounded-md shadow-lg z-[100] flex flex-col w-[100px]">
+                          <button
+                            className="bg-transparent border-none px-3 py-2 text-left cursor-pointer font-serif text-[13px] hover:bg-[#f9fafb]"
+                            onClick={() => {
+                              setViewingCustomer(customer);
+                              setActiveDropdownId(null);
+                            }}
+                          >
+                            👁 View
+                          </button>
+
+                          <button
+                            className="bg-transparent border-none px-3 py-2 text-left cursor-pointer font-serif text-[13px] hover:bg-[#f9fafb]"
+                            onClick={() => {
+                              setEditingCustomer(customer);
+                              setActiveDropdownId(null);
+                            }}
+                          >
+                            ✏ Edit
+                          </button>
+
+                          <button
+                            className="bg-transparent border-none px-3 py-2 text-left cursor-pointer font-serif text-[13px] hover:bg-[#f9fafb] text-red-500"
+                            onClick={() => handleDelete(customer.id)}
+                          >
+                            🗑 Delete
+                          </button>
                         </div>
                       )}
                     </td>
                   </tr>
                 ))}
-              </tbody> */}
-              <tbody>
-  {filteredCustomers.map((customer) => (
-    <tr key={customer.id}>
-      <td
-        className="customer-name-cell clickable-name"
-        onClick={() => setViewingCustomer(customer)}
-      >
-        {customer.display_name}
-      </td>
-
-      <td>{customer.company_name || "-"}</td>
-
-      <td>
-        {customer.phone_mobile ||
-          customer.phone_work ||
-          "-"}
-      </td>
-
-      <td>{customer.email}</td>
-
-      <td>
-        ₹ {Number(customer.amountSpent || 0).toFixed(2)}
-      </td>
-
-      <td>{customer.location || "-"}</td>
-
-     <td style={{ textAlign: "center" }} className="action-cell">
-  <button
-    className="btn-dots"
-    onClick={() => toggleDropdown(customer.id)}
-  >
-    •••
-  </button>
-
-  {activeDropdownId === customer.id && (
-    <div className="action-dropdown">
-      <button
-        className="dropdown-item"
-        onClick={() => {
-          setViewingCustomer(customer);
-          setActiveDropdownId(null);
-        }}
-      >
-        👁 View
-      </button>
-
-      <button
-        className="dropdown-item"
-        onClick={() => {
-          setEditingCustomer(customer);
-          setActiveDropdownId(null);
-        }}
-      >
-        ✏ Edit
-      </button>
-
-      <button
-        className="dropdown-item delete-item"
-        onClick={() => handleDelete(customer.id)}
-      >
-        🗑 Delete
-      </button>
-    </div>
-  )}
-</td>
-    </tr>
-  ))}
-</tbody>
+              </tbody>
             </table>
           </div>
         </>

@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef } from "react";
-import "./CreateInvoice.css";
 
 interface Invoice {
   id: number;
@@ -9,7 +8,7 @@ interface Invoice {
   items?: InvoiceItem[];
   status: string;
   total: number;
-  salesperson_id?: number | null;   
+  salesperson_id?: number | null;
 
 }
 
@@ -54,6 +53,16 @@ function getAuthHeaders(): HeadersInit {
   };
 }
 
+// Shared Tailwind class fragments
+const labelClass = "block mb-2 text-gray-700 font-semibold text-sm";
+const inputClass =
+  "w-full p-3 border border-gray-300 rounded-lg text-sm outline-none transition-colors focus:border-blue-600";
+const inputWarn = "!border-amber-500 !bg-amber-50";
+const dropdownClass =
+  "absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md shadow-[0_6px_20px_rgba(0,0,0,0.10)] z-[999] list-none mt-1 py-1 max-h-[220px] overflow-y-auto";
+const dropdownItemClass =
+  "flex flex-col px-3.5 py-2.5 cursor-pointer gap-0.5 transition-colors hover:bg-blue-50";
+
 const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, invoice, onClose }) => {
 
   const getTodayDate = () => new Date().toISOString().split("T")[0];
@@ -77,16 +86,13 @@ const CreateInvoice: React.FC<CreateInvoiceProps> = ({ customer, invoice, onClos
     { product_id: null, item_name: "", quantity: 1, rate: 0, amount: 0 },
   ]);
 
-  // NEW — per-row product search state. Keyed by row index since each
-  // line item has its own independent search box + dropdown, same idea
-  // as the single customer search above but repeated per row.
   const [productSearchTerms, setProductSearchTerms] = useState<Record<number, string>>({});
   const [productOptions, setProductOptions] = useState<Record<number, ProductOption[]>>({});
   const [productDropdownOpen, setProductDropdownOpen] = useState<Record<number, boolean>>({});
 
 
   const [salespersonId, setSalespersonId] = useState<number | null>(null);
-const [employees, setEmployees] = useState<{ id: number; name: string }[]>([]);
+  const [employees, setEmployees] = useState<{ id: number; name: string }[]>([]);
 
   // Combined Initialization Effect
   useEffect(() => {
@@ -96,12 +102,6 @@ const [employees, setEmployees] = useState<{ id: number; name: string }[]>([]);
       setDueDate(invoice.due_date.split("T")[0]);
       setSalespersonId(invoice.salesperson_id ?? null);
       if (invoice.items && invoice.items.length > 0) {
-        // Normalize every field before it reaches a controlled input.
-        // Older invoice_items rows (saved before product_id existed, or
-        // with NULL quantity/rate from a partial insert) would otherwise
-        // pass `undefined` straight into value={...}, which is exactly
-        // what triggers React's "controlled input becoming uncontrolled"
-        // warning.
         const normalizedItems: InvoiceItem[] = invoice.items.map((it: any) => ({
           product_id: it.product_id ?? null,
           item_name: it.item_name ?? "",
@@ -110,8 +110,6 @@ const [employees, setEmployees] = useState<{ id: number; name: string }[]>([]);
           amount: Number(it.amount) || 0,
         }));
         setItems(normalizedItems);
-        // Pre-fill each row's search box with its existing item name so
-        // editing an invoice doesn't show blank search fields.
         const initialSearches: Record<number, string> = {};
         normalizedItems.forEach((it, idx) => {
           initialSearches[idx] = it.item_name;
@@ -130,24 +128,39 @@ const [employees, setEmployees] = useState<{ id: number; name: string }[]>([]);
 
 
   useEffect(() => {
-  const fetchEmployees = async () => {
+    const fetchEmployees = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/hrms/employees", {
+          headers: getAuthHeaders(),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setEmployees(data.data);
+        }
+      } catch (err) {
+        console.error("Employee fetch failed:", err);
+      }
+    };
+    fetchEmployees();
+  }, []);
+
+  const generateInvoiceNumber = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/hrms/employees", {
+      const res = await fetch("http://localhost:5000/api/invoices/next-number", {
         headers: getAuthHeaders(),
+        cache: "no-store",
       });
       const data = await res.json();
-      if (data.success) {
-        setEmployees(data.data);
+      if (data.success && data.invoiceNumber) {
+        setInvoiceNumber(data.invoiceNumber);
+        return;
       }
+      throw new Error("Next-number endpoint returned no number");
     } catch (err) {
-      console.error("Employee fetch failed:", err);
+      console.error("Sequential invoice number fetch failed, falling back to random:", err);
+      const random = Math.floor(10000 + Math.random() * 90000);
+      setInvoiceNumber(`INV-${random}`);
     }
-  };
-  fetchEmployees();
-}, []);
-  const generateInvoiceNumber = () => {
-    const random = Math.floor(10000 + Math.random() * 90000);
-    setInvoiceNumber(`INV-${random}`);
   };
 
   const handleCustomerSearch = async (value: string) => {
@@ -182,170 +195,115 @@ const [employees, setEmployees] = useState<{ id: number; name: string }[]>([]);
     setShowDropdown(false);
   };
 
-  // NEW — product search for a specific line item row, mirrors
-  // handleCustomerSearch but scoped to one row index at a time.
-  // const handleProductSearch = async (index: number, value: string) => {
-  //   setProductSearchTerms((prev) => ({ ...prev, [index]: value }));
-
-  //   // Typing invalidates any previously-selected product for this row —
-  //   // the line item is no longer linked until a new option is picked.
-  //   const updatedItems = [...items];
-  //   updatedItems[index] = { ...updatedItems[index], product_id: null, item_name: value };
-  //   setItems(updatedItems);
-
-  //   if (value.trim().length < 1) {
-  //     setProductOptions((prev) => ({ ...prev, [index]: [] }));
-  //     setProductDropdownOpen((prev) => ({ ...prev, [index]: false }));
-  //     return;
-  //   }
-
-  //   try {
-  //     const res = await fetch(
-  //       `http://localhost:5000/api/products/search?q=${encodeURIComponent(value)}`,
-  //       { headers: getAuthHeaders() }
-  //     );
-  //     const data = await res.json();
-
-  //         console.log("Product API Response:", data); // 👈 Add this
-
-
-  //     if (data.success) {
-  //       setProductOptions((prev) => ({ ...prev, [index]: data.data }));
-  //       setProductDropdownOpen((prev) => ({ ...prev, [index]: true }));
-  //     }
-  //   } catch (err) {
-  //     console.error("Product search failed:", err);
-  //   }
-  // };
-
   const handleProductSearch = async (index: number, value: string) => {
-  setProductSearchTerms((prev) => ({
-    ...prev,
-    [index]: value,
-  }));
-
-  const updatedItems = [...items];
-  updatedItems[index] = {
-    ...updatedItems[index],
-    product_id: null,
-    item_name: value,
-  };
-  setItems(updatedItems);
-
-  if (value.trim().length < 1) {
-    setProductOptions((prev) => ({
+    setProductSearchTerms((prev) => ({
       ...prev,
-      [index]: [],
+      [index]: value,
+    }));
+
+    const updatedItems = [...items];
+    updatedItems[index] = {
+      ...updatedItems[index],
+      product_id: null,
+      item_name: value,
+    };
+    setItems(updatedItems);
+
+    if (value.trim().length < 1) {
+      setProductOptions((prev) => ({
+        ...prev,
+        [index]: [],
+      }));
+
+      setProductDropdownOpen((prev) => ({
+        ...prev,
+        [index]: false,
+      }));
+
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/products/search?q=${encodeURIComponent(
+          value
+        )}`,
+        {
+          headers: getAuthHeaders(),
+        }
+      );
+
+      const data = await response.json();
+
+      console.log("Product API Response:", data);
+
+      if (data.success) {
+        const normalizedProducts = data.data.map((product: any) => ({
+          id: product.id,
+          name:
+            product.name ||
+            product.product_name ||
+            product.item_name ||
+            "",
+
+          sku: product.sku || "",
+
+          price:
+            Number(
+              product.price ||
+                product.selling_price ||
+                product.rate ||
+                0
+            ),
+
+          unit: product.unit || "pcs",
+        }));
+
+        console.log("Normalized Products:", normalizedProducts);
+
+        setProductOptions((prev) => ({
+          ...prev,
+          [index]: normalizedProducts,
+        }));
+
+        setProductDropdownOpen((prev) => ({
+          ...prev,
+          [index]: true,
+        }));
+      }
+    } catch (error) {
+      console.error("Product search failed:", error);
+    }
+  };
+
+  const handleSelectProduct = (
+    index: number,
+    product: ProductOption
+  ) => {
+    const updatedItems = [...items];
+
+    updatedItems[index] = {
+      ...updatedItems[index],
+      product_id: product.id,
+      item_name: product.name,
+      rate: Number(product.price),
+      amount:
+        updatedItems[index].quantity *
+        Number(product.price),
+    };
+
+    setItems(updatedItems);
+
+    setProductSearchTerms((prev) => ({
+      ...prev,
+      [index]: product.name,
     }));
 
     setProductDropdownOpen((prev) => ({
       ...prev,
       [index]: false,
     }));
-
-    return;
-  }
-
-  try {
-    const response = await fetch(
-      `http://localhost:5000/api/products/search?q=${encodeURIComponent(
-        value
-      )}`,
-      {
-        headers: getAuthHeaders(),
-      }
-    );
-
-    const data = await response.json();
-
-    console.log("Product API Response:", data);
-
-    if (data.success) {
-      // Normalize backend response
-      const normalizedProducts = data.data.map((product: any) => ({
-        id: product.id,
-        name:
-          product.name ||
-          product.product_name ||
-          product.item_name ||
-          "",
-
-        sku: product.sku || "",
-
-        price:
-          Number(
-            product.price ||
-              product.selling_price ||
-              product.rate ||
-              0
-          ),
-
-        unit: product.unit || "pcs",
-      }));
-
-      console.log("Normalized Products:", normalizedProducts);
-
-      setProductOptions((prev) => ({
-        ...prev,
-        [index]: normalizedProducts,
-      }));
-
-      setProductDropdownOpen((prev) => ({
-        ...prev,
-        [index]: true,
-      }));
-    }
-  } catch (error) {
-    console.error("Product search failed:", error);
-  }
-};
-  // NEW — selecting a product fills item_name + rate + product_id, and
-  // recalculates that row's amount, same as a manual rate edit would.
-  // const handleSelectProduct = (index: number, product: ProductOption) => {
-  //   const updatedItems = [...items];
-  //   const quantity = updatedItems[index].quantity || 1;
-  //   updatedItems[index] = {
-  //     ...updatedItems[index],
-  //     product_id: product.id,
-  //     item_name: product.name,
-  //     rate: product.price,
-  //     amount: quantity * product.price,
-  //   };
-  //   setItems(updatedItems);
-
-  //   setProductSearchTerms((prev) => ({ ...prev, [index]: product.name }));
-  //   setProductOptions((prev) => ({ ...prev, [index]: [] }));
-  //   setProductDropdownOpen((prev) => ({ ...prev, [index]: false }));
-  // };
-
-  const handleSelectProduct = (
-  index: number,
-  product: ProductOption
-) => {
-  const updatedItems = [...items];
-
-  updatedItems[index] = {
-    ...updatedItems[index],
-    product_id: product.id,
-    item_name: product.name,
-    rate: Number(product.price),
-    amount:
-      updatedItems[index].quantity *
-      Number(product.price),
   };
-
-  setItems(updatedItems);
-
-  setProductSearchTerms((prev) => ({
-    ...prev,
-    [index]: product.name,
-  }));
-
-  setProductDropdownOpen((prev) => ({
-    ...prev,
-    [index]: false,
-  }));
-};
 
   const handleItemChange = (index: number, field: keyof InvoiceItem, value: string | number) => {
     const updatedItems = [...items];
@@ -363,8 +321,6 @@ const [employees, setEmployees] = useState<{ id: number; name: string }[]>([]);
 
   const removeItem = (index: number) => {
     setItems(items.filter((_, i) => i !== index));
-    // Clean up this row's search state so indices don't carry stale data
-    // if rows are removed from the middle of the list.
     setProductSearchTerms((prev) => {
       const next = { ...prev };
       delete next[index];
@@ -384,9 +340,6 @@ const [employees, setEmployees] = useState<{ id: number; name: string }[]>([]);
       return;
     }
 
-    // Every line item must now be linked to a real product — this is the
-    // change that makes Inventory's Transactions tab actually work for
-    // invoices, instead of relying on free-text item_name matching.
     const unlinkedRow = items.findIndex((item) => !item.product_id);
     if (unlinkedRow !== -1) {
       alert(`Please select a product from the dropdown for row ${unlinkedRow + 1}.`);
@@ -395,7 +348,7 @@ const [employees, setEmployees] = useState<{ id: number; name: string }[]>([]);
 
     const payload = {
       customer_id: customerId,
-        salesperson_id: salespersonId,
+      salesperson_id: salespersonId,
 
       invoice_number: invoiceNumber,
       invoice_date: invoiceDate,
@@ -432,32 +385,39 @@ const [employees, setEmployees] = useState<{ id: number; name: string }[]>([]);
   };
 
   return (
-    <div className="create-invoice-page">
-      <div className="invoice-title-bar">
-        <h1>Create Invoice</h1>
-        <button className="close-btn" onClick={onClose}>Back to Details</button>
+    <div className="min-h-screen bg-[#f5f7fb] p-4 sm:p-6 font-['Times_New_Roman',Times,serif]">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Create Invoice</h1>
+        <button
+          className="px-4 py-2 border border-gray-300 bg-white rounded-lg cursor-pointer text-sm font-medium hover:bg-gray-100 transition-colors w-fit"
+          onClick={onClose}
+        >
+          Back to Details
+        </button>
       </div>
 
-      <div className="invoice-card">
+      <div className="bg-white rounded-xl p-4 sm:p-6 shadow-[0_2px_10px_rgba(0,0,0,0.06)]">
 
         {/* Header */}
-        <div className="invoice-header">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
           <div>
-            <label>Invoice Number</label>
-            <input value={invoiceNumber} readOnly />
+            <label className={labelClass}>Invoice Number</label>
+            <input className={`${inputClass} bg-gray-50`} value={invoiceNumber} readOnly />
           </div>
           <div>
-            <label>Invoice Date</label>
+            <label className={labelClass}>Invoice Date</label>
             <input
               type="date"
+              className={inputClass}
               value={invoiceDate}
               onChange={(e) => setInvoiceDate(e.target.value)}
             />
           </div>
           <div>
-            <label>Due Date</label>
+            <label className={labelClass}>Due Date</label>
             <input
               type="date"
+              className={inputClass}
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
             />
@@ -465,11 +425,13 @@ const [employees, setEmployees] = useState<{ id: number; name: string }[]>([]);
         </div>
 
         {/* ✅ Customer Search with Autocomplete */}
-        <div className="form-group" ref={searchRef} style={{ position: "relative" }}>
-          <label>
+        <div className="mb-6 relative" ref={searchRef}>
+          <label className={labelClass}>
             Customer Name
             {customerId && (
-              <span className="customer-id-badge"> ✅ ID: {customerId}</span>
+              <span className="text-[11px] text-green-600 font-medium ml-2 bg-green-100 px-2 py-0.5 rounded-full">
+                ✅ ID: {customerId}
+              </span>
             )}
           </label>
           <input
@@ -478,20 +440,20 @@ const [employees, setEmployees] = useState<{ id: number; name: string }[]>([]);
             value={customerSearch}
             onChange={(e) => handleCustomerSearch(e.target.value)}
             autoComplete="off"
-            className={!customerId && customerSearch ? "input-warn" : ""}
+            className={`${inputClass} ${!customerId && customerSearch ? inputWarn : ""}`}
           />
 
           {/* Dropdown */}
           {showDropdown && customerOptions.length > 0 && (
-            <ul className="customer-dropdown">
+            <ul className={dropdownClass}>
               {customerOptions.map((c) => (
                 <li
                   key={c.id}
                   onClick={() => handleSelectCustomer(c)}
-                  className="customer-dropdown-item"
+                  className={dropdownItemClass}
                 >
-                  <span className="dropdown-name">{c.display_name}</span>
-                  <span className="dropdown-email">{c.email}</span>
+                  <span className="text-sm font-medium text-gray-900">{c.display_name}</span>
+                  <span className="text-xs text-gray-500">{c.email}</span>
                 </li>
               ))}
             </ul>
@@ -499,220 +461,143 @@ const [employees, setEmployees] = useState<{ id: number; name: string }[]>([]);
 
           {/* No results */}
           {showDropdown && customerOptions.length === 0 && customerSearch.length > 0 && (
-            <ul className="customer-dropdown">
-              <li className="customer-dropdown-item no-result">No customers found</li>
+            <ul className={dropdownClass}>
+              <li className="cursor-default text-gray-400 text-[13px] px-3.5 py-2.5">No customers found</li>
             </ul>
           )}
         </div>
 
-        <div className="form-group">
-  <label>Sales Person</label>
-  <select
-    value={salespersonId ?? ""}
-    onChange={(e) => setSalespersonId(e.target.value ? Number(e.target.value) : null)}
-  >
-    <option value="">-- Select Sales Person --</option>
-    {employees.map((emp) => (
-      <option key={emp.id} value={emp.id}>
-        {emp.name}
-      </option>
-    ))}
-  </select>
-</div>
+        <div className="mb-6">
+          <label className={labelClass}>Sales Person</label>
+          <select
+            className={inputClass}
+            value={salespersonId ?? ""}
+            onChange={(e) => setSalespersonId(e.target.value ? Number(e.target.value) : null)}
+          >
+            <option value="">-- Select Sales Person --</option>
+            {employees.map((emp) => (
+              <option key={emp.id} value={emp.id}>
+                {emp.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {/* Items Table */}
-        <table className="items-table">
-          <thead>
-            <tr>
-              <th>Item Name</th>
-              <th>Qty</th>
-              <th>Rate</th>
-              <th>Amount</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item, index) => (
-              <tr key={index}>
-                <td style={{ position: "relative", overflow: "visible" }}>
-
-                  {/* Item Name is now a product search box, not free text.
-                      A row is only "complete" once product_id is set via
-                      a dropdown selection below. */}
-                  <input
-                    type="text"
-                    value={productSearchTerms[index] ?? item.item_name ?? ""}
-                    placeholder="Search product by name or SKU..."
-                    onChange={(e) => handleProductSearch(index, e.target.value)}
-                    autoComplete="off"
-                    className={!item.product_id && (productSearchTerms[index] ?? item.item_name ?? "").trim() !== "" ? "input-warn" : ""}
-                  />
-
-                  {/* {productDropdownOpen[index] && (productOptions[index]?.length ?? 0) > 0 && ( */}
-                    {/* {(productOptions[index]?.length ?? 0) > 0 && (
-                    <ul className="customer-dropdown"
-    style={{
-      display: "block",
-      position: "absolute",
-      top: "100%",
-      left: 0,
-      width: "300px",
-      background: "#fff",
-      border: "1px solid #ddd",
-      zIndex: 999999,
-    }}
-                    
-                    >
-                      {productOptions[index].map((p) => (
-                        <li
-                          key={p.id}
-                          onClick={() => handleSelectProduct(index, p)}
-                          className="customer-dropdown-item"
-                        >
-                          <span className="dropdown-name">{p.name}</span>
-                          <span className="dropdown-email">
-                            {p.sku} · ₹{Number(p.price).toFixed(2)} / {p.unit}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )} */}
-
-                  {/* {productDropdownOpen[index] &&
-  productOptions[index] &&
-  productOptions[index].length > 0 && (
-    <ul
-      className="customer-dropdown"
-      style={{
-        position: "absolute",
-        top: "100%",
-        left: 0,
-        width: "100%",
-        background: "#fff",
-        border: "1px solid #ddd",
-        borderRadius: "8px",
-        zIndex: 999999,
-        maxHeight: "220px",
-        overflowY: "auto",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
-      }}
-    >
-      {productOptions[index].map((product) => (
-        <li
-          key={product.id}
-          className="customer-dropdown-item"
-          onClick={() =>
-            handleSelectProduct(index, product)
-          }
-        >
-          <span className="dropdown-name">
-            {product.name}
-          </span>
-
-          <span className="dropdown-email">
-            {product.sku} • ₹
-            {Number(product.price).toFixed(2)} /{" "}
-            {product.unit}
-          </span>
-        </li>
-      ))}
-    </ul>
-)} */}
-
-{productDropdownOpen[index] &&
- productOptions[index]?.length > 0 && (
-  <ul
-    className="product-dropdown"
-    style={{
-      position: "absolute",
-      top: "45px",
-      left: "0",
-      width: "100%",
-      background: "#fff",
-      border: "1px solid #ddd",
-      borderRadius: "8px",
-      zIndex: 9999999,
-      maxHeight: "220px",
-      overflowY: "auto",
-      boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
-    }}
-  >
-    {productOptions[index].map((product) => (
-      <li
-        key={product.id}
-        onClick={() => handleSelectProduct(index, product)}
-        style={{
-          padding: "10px",
-          cursor: "pointer",
-          borderBottom: "1px solid #eee"
-        }}
-      >
-        <div>
-          <strong>{product.name}</strong>
-        </div>
-
-        <div style={{ fontSize: "12px", color: "#666" }}>
-          {product.sku} • ₹{product.price}
-        </div>
-      </li>
-    ))}
-  </ul>
-)}
-
-                  {productDropdownOpen[index] &&
-                    (productOptions[index]?.length ?? 0) === 0 &&
-                    (productSearchTerms[index]?.length ?? 0) > 0 && (
-                      <ul className="customer-dropdown">
-                        <li className="customer-dropdown-item no-result">No products found</li>
-                      </ul>
-                  )}
-                </td>
-                <td>
-                  <input
-                    type="number"
-                    value={item.quantity ?? 1}
-                    onChange={(e) => handleItemChange(index, "quantity", e.target.value)}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="number"
-                    value={item.rate ?? 0}
-                    onChange={(e) => handleItemChange(index, "rate", e.target.value)}
-                  />
-                </td>
-                <td>₹{item.amount.toFixed(2)}</td>
-                <td>
-                  <button className="remove-btn" onClick={() => removeItem(index)}>
-                    Remove
-                  </button>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full border-separate border-spacing-0 min-w-[640px]">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="p-3.5 text-left text-gray-700 text-sm font-semibold">Item Name</th>
+                <th className="p-3.5 text-left text-gray-700 text-sm font-semibold">Qty</th>
+                <th className="p-3.5 text-left text-gray-700 text-sm font-semibold">Rate</th>
+                <th className="p-3.5 text-left text-gray-700 text-sm font-semibold">Amount</th>
+                <th className="p-3.5 text-left text-gray-700 text-sm font-semibold">Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {items.map((item, index) => (
+                <tr key={index}>
+                  <td className="p-3 border-b border-gray-200 relative">
 
-        <button className="add-item-btn" onClick={addItem}>
+                    <input
+                      type="text"
+                      value={productSearchTerms[index] ?? item.item_name ?? ""}
+                      placeholder="Search product by name or SKU..."
+                      onChange={(e) => handleProductSearch(index, e.target.value)}
+                      autoComplete="off"
+                      className={`w-full p-2.5 border border-gray-300 rounded-md outline-none focus:border-blue-600 ${
+                        !item.product_id && (productSearchTerms[index] ?? item.item_name ?? "").trim() !== "" ? inputWarn : ""
+                      }`}
+                    />
+
+                    {productDropdownOpen[index] &&
+                     productOptions[index]?.length > 0 && (
+                      <ul className="absolute top-[45px] left-0 w-full bg-white border border-gray-300 rounded-lg z-[9999999] max-h-[220px] overflow-y-auto shadow-[0_4px_12px_rgba(0,0,0,0.15)]">
+                        {productOptions[index].map((product) => (
+                          <li
+                            key={product.id}
+                            onClick={() => handleSelectProduct(index, product)}
+                            className="p-2.5 cursor-pointer border-b border-gray-100 hover:bg-blue-50"
+                          >
+                            <div>
+                              <strong className="text-sm">{product.name}</strong>
+                            </div>
+
+                            <div className="text-xs text-gray-500">
+                              {product.sku} • ₹{product.price}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    {productDropdownOpen[index] &&
+                      (productOptions[index]?.length ?? 0) === 0 &&
+                      (productSearchTerms[index]?.length ?? 0) > 0 && (
+                        <ul className={dropdownClass}>
+                          <li className="cursor-default text-gray-400 text-[13px] px-3.5 py-2.5">No products found</li>
+                        </ul>
+                    )}
+                  </td>
+                  <td className="p-3 border-b border-gray-200">
+                    <input
+                      type="number"
+                      className="w-full p-2.5 border border-gray-300 rounded-md outline-none focus:border-blue-600"
+                      value={item.quantity ?? 1}
+                      onChange={(e) => handleItemChange(index, "quantity", e.target.value)}
+                    />
+                  </td>
+                  <td className="p-3 border-b border-gray-200">
+                    <input
+                      type="number"
+                      className="w-full p-2.5 border border-gray-300 rounded-md outline-none focus:border-blue-600"
+                      value={item.rate ?? 0}
+                      onChange={(e) => handleItemChange(index, "rate", e.target.value)}
+                    />
+                  </td>
+                  <td className="p-3 border-b border-gray-200 whitespace-nowrap">₹{item.amount.toFixed(2)}</td>
+                  <td className="p-3 border-b border-gray-200">
+                    <button
+                      className="px-3.5 py-2 bg-red-500 text-white rounded-md cursor-pointer text-sm hover:bg-red-600 transition-colors"
+                      onClick={() => removeItem(index)}
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <button
+          className="mt-4 px-[18px] py-2.5 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors text-sm font-medium"
+          onClick={addItem}
+        >
           + Add Item
         </button>
 
         {/* Totals */}
-        <div className="totals-section">
-          <div className="total-row">
+        <div className="w-full md:w-[320px] md:ml-auto mt-8 bg-gray-50 p-[18px] rounded-xl">
+          <div className="flex justify-between mb-3 text-gray-700 text-sm">
             <span>Subtotal</span>
             <span>₹{subtotal.toFixed(2)}</span>
           </div>
-          <div className="total-row">
+          <div className="flex justify-between mb-3 text-gray-700 text-sm">
             <span>GST (18%)</span>
             <span>₹{tax.toFixed(2)}</span>
           </div>
-          <div className="total-row grand-total">
+          <div className="flex justify-between border-t-2 border-gray-300 pt-3 mt-3 text-lg sm:text-xl font-bold text-gray-900">
             <span>Total</span>
             <span>₹{grandTotal.toFixed(2)}</span>
           </div>
         </div>
 
-        <button className="save-btn" onClick={handleSave}>
+        <button
+          className="mt-6 px-6 py-3 bg-green-600 text-white rounded-lg cursor-pointer text-[15px] font-semibold hover:bg-green-700 transition-colors w-full sm:w-auto"
+          onClick={handleSave}
+        >
           Save Invoice
         </button>
 

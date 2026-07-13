@@ -26,7 +26,10 @@ import taskRoutes from './routes/task.routes.js';
 import expenseRoutes from './routes/expense.routes.js';
 import purchaseOrderRoutes from './routes/purchaseOrder.routes.js';
 import vendorRoutes from './routes/vendor.routes.js';
-
+import dashboardRoutes from './routes/dashboardRoutes.js';
+import settingsRoutes from './routes/settings.routes.js';
+import companyRoutes from './routes/company.routes.js';
+ 
 
 const app = express();
 const PORT = 5000;
@@ -56,7 +59,10 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api', expenseRoutes);
 app.use('/api/vendors', vendorRoutes);
 app.use('/api/purchase-orders', purchaseOrderRoutes);
-
+app.use('/api/dashboard', dashboardRoutes);
+app.use("/api/employees", employeeRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/company', companyRoutes);
 
 // Interfaces for incoming requests
 interface RegisterBody {

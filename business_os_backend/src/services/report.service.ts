@@ -371,3 +371,398 @@ export const getLandedCostSummary = async () => {
     };
   });
 };
+
+// Add this to report.service.ts
+
+export const getFifoCostLotTracking = async () => {
+  // 1. All received purchase lots, oldest first per product
+  const lotRows: any = await db.execute(
+    `SELECT
+       poi.product_id,
+       p.name AS item_name,
+       po.id AS po_id,
+       po.po_number,
+       po.po_date,
+       poi.quantity AS qty_received,
+       poi.amount AS total_cost
+     FROM purchase_order_items poi
+     JOIN purchase_orders po ON po.id = poi.po_id
+     JOIN products p ON p.id = poi.product_id
+     WHERE po.status = 'Received'
+     ORDER BY poi.product_id ASC, po.po_date ASC, po.id ASC`,
+    []
+  );
+  const lotData = Array.isArray(lotRows[0]) ? lotRows[0] : lotRows;
+
+  // 2. All sales events, oldest first per product
+  const saleRows: any = await db.execute(
+    `SELECT
+       ii.product_id,
+       i.id AS invoice_id,
+       i.invoice_number,
+       i.invoice_date,
+       ii.quantity AS qty_sold
+     FROM invoice_items ii
+     JOIN invoices i ON i.id = ii.invoice_id
+     WHERE ii.product_id IS NOT NULL
+     ORDER BY ii.product_id ASC, i.invoice_date ASC, i.id ASC`,
+    []
+  );
+  const saleData = Array.isArray(saleRows[0]) ? saleRows[0] : saleRows;
+
+  // 3. Group lots by product
+  const productMap = new Map<number, any>();
+
+  for (const row of lotData) {
+    const pid = row.product_id;
+    if (!productMap.has(pid)) {
+      productMap.set(pid, {
+        product_id: pid,
+        item_name: row.item_name,
+        lots: [],
+        ledger: [],
+      });
+    }
+    const qtyReceived = Number(row.qty_received);
+    const totalCost = Number(row.total_cost);
+    const unitCost = qtyReceived > 0 ? totalCost / qtyReceived : 0;
+
+    const lot = {
+      lot_id: `PO-${row.po_id}`,
+      po_number: row.po_number,
+      po_date: row.po_date,
+      qty_received: qtyReceived,
+      qty_remaining: qtyReceived,
+      unit_cost: unitCost,
+    };
+
+    const product = productMap.get(pid);
+    product.lots.push(lot);
+    product.ledger.push({
+      date: row.po_date,
+      type: 'purchase',
+      reference: row.po_number,
+      quantity: qtyReceived,
+      unit_cost: unitCost,
+      lot_id: lot.lot_id,
+      remaining_after: qtyReceived,
+    });
+  }
+
+  // 4. Walk sales in date order, deplete oldest lot first (FIFO)
+  for (const row of saleData) {
+    const pid = row.product_id;
+    const product = productMap.get(pid);
+    if (!product) continue; // sold but never received via a tracked PO
+
+    let qtyToDeplete = Number(row.qty_sold);
+
+    for (const lot of product.lots) {
+      if (qtyToDeplete <= 0) break;
+      if (lot.qty_remaining <= 0) continue;
+
+      const take = Math.min(lot.qty_remaining, qtyToDeplete);
+      lot.qty_remaining -= take;
+      qtyToDeplete -= take;
+
+      product.ledger.push({
+        date: row.invoice_date,
+        type: 'sale',
+        reference: row.invoice_number,
+        quantity: -take,
+        unit_cost: lot.unit_cost,
+        lot_id: lot.lot_id,
+        remaining_after: lot.qty_remaining,
+      });
+    }
+
+    // Oversold beyond all tracked lots — no purchase cost basis on record
+    if (qtyToDeplete > 0) {
+      product.ledger.push({
+        date: row.invoice_date,
+        type: 'sale',
+        reference: row.invoice_number,
+        quantity: -qtyToDeplete,
+        unit_cost: 0,
+        lot_id: 'UNALLOCATED',
+        remaining_after: null,
+        note: 'Exceeds tracked FIFO lots — no purchase cost on record',
+      });
+    }
+  }
+
+  // 5. Sort each product's ledger chronologically (purchases before sales on same date)
+  return Array.from(productMap.values()).map((product) => {
+    const ledger = product.ledger.slice().sort((a: any, b: any) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      if (dateA !== dateB) return dateA - dateB;
+      return a.type === 'purchase' ? -1 : 1;
+    });
+
+    return {
+      product_id: product.product_id,
+      item_name: product.item_name,
+      lots: product.lots.map((l: any) => ({
+        ...l,
+        status: l.qty_remaining > 0 ? 'active' : 'depleted',
+      })),
+      ledger,
+    };
+  });
+};
+// Add this to report.service.ts
+
+export const getCustomerSummary = async () => {
+  const query = `
+    SELECT
+      c.id AS customer_id,
+      c.display_name AS customer_name,
+      c.email,
+      COALESCE(c.phone_mobile, c.phone_work) AS phone,
+      COUNT(DISTINCT i.id) AS total_invoices,
+      COALESCE(SUM(i.total), 0) AS total_sales,
+      COALESCE((
+        SELECT SUM(p.amount) FROM payments p
+        WHERE p.invoice_id IN (SELECT id FROM invoices WHERE customer_id = c.id)
+      ), 0) AS total_received,
+      MAX(i.invoice_date) AS last_invoice_date
+    FROM customers c
+    LEFT JOIN invoices i ON i.customer_id = c.id
+    GROUP BY c.id, c.display_name, c.email, c.phone_mobile, c.phone_work
+    ORDER BY total_sales DESC
+  `;
+
+  const rows: any = await db.execute(query, []);
+  const data = Array.isArray(rows[0]) ? rows[0] : rows;
+
+  const now = new Date();
+  const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
+
+  return data.map((row: any) => {
+    const totalSales = Number(row.total_sales);
+    const totalReceived = Number(row.total_received);
+    const lastInvoiceDate = row.last_invoice_date ? new Date(row.last_invoice_date) : null;
+
+    let status: 'Active' | 'Inactive' | 'No Activity' = 'No Activity';
+    if (lastInvoiceDate) {
+      const isRecent = now.getTime() - lastInvoiceDate.getTime() <= ninetyDaysMs;
+      status = isRecent ? 'Active' : 'Inactive';
+    }
+
+    return {
+      customer_id: row.customer_id,
+      customer_name: row.customer_name,
+      email: row.email,
+      phone: row.phone,
+      total_invoices: Number(row.total_invoices),
+      total_sales: totalSales,
+      total_received: totalReceived,
+      outstanding: totalSales - totalReceived,
+      last_invoice_date: row.last_invoice_date,
+      status,
+    };
+  });
+}; 
+
+
+export const getCustomerAgingReport = async () => {
+  const query = `
+    SELECT
+      c.id AS customer_id,
+      c.display_name AS customer_name,
+      i.id AS invoice_id,
+      i.invoice_number,
+      i.due_date,
+      i.total,
+      COALESCE((SELECT SUM(amount) FROM payments WHERE invoice_id = i.id), 0) AS paid_amount
+    FROM invoices i
+    JOIN customers c ON c.id = i.customer_id
+    WHERE LOWER(i.status) != 'paid'
+    ORDER BY c.display_name ASC, i.due_date ASC
+  `;
+
+  const rows: any = await db.execute(query, []);
+  const data = Array.isArray(rows[0]) ? rows[0] : rows;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const customerMap = new Map<number, any>();
+
+  for (const row of data) {
+    const total = Number(row.total);
+    const paid = Number(row.paid_amount);
+    const outstanding = total - paid;
+
+    // Fully paid via payments even though status wasn't updated — skip
+    if (outstanding <= 0) continue;
+
+    const pid = row.customer_id;
+    if (!customerMap.has(pid)) {
+      customerMap.set(pid, {
+        customer_id: pid,
+        customer_name: row.customer_name,
+        current: 0,
+        days_1_30: 0,
+        days_31_60: 0,
+        days_61_90: 0,
+        days_90_plus: 0,
+        total_outstanding: 0,
+        invoices: [],
+      });
+    }
+
+    const dueDate = row.due_date ? new Date(row.due_date) : null;
+    let daysOverdue = 0;
+    if (dueDate) {
+      dueDate.setHours(0, 0, 0, 0);
+      daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+    }
+
+    let bucket: 'current' | 'days_1_30' | 'days_31_60' | 'days_61_90' | 'days_90_plus';
+    if (daysOverdue <= 0) bucket = 'current';
+    else if (daysOverdue <= 30) bucket = 'days_1_30';
+    else if (daysOverdue <= 60) bucket = 'days_31_60';
+    else if (daysOverdue <= 90) bucket = 'days_61_90';
+    else bucket = 'days_90_plus';
+
+    const customer = customerMap.get(pid);
+    customer[bucket] += outstanding;
+    customer.total_outstanding += outstanding;
+    customer.invoices.push({
+      invoice_id: row.invoice_id,
+      invoice_number: row.invoice_number,
+      due_date: row.due_date,
+      outstanding,
+      days_overdue: daysOverdue,
+    });
+  }
+
+  return Array.from(customerMap.values())
+    .map((c) => ({
+      ...c,
+      current: Number(c.current.toFixed(2)),
+      days_1_30: Number(c.days_1_30.toFixed(2)),
+      days_31_60: Number(c.days_31_60.toFixed(2)),
+      days_61_90: Number(c.days_61_90.toFixed(2)),
+      days_90_plus: Number(c.days_90_plus.toFixed(2)),
+      total_outstanding: Number(c.total_outstanding.toFixed(2)),
+    }))
+    .sort((a, b) => b.total_outstanding - a.total_outstanding);
+};
+
+// Add this to report.service.ts
+
+export const getLeadSummary = async () => {
+  // Overall status breakdown
+  const statusRows: any = await db.execute(
+    `SELECT status, COUNT(*) AS count FROM leads GROUP BY status`,
+    []
+  );
+  const statusData = Array.isArray(statusRows[0]) ? statusRows[0] : statusRows;
+
+  // Source breakdown
+  const sourceRows: any = await db.execute(
+    `SELECT COALESCE(source, 'Unknown') AS source, COUNT(*) AS count
+     FROM leads GROUP BY source ORDER BY count DESC`,
+    []
+  );
+  const sourceData = Array.isArray(sourceRows[0]) ? sourceRows[0] : sourceRows;
+
+  // Full lead list with assigned employee name
+  const leadRows: any = await db.execute(
+    `SELECT
+       l.id,
+       l.name,
+       l.email,
+       l.phone,
+       l.source,
+       l.status,
+       l.created_at,
+       e.name AS assigned_to_name
+     FROM leads l
+     LEFT JOIN hrms_employees e ON e.id = l.assigned_to
+     ORDER BY l.created_at DESC`,
+    []
+  );
+  const leadData = Array.isArray(leadRows[0]) ? leadRows[0] : leadRows;
+
+  const statusCounts: Record<string, number> = {
+    New: 0,
+    Contacted: 0,
+    Qualified: 0,
+    Lost: 0,
+    Won: 0,
+  };
+  for (const row of statusData) {
+    statusCounts[row.status] = Number(row.count);
+  }
+
+  const totalLeads = Object.values(statusCounts).reduce((sum, c) => sum + c, 0);
+
+  return {
+    total_leads: totalLeads,
+    status_breakdown: statusCounts,
+    source_breakdown: sourceData.map((row: any) => ({
+      source: row.source,
+      count: Number(row.count),
+    })),
+    leads: leadData.map((row: any) => ({
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      phone: row.phone,
+      source: row.source,
+      status: row.status,
+      assigned_to_name: row.assigned_to_name,
+      created_at: row.created_at,
+    })),
+  };
+};
+
+// Add this to report.service.ts
+
+export const getCustomerTransactions = async () => {
+  const query = `
+    SELECT
+      'Invoice' AS type,
+      i.invoice_number AS reference,
+      i.invoice_date AS date,
+      c.id AS customer_id,
+      c.display_name AS customer_name,
+      i.total AS amount,
+      i.status AS status
+    FROM invoices i
+    JOIN customers c ON c.id = i.customer_id
+
+    UNION ALL
+
+    SELECT
+      'Payment' AS type,
+      COALESCE(p.payment_number, CONCAT('PAY-', p.id)) AS reference,
+      p.payment_date AS date,
+      c.id AS customer_id,
+      c.display_name AS customer_name,
+      p.amount AS amount,
+      NULL AS status
+    FROM payments p
+    JOIN invoices i ON i.id = p.invoice_id
+    JOIN customers c ON c.id = i.customer_id
+
+    ORDER BY date DESC
+  `;
+
+  const rows: any = await db.execute(query, []);
+  const data = Array.isArray(rows[0]) ? rows[0] : rows;
+
+  return data.map((row: any) => ({
+    type: row.type,
+    reference: row.reference,
+    date: row.date,
+    customer_id: row.customer_id,
+    customer_name: row.customer_name,
+    amount: Number(row.amount),
+    status: row.status,
+  }));
+};
