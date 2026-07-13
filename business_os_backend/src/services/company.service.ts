@@ -22,7 +22,7 @@ export interface CompanyProfileData {
 
 class CompanyService {
   async getProfile(companyId: number) {
-    const [rows]: any = await db.execute(
+    const rows: any = await db.execute(
       `SELECT id, company_name, subdomain, address, city, state, country, pincode,
               gst_number, phone, email, logo_url, currency, timezone,
               fiscal_year_start, date_format, default_language, time_format
