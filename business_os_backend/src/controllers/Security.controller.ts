@@ -150,12 +150,14 @@ export const securityController = {
 
       res.status(200).json({
         success: true,
-        data: result.logs,
-        pagination: {
-          total: result.total,
-          page: currentPage,
-          pageSize: limit,
-          totalPages: Math.ceil(result.total / limit),
+        data: {
+          logs: result.logs,
+          pagination: {
+            total: result.total,
+            page: currentPage,
+            pageSize: limit,
+            totalPages: Math.ceil(result.total / limit),
+          },
         },
       });
     } catch (error: any) {

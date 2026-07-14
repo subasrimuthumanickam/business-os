@@ -28,11 +28,15 @@ import dashboardRoutes from './routes/dashboardRoutes.js';
 import settingsRoutes from './routes/settings.routes.js';
 import companyRoutes from './routes/company.routes.js';
 import roleRoutes from './routes/role.routes.js'; 
-
+import securityRoutes from './routes/Security.routes.js';
+import financeRoutes from './routes/finance.routes.js';
+import chartOfAccountsRoutes from './routes/chartOfAccounts.routes.js';
+import approvalWorkflowRoutes from './routes/approvalWorkflow.routes.js';
+import inventorySettingsRoutes from './routes/inventorySettings.routes.js';
+import warehouseRoutes from './routes/warehouse.routes.js';
 // ✅ IMPORT EMAIL SERVICE
 import { sendReworkRequestEmail } from './services/emailService.js';
 
- 
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -70,7 +74,12 @@ app.use("/api/employees", employeeRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/company', companyRoutes); 
 app.use('/api/roles', roleRoutes); // Role and permission management routes
-
+app.use('/api/security', securityRoutes); // Security-related routes
+app.use('/api/finance', financeRoutes);
+app.use('/api/finance/accounts', chartOfAccountsRoutes);
+app.use('/api/finance/approval-workflows', approvalWorkflowRoutes);
+app.use('/api/inventory/settings', inventorySettingsRoutes);
+app.use('/api/inventory/warehouses', warehouseRoutes);
 
 // ============= TEST ENDPOINT =============
 app.get('/api/test', (req: Request, res: Response) => {

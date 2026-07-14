@@ -8,6 +8,9 @@ import RolesPermissions from '../components/settings/RolesPermissions';
 import NotificationSettings from '../components/settings/NotificationSettings';
 import BillingSettings from '../components/settings/BillingSettings';
 import TeamSettings from '../components/settings/TeamSettings';
+import FinanceSettings from '../components/settings/FinanceSettings';
+import FinanceModulePreferences from '../components/settings/FinanceModulePreferences';
+import InventoryModulePreferences from '../components/settings/Inventorymodulepreferences';
 
 interface NavItem {
   id: string;
@@ -40,8 +43,8 @@ const navGroups: NavGroup[] = [
   {
     title: 'Module Preferences',
     items: [
-      { id: 'mod-finance', label: 'Finance', status: 'soon' },
-      { id: 'mod-inventory', label: 'Inventory', status: 'soon' },
+      { id: 'mod-finance', label: 'Finance', status: 'active' },
+      { id: 'mod-inventory', label: 'Inventory', status: 'active' },
       { id: 'mod-hr', label: 'HR & Payroll', status: 'soon' },
     ],
   },
@@ -71,7 +74,7 @@ const SettingsView: React.FC = () => {
   const [activeTab, setActiveTab] = useState('general');
 
   // Pages that need full width (tables, matrices) skip the narrow max-w constraint
-  const isWideLayout = activeTab === 'roles';
+const isWideLayout = activeTab === 'roles' || activeTab === 'security' || activeTab === 'financial' || activeTab === 'mod-finance' || activeTab === 'mod-inventory';
 
   const renderContent = () => {
     switch (activeTab) {
@@ -80,7 +83,7 @@ const SettingsView: React.FC = () => {
       case 'company':
         return <CompanyProfile />;
       case 'financial':
-        return <GeneralSettings section="financial" />;
+        return <FinanceSettings />;
       case 'team':
         return <TeamSettings />;
       case 'roles':
@@ -89,6 +92,10 @@ const SettingsView: React.FC = () => {
         return <SecuritySettings />;
       case 'profile':
         return <ProfileSettings />;
+        case 'mod-finance':
+        return <FinanceModulePreferences />;
+        case 'mod-inventory':
+       return <InventoryModulePreferences />;
       case 'billing':
         return <BillingSettings />;
       case 'notifications':
