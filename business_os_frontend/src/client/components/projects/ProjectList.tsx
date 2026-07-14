@@ -13820,7 +13820,60 @@ const ProjectList: React.FC = () => {
     }
     setActiveTab('timetracker');
   };
- 
+ const handleTaskCompleted = (projectId: string, taskName: string) => {
+  console.log(`🗑️ Task "${taskName}" completed, removing from project ${projectId}`);
+  
+  setProjects(prevProjects => 
+    prevProjects.map(project => {
+      if (project.id === projectId) {
+        // Remove the completed task from the project's tasks array
+        const updatedTasks = project.tasks?.filter(task => task !== taskName) || [];
+        console.log(`📋 Project "${project.projectName}" tasks before:`, project.tasks);
+        console.log(`📋 Project "${project.projectName}" tasks after:`, updatedTasks);
+        
+        // Update the project's tasks
+        const updatedProject = {
+          ...project,
+          tasks: updatedTasks,
+          updatedAt: new Date().toISOString()
+        };
+        
+        // Also update the project's currentTask if it was the completed one
+        if (project.currentTask === taskName) {
+          updatedProject.currentTask = updatedTasks.length > 0 ? updatedTasks[0] : '';
+        }
+        
+        return updatedProject;
+      }
+      return project;
+    })
+  );
+  
+  // Save to localStorage immediately
+  setTimeout(() => {
+    try {
+      const savedProjects = localStorage.getItem('userProjects');
+      if (savedProjects) {
+        const parsed = JSON.parse(savedProjects);
+        const updated = parsed.map((p: any) => {
+          if (p.id === projectId) {
+            const updatedTasks = p.tasks?.filter((t: string) => t !== taskName) || [];
+            return {
+              ...p,
+              tasks: updatedTasks,
+              updatedAt: new Date().toISOString(),
+              currentTask: updatedTasks.length > 0 ? updatedTasks[0] : ''
+            };
+          }
+          return p;
+        });
+        localStorage.setItem('userProjects', JSON.stringify(updated));
+      }
+    } catch (error) {
+      console.error('Failed to save updated projects:', error);
+    }
+  }, 100);
+};
   if (view === 'create') {
     return <CreateProjectPage onBack={handleBackToList} onSave={handleCreateProject} currentUser={currentUser} />;
   }
@@ -13866,52 +13919,109 @@ const ProjectList: React.FC = () => {
   }
  
   // ==================== RENDER TAB CONTENT ====================
-  const renderTabContent = () => {
-    switch(activeTab) {
-      case 'projects':
-        return (
-          <ProjectsTab
-            viewBy={viewBy}
-            setViewBy={setViewBy}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            projects={projects}
-            setProjects={setProjects}
-            selectedProjects={selectedProjects}
-            setSelectedProjects={setSelectedProjects}
-            currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
-            itemsPerPage={itemsPerPage}
-            handleDeleteProject={handleDeleteProject}
-            onProjectClick={handleProjectClick}
-            onEditClick={handleEditClick}
-            onStartTimer={handleStartTimer}
-            onStopTimer={handleStopTimer}
-            onCompleteProject={handleCompleteProject}
-            onLogTime={handleLogTimeClick}
-            onOpenTimeTracker={handleOpenTimeTracker}
-            currentUser={currentUser}
-          />
-        );
-      case 'taskboard':
-        return <TaskBoard projects={projects} />;
-      case 'timetracker':
-        return (
-          <TimeTracker
-            preselectedProject={timerProjectName}
-            currentUser={currentUser}
-            activeProjectId={activeTrackerProjectId}
-            projects={projects}
-            entries={entries}
-            onStartTimer={handleStartTimer}
-            onStopTimer={handleStopTimer}
-          />
-        );
-      default:
-        return null;
-    }
-  };
- 
+//   const renderTabContent = () => {
+//     switch(activeTab) {
+//       case 'projects':
+//         return (
+//           <ProjectsTab
+//             viewBy={viewBy}
+//             setViewBy={setViewBy}
+//             searchTerm={searchTerm}
+//             setSearchTerm={setSearchTerm}
+//             projects={projects}
+//             setProjects={setProjects}
+//             selectedProjects={selectedProjects}
+//             setSelectedProjects={setSelectedProjects}
+//             currentPage={currentPage}
+//             setCurrentPage={setCurrentPage}
+//             itemsPerPage={itemsPerPage}
+//             handleDeleteProject={handleDeleteProject}
+//             onProjectClick={handleProjectClick}
+//             onEditClick={handleEditClick}
+//             onStartTimer={handleStartTimer}
+//             onStopTimer={handleStopTimer}
+//             onCompleteProject={handleCompleteProject}
+//             onLogTime={handleLogTimeClick}
+//             onOpenTimeTracker={handleOpenTimeTracker}
+//             currentUser={currentUser}
+//           />
+//         );
+//       case 'taskboard':
+//         return <TaskBoard projects={projects} />;
+//       case 'timetracker':
+//         return (
+//           <TimeTracker
+//             preselectedProject={timerProjectName}
+//             currentUser={currentUser}
+//             activeProjectId={activeTrackerProjectId}
+//             projects={projects}
+//             entries={entries}
+//             onStartTimer={handleStartTimer}
+//             onStopTimer={handleStopTimer}
+//           />
+//         );
+//       default:
+//         return null;
+//     }
+//   };
+ // In ProjectList.tsx - Update the renderTabContent function
+
+const renderTabContent = () => {
+  switch(activeTab) {
+    case 'projects':
+      return (
+        <ProjectsTab
+          viewBy={viewBy}
+          setViewBy={setViewBy}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          projects={projects}
+          setProjects={setProjects}
+          selectedProjects={selectedProjects}
+          setSelectedProjects={setSelectedProjects}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          itemsPerPage={itemsPerPage}
+          handleDeleteProject={handleDeleteProject}
+          onProjectClick={handleProjectClick}
+          onEditClick={handleEditClick}
+          onStartTimer={handleStartTimer}
+          onStopTimer={handleStopTimer}
+          onCompleteProject={handleCompleteProject}
+          onLogTime={handleLogTimeClick}
+          onOpenTimeTracker={handleOpenTimeTracker}
+          currentUser={currentUser}
+        />
+      );
+    case 'taskboard':
+      // ✅ Pass the timer callbacks to TaskBoard
+      return (
+        <TaskBoard 
+          projects={projects}
+          currentUser={currentUser}
+          userRole="developer"
+          onStartProjectTimer={handleStartTimer}
+          onStopProjectTimer={handleStopTimer}
+          activeProjectId={activeTrackerProjectId}
+            onTaskCompleted={handleTaskCompleted} 
+        />
+      );
+    case 'timetracker':
+      return (
+        <TimeTracker
+          preselectedProject={timerProjectName}
+          currentUser={currentUser}
+          activeProjectId={activeTrackerProjectId}
+          projects={projects}
+          entries={entries}
+          onStartTimer={handleStartTimer}
+          onStopTimer={handleStopTimer}
+        />
+      );
+    default:
+      return null;
+  }
+};
   return (
     <div className="p-3 sm:p-6 bg-gray-50 min-h-screen">
       {activeTab === 'projects' && (
