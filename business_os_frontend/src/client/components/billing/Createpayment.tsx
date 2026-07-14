@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef } from "react";
-import "./Createpayment.css";
 
 interface CustomerOption {
   id: number;
@@ -31,9 +30,10 @@ interface CreatePaymentProps {
   onClose: () => void;
 }
 
-
-
 const PAYMENT_MODES = ["Cash", "Bank Transfer", "UPI", "Cheque", "Card", "Other"];
+
+// Format a numeric sequence into PMT-0001, PMT-0002, ... style
+const formatPaymentNumber = (n: number) => `PMT-${String(n).padStart(4, "0")}`;
 
 const CreatePayment: React.FC<CreatePaymentProps> = ({ customer, invoice, payment, onClose }) => {
   const getTodayDate = () => new Date().toISOString().split("T")[0];
@@ -53,7 +53,11 @@ const CreatePayment: React.FC<CreatePaymentProps> = ({ customer, invoice, paymen
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    generatePaymentNumber();
+    // Only auto-generate a fresh sequential number when creating a NEW payment.
+    // If we're editing an existing payment, its number is set from the `payment` prop effect below.
+    if (!payment) {
+      generatePaymentNumber();
+    }
 
     const handleOutsideClick = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
@@ -73,34 +77,36 @@ const CreatePayment: React.FC<CreatePaymentProps> = ({ customer, invoice, paymen
   }, [customer]);
 
   useEffect(() => {
-  if (payment) {
-    setPaymentNumber(payment.payment_number || "");
+    if (payment) {
+      setPaymentNumber(payment.payment_number || "");
+      setPaymentDate(payment.payment_date ? payment.payment_date.split("T")[0] : getTodayDate());
+      setAmount(payment.amount || 0);
+      setPaymentMode(payment.payment_method || PAYMENT_MODES[0]);
+      setReferenceNumber(payment.reference_number || "");
+      setNotes(payment.notes || "");
+    }
+  }, [payment]);
 
-    setPaymentDate(
-      payment.payment_date
-        ? payment.payment_date.split("T")[0]
-        : getTodayDate()
-    );
+  // Generates the next sequential payment number (PMT-0001, PMT-0002, ...)
+  // by asking the backend for the last payment number on record and incrementing it.
+  // Requires a backend endpoint that returns the most recent payment_number, e.g.
+  // GET /api/payments/last -> { success: true, data: { payment_number: "PMT-0007" } }
+  const generatePaymentNumber = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/payments/last");
+      const data = await res.json();
 
-    setAmount(payment.amount || 0);
+      const lastNumber =
+        data?.success && data?.data?.payment_number
+          ? parseInt(String(data.data.payment_number).replace(/\D/g, ""), 10)
+          : 0;
 
-    setPaymentMode(
-      payment.payment_method || PAYMENT_MODES[0]
-    );
-
-    setReferenceNumber(
-      payment.reference_number || ""
-    );
-
-    setNotes(
-      payment.notes || ""
-    );
-  }
-}, [payment]);
-
-  const generatePaymentNumber = () => {
-    const random = Math.floor(10000 + Math.random() * 90000);
-    setPaymentNumber(`PMT-${random}`);
+      const nextNumber = Number.isFinite(lastNumber) ? lastNumber + 1 : 1;
+      setPaymentNumber(formatPaymentNumber(nextNumber));
+    } catch (err) {
+      console.error("Could not fetch last payment number, defaulting to PMT-0001:", err);
+      setPaymentNumber(formatPaymentNumber(1));
+    }
   };
 
   const handleCustomerSearch = async (value: string) => {
@@ -167,7 +173,7 @@ const CreatePayment: React.FC<CreatePaymentProps> = ({ customer, invoice, paymen
 
       if (response.ok) {
         alert("Payment Recorded Successfully!");
-        generatePaymentNumber();
+        await generatePaymentNumber();
         setCustomerSearch("");
         setCustomerId(null);
         setAmount(0);
@@ -183,23 +189,31 @@ const CreatePayment: React.FC<CreatePaymentProps> = ({ customer, invoice, paymen
     }
   };
 
+  const inputClasses =
+    "w-full p-3 border border-gray-300 rounded-lg text-sm font-inherit outline-none transition-colors box-border focus:border-blue-600";
+
   return (
-    <div className="pay-page">
-      <div className="pay-titlebar">
-        <h1>Customer Payment</h1>
-        <button className="pay-close-btn" onClick={onClose}>
+    <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl sm:text-[28px] font-bold text-gray-900">Customer Payment</h1>
+        <button
+          className="px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-700 font-semibold cursor-pointer transition-colors hover:bg-gray-100"
+          onClick={onClose}
+        >
           Back to Details
         </button>
       </div>
 
-      <div className="pay-card">
+      <div className="bg-white rounded-xl p-5 sm:p-7 shadow-[0_2px_10px_rgba(0,0,0,0.06)] max-w-[820px]">
         {/* Invoice context — only shown when paying a specific invoice */}
         {invoice && (
-          <div className="pay-invoice-banner">
-            <span className="pay-invoice-banner-icon">🧾</span>
+          <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3.5 mb-6">
+            <span className="text-xl">🧾</span>
             <div>
-              <strong>Paying Invoice {invoice.invoice_number}</strong>
-              <span className="pay-invoice-banner-amount">
+              <strong className="block text-blue-900 text-[15px]">
+                Paying Invoice {invoice.invoice_number}
+              </strong>
+              <span className="text-blue-600 text-[13px] font-semibold">
                 Outstanding ₹{(Number(invoice.total) || 0).toFixed(2)}
               </span>
             </div>
@@ -207,22 +221,33 @@ const CreatePayment: React.FC<CreatePaymentProps> = ({ customer, invoice, paymen
         )}
 
         {/* Row 1: Number / Date / Mode */}
-        <div className="pay-header-grid">
-          <div className="pay-field">
-            <label>Payment Number</label>
-            <input className="pay-readonly" value={paymentNumber} readOnly />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-5">
+          <div className="relative">
+            <label className="flex items-center gap-2 mb-2 text-gray-700 font-semibold text-sm">
+              Payment Number
+            </label>
+            <input className={`${inputClasses} bg-gray-50 text-gray-500 font-semibold`} value={paymentNumber} readOnly />
           </div>
-          <div className="pay-field">
-            <label>Payment Date</label>
+          <div className="relative">
+            <label className="flex items-center gap-2 mb-2 text-gray-700 font-semibold text-sm">
+              Payment Date
+            </label>
             <input
               type="date"
+              className={inputClasses}
               value={paymentDate}
               onChange={(e) => setPaymentDate(e.target.value)}
             />
           </div>
-          <div className="pay-field">
-            <label>Payment Mode</label>
-            <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)}>
+          <div className="relative">
+            <label className="flex items-center gap-2 mb-2 text-gray-700 font-semibold text-sm">
+              Payment Mode
+            </label>
+            <select
+              className={inputClasses}
+              value={paymentMode}
+              onChange={(e) => setPaymentMode(e.target.value)}
+            >
               {PAYMENT_MODES.map((m) => (
                 <option key={m} value={m}>
                   {m}
@@ -233,10 +258,14 @@ const CreatePayment: React.FC<CreatePaymentProps> = ({ customer, invoice, paymen
         </div>
 
         {/* Row 2: Customer Search */}
-        <div className="pay-field pay-customer-field" ref={searchRef}>
-          <label>
+        <div className="relative mb-5" ref={searchRef}>
+          <label className="flex items-center gap-2 mb-2 text-gray-700 font-semibold text-sm">
             Customer Name
-            {customerId && <span className="pay-id-badge">✅ ID: {customerId}</span>}
+            {customerId && (
+              <span className="text-[11px] text-green-600 font-medium bg-green-100 px-2 py-0.5 rounded-full">
+                ✅ ID: {customerId}
+              </span>
+            )}
           </label>
           <input
             type="text"
@@ -244,47 +273,57 @@ const CreatePayment: React.FC<CreatePaymentProps> = ({ customer, invoice, paymen
             value={customerSearch}
             onChange={(e) => handleCustomerSearch(e.target.value)}
             autoComplete="off"
-            className={!customerId && customerSearch ? "pay-input-warn" : ""}
+            className={`${inputClasses} ${
+              !customerId && customerSearch ? "border-amber-500 bg-amber-50" : ""
+            }`}
           />
 
           {showDropdown && customerOptions.length > 0 && (
-            <ul className="pay-dropdown">
+            <ul className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md shadow-lg z-50 list-none mt-1 py-1 max-h-[220px] overflow-y-auto">
               {customerOptions.map((c) => (
                 <li
                   key={c.id}
                   onClick={() => handleSelectCustomer(c)}
-                  className="pay-dropdown-item"
+                  className="flex flex-col px-3.5 py-2.5 cursor-pointer gap-0.5 transition-colors hover:bg-blue-50"
                 >
-                  <span className="pay-dropdown-name">{c.display_name}</span>
-                  <span className="pay-dropdown-email">{c.email}</span>
+                  <span className="text-sm font-medium text-gray-900">{c.display_name}</span>
+                  <span className="text-xs text-gray-400">{c.email}</span>
                 </li>
               ))}
             </ul>
           )}
 
           {showDropdown && customerOptions.length === 0 && customerSearch.length > 0 && (
-            <ul className="pay-dropdown">
-              <li className="pay-dropdown-item pay-no-result">No customers found</li>
+            <ul className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md shadow-lg z-50 list-none mt-1 py-1 max-h-[220px] overflow-y-auto">
+              <li className="px-3.5 py-2.5 cursor-default text-gray-300 text-[13px]">
+                No customers found
+              </li>
             </ul>
           )}
         </div>
 
         {/* Row 3: Amount + Reference */}
-        <div className="pay-amount-grid">
-          <div className="pay-field pay-amount-field">
-            <label>Amount Received (₹)</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+          <div className="relative">
+            <label className="flex items-center gap-2 mb-2 text-gray-700 font-semibold text-sm">
+              Amount Received (₹)
+            </label>
             <input
               type="number"
+              className={`${inputClasses} text-xl font-bold text-gray-900`}
               value={amount}
               min={0}
               placeholder="0.00"
               onChange={(e) => setAmount(Number(e.target.value))}
             />
           </div>
-          <div className="pay-field">
-            <label>Reference Number</label>
+          <div className="relative">
+            <label className="flex items-center gap-2 mb-2 text-gray-700 font-semibold text-sm">
+              Reference Number
+            </label>
             <input
               type="text"
+              className={inputClasses}
               value={referenceNumber}
               placeholder="UTR / Cheque No / Txn ID"
               onChange={(e) => setReferenceNumber(e.target.value)}
@@ -293,9 +332,12 @@ const CreatePayment: React.FC<CreatePaymentProps> = ({ customer, invoice, paymen
         </div>
 
         {/* Row 4: Notes */}
-        <div className="pay-field">
-          <label>Notes</label>
+        <div className="relative mb-5">
+          <label className="flex items-center gap-2 mb-2 text-gray-700 font-semibold text-sm">
+            Notes
+          </label>
           <textarea
+            className={`${inputClasses} min-h-[90px] resize-y`}
             value={notes}
             placeholder="Add a note about this payment (optional)"
             onChange={(e) => setNotes(e.target.value)}
@@ -303,12 +345,15 @@ const CreatePayment: React.FC<CreatePaymentProps> = ({ customer, invoice, paymen
         </div>
 
         {/* Footer: Summary + Save */}
-        <div className="pay-footer">
-          <div className="pay-summary">
-            <span className="pay-summary-label">Amount Received</span>
-            <span className="pay-summary-amount">₹{amount.toFixed(2)}</span>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3.5 sm:gap-0 mt-2 pt-5 border-t border-gray-200">
+          <div className="flex items-baseline gap-2.5">
+            <span className="text-gray-500 text-sm">Amount Received</span>
+            <span className="text-2xl font-bold text-gray-900">₹{amount.toFixed(2)}</span>
           </div>
-          <button className="pay-save-btn" onClick={handleSave}>
+          <button
+            className="w-full sm:w-auto px-7 py-3 bg-green-600 text-white border-none rounded-lg cursor-pointer text-[15px] font-semibold transition-colors hover:bg-green-700"
+            onClick={handleSave}
+          >
             Save Payment
           </button>
         </div>

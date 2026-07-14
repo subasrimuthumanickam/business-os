@@ -1,4 +1,3 @@
-
 import express, { type Request, type Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -25,12 +24,14 @@ import taskRoutes from './routes/task.routes.js';
 import expenseRoutes from './routes/expense.routes.js';
 import purchaseOrderRoutes from './routes/purchaseOrder.routes.js';
 import vendorRoutes from './routes/vendor.routes.js';
-
-// ✅ IMPORT EMAIL SERVICE
-import { sendReworkRequestEmail } from './services/emailService.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import settingsRoutes from './routes/settings.routes.js';
 import companyRoutes from './routes/company.routes.js';
+import roleRoutes from './routes/role.routes.js'; 
+
+// ✅ IMPORT EMAIL SERVICE
+import { sendReworkRequestEmail } from './services/emailService.js';
+
  
 
 const app = express();
@@ -64,6 +65,12 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api', expenseRoutes);
 app.use('/api/vendors', vendorRoutes);
 app.use('/api/purchase-orders', purchaseOrderRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use("/api/employees", employeeRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/company', companyRoutes); 
+app.use('/api/roles', roleRoutes); // Role and permission management routes
+
 
 // ============= TEST ENDPOINT =============
 app.get('/api/test', (req: Request, res: Response) => {
@@ -74,10 +81,7 @@ app.get('/api/test', (req: Request, res: Response) => {
   });
 });
 
-app.use('/api/dashboard', dashboardRoutes);
-app.use("/api/employees", employeeRoutes);
-app.use('/api/settings', settingsRoutes);
-app.use('/api/company', companyRoutes);
+
 
 
 // ============= DEBUG: GET ALL USERS =============
@@ -799,7 +803,7 @@ app.post('/api/login-2fa', async (req: Request<{}, {}, LoginBody>, res: Response
   }
   
   try {
-    console.log(`🔍 Login attempt for: ${email}`);
+    
     
     const user = await new Promise<any>((resolve, reject) => {
       db.get(
@@ -828,8 +832,7 @@ app.post('/api/login-2fa', async (req: Request<{}, {}, LoginBody>, res: Response
       console.warn(`❌ Invalid password for: ${email}`);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
-    
-    console.log(`✅ Login successful for: ${email}`);
+  
     
     const twoFA = await new Promise<any>((resolve, reject) => {
       db.get('SELECT secret, enabled FROM two_fa WHERE user_id = ?', [user.id], (err: any, row: any) => {

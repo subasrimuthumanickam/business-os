@@ -1,5 +1,4 @@
 import React, { useEffect, useRef } from "react";
-import "./InvoiceView.css";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
@@ -33,15 +32,29 @@ interface Props {
   customer: any;
   onClose: () => void;
   onPay?: () => void;
- autoDownload?: boolean;
+  autoDownload?: boolean;
 }
+
+// Maps invoice status to badge color classes (was .status-badge.draft/.pending/.paid)
+const getStatusBadgeClasses = (status?: string) => {
+  switch (status?.toLowerCase()) {
+    case "draft":
+      return "bg-amber-100 text-amber-800";
+    case "pending":
+      return "bg-blue-100 text-blue-700";
+    case "paid":
+      return "bg-green-100 text-green-700";
+    default:
+      return "bg-gray-100 text-gray-700";
+  }
+};
 
 const InvoiceView: React.FC<Props> = ({
   invoice,
   customer,
   onClose,
   onPay,
-  autoDownload
+  autoDownload,
 }) => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -65,224 +78,192 @@ const InvoiceView: React.FC<Props> = ({
   };
 
   useEffect(() => {
+    if (autoDownload) {
+      setTimeout(() => {
+        handleDownload();
+        onClose();
+      }, 500);
+    }
+  }, [autoDownload]);
 
-  if (autoDownload) {
+  // invoice download component
+  const invoiceRef = useRef<HTMLDivElement>(null);
 
-    setTimeout(() => {
-      handleDownload();
-      onClose();
-    }, 500);
+  const handleDownload = async () => {
+    if (!invoiceRef.current) return;
 
-  }
+    const canvas = await html2canvas(invoiceRef.current, {
+      scale: 2,
+    });
 
-}, [autoDownload]);
- 
-//invoice download compontent
-const invoiceRef = useRef<HTMLDivElement>(null);
+    const imgData = canvas.toDataURL("image/png");
 
-const handleDownload = async () => {
+    const pdf = new jsPDF("p", "mm", "a4");
 
-  if (!invoiceRef.current) return;
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-  const canvas = await html2canvas(invoiceRef.current, {
-    scale: 2
-  });
+    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
 
-  const imgData = canvas.toDataURL("image/png");
+    pdf.save(`${invoice.invoice_number}.pdf`);
+  };
 
-  const pdf = new jsPDF("p", "mm", "a4");
-
-  const pdfWidth = pdf.internal.pageSize.getWidth();
-  const pdfHeight =
-    (canvas.height * pdfWidth) / canvas.width;
-
-  pdf.addImage(
-    imgData,
-    "PNG",
-    0,
-    0,
-    pdfWidth,
-    pdfHeight
-  );
-
-  pdf.save(`${invoice.invoice_number}.pdf`);
-};
   return (
-    <div className="invoice-page">
-
+    <div className="bg-gray-100 min-h-screen p-4 sm:p-6 lg:p-[30px] print:bg-white print:p-0">
       {/* Toolbar */}
-      <div className="invoice-toolbar">
-
+      <div className="flex justify-between mb-5 print:hidden">
         <button
-          className="toolbar-btn"
+          className="border-none bg-blue-600 text-white px-4.5 py-2.5 rounded-lg cursor-pointer font-semibold transition-colors hover:bg-blue-700"
           onClick={onClose}
         >
           ← Back
         </button>
 
         <button
-          className="toolbar-btn"
+          className="border-none bg-blue-600 text-white px-4.5 py-2.5 rounded-lg cursor-pointer font-semibold transition-colors hover:bg-blue-700"
           onClick={() => window.print()}
         >
           🖨 Print
         </button>
-
       </div>
 
-      <div className="invoice-container" ref={invoiceRef}>
-
+      <div
+        className="max-w-[1000px] w-full mx-auto bg-white p-5 sm:p-8 lg:p-10 rounded-xl shadow-[0_5px_25px_rgba(0,0,0,0.08)] box-border print:shadow-none print:rounded-none print:max-w-full"
+        ref={invoiceRef}
+      >
         {/* Header */}
-        <div className="invoice-header">
-
+        <div className="flex flex-wrap sm:flex-nowrap justify-between items-start gap-4 border-b-2 border-gray-200 pb-5">
           <div>
-            <h1>BusinessOS</h1>
-            <p>Business Management Software</p>
+            <h1 className="m-0 text-blue-600 text-2xl font-bold">BusinessOS</h1>
+            <p className="text-gray-500 mt-1.5">Business Management Software</p>
           </div>
 
-          <div className="invoice-title">
-            <h2>INVOICE</h2>
+          <div className="text-right shrink-0 w-full sm:w-auto">
+            <h2 className="m-0 text-3xl font-bold">INVOICE</h2>
 
             <span
-              className={`status-badge ${invoice.status?.toLowerCase()}`}
+              className={`inline-block mt-2 px-3.5 py-1.5 rounded-full text-[13px] font-semibold ${getStatusBadgeClasses(
+                invoice.status
+              )}`}
             >
               {invoice.status}
             </span>
           </div>
-
         </div>
 
         {/* Customer + Invoice Details */}
-        <div className="invoice-info">
-
+        <div className="flex flex-wrap justify-between gap-4 mt-8">
           <div>
-            <h4>Bill To</h4>
+            <h4 className="mb-2.5 font-semibold">Bill To</h4>
 
             <p>
-              <strong>
-                {invoice.customer_name || customer?.name}
-              </strong>
+              <strong>{invoice.customer_name || customer?.name}</strong>
             </p>
 
-            <p>
-              {invoice.customer_email || customer?.email}
-            </p>
+            <p>{invoice.customer_email || customer?.email}</p>
 
-            <p>
-              {invoice.customer_phone || customer?.phone_work}
-            </p>
+            <p>{invoice.customer_phone || customer?.phone_work}</p>
           </div>
 
-          <div className="invoice-meta">
-
-            <div>
-              <span>Invoice No</span>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col">
+              <span className="text-gray-500 text-[13px]">Invoice No</span>
               <strong>{invoice.invoice_number}</strong>
             </div>
 
-            <div>
-              <span>Invoice Date</span>
+            <div className="flex flex-col">
+              <span className="text-gray-500 text-[13px]">Invoice Date</span>
               <strong>{formatDate(invoice.invoice_date)}</strong>
             </div>
 
-            <div>
-              <span>Due Date</span>
+            <div className="flex flex-col">
+              <span className="text-gray-500 text-[13px]">Due Date</span>
               <strong>{formatDate(invoice.due_date)}</strong>
             </div>
-
           </div>
-
         </div>
 
         {/* Items */}
-        <table className="invoice-table">
-
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Item Name</th>
-              <th>Qty</th>
-              <th>Rate</th>
-              <th>Amount</th>
-            </tr>
-          </thead>
-
-          <tbody>
-
-            {invoice.items && invoice.items.length > 0 ? (
-  invoice.items.map((item, index) => (
-                <tr key={index}>
-                  <td>{index + 1}</td>
-                  <td>{item.item_name}</td>
-                  <td>{item.quantity}</td>
-                  <td>{formatCurrency(item.rate)}</td>
-                  <td>{formatCurrency(item.amount)}</td>
-                </tr>
-              ))
-            ) : (
+        <div className="overflow-x-auto mt-8">
+          <table className="w-full border-collapse min-w-[560px]">
+            <thead>
               <tr>
-                <td
-                  colSpan={5}
-                  style={{ textAlign: "center" }}
-                >
-                  No Items Found
-                </td>
+                <th className="bg-slate-50 text-left p-3.5 border border-gray-200">#</th>
+                <th className="bg-slate-50 text-left p-3.5 border border-gray-200">Item Name</th>
+                <th className="bg-slate-50 text-left p-3.5 border border-gray-200">Qty</th>
+                <th className="bg-slate-50 text-left p-3.5 border border-gray-200">Rate</th>
+                <th className="bg-slate-50 text-left p-3.5 border border-gray-200">Amount</th>
               </tr>
-            )}
+            </thead>
 
-          </tbody>
-
-        </table>
+            <tbody>
+              {invoice.items && invoice.items.length > 0 ? (
+                invoice.items.map((item, index) => (
+                  <tr key={index}>
+                    <td className="p-3.5 border border-gray-200">{index + 1}</td>
+                    <td className="p-3.5 border border-gray-200">{item.item_name}</td>
+                    <td className="p-3.5 border border-gray-200">{item.quantity}</td>
+                    <td className="p-3.5 border border-gray-200">{formatCurrency(item.rate)}</td>
+                    <td className="p-3.5 border border-gray-200">{formatCurrency(item.amount)}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="p-3.5 border border-gray-200 text-center">
+                    No Items Found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
 
         {/* Totals */}
-        <div className="invoice-totals">
-
-          <div className="total-row">
+        <div className="w-full sm:w-80 max-w-full sm:ml-auto mt-7">
+          <div className="flex justify-between py-2.5">
             <span>Subtotal</span>
-            <strong>
-              {formatCurrency(invoice.subtotal)}
-            </strong>
+            <strong>{formatCurrency(invoice.subtotal)}</strong>
           </div>
 
-          <div className="total-row">
+          <div className="flex justify-between py-2.5">
             <span>Tax</span>
-            <strong>
-              {formatCurrency(invoice.tax)}
-            </strong>
+            <strong>{formatCurrency(invoice.tax)}</strong>
           </div>
 
-          <div className="total-row grand-total">
+          <div className="flex justify-between py-2.5 text-xl font-bold border-t-2 border-gray-200 mt-2.5 pt-4">
             <span>Total</span>
-            <strong>
-              {formatCurrency(invoice.total)}
-            </strong>
+            <strong>{formatCurrency(invoice.total)}</strong>
           </div>
-
         </div>
 
         {/* Footer Actions */}
         <div
-  className="invoice-footer-actions"
-  data-html2canvas-ignore="true"
->
-  <button
-    className="btn-secondary"
-    onClick={onClose}
-  >
-    Close
-  </button>
+          className="flex flex-wrap justify-end items-center gap-3 mt-7 print:hidden"
+          data-html2canvas-ignore="true"
+        >
+          <button
+            className="px-5 py-2.5 border border-gray-300 rounded-lg cursor-pointer text-sm font-semibold bg-gray-100 text-gray-700 transition-colors hover:bg-gray-200"
+            onClick={onClose}
+          >
+            Close
+          </button>
 
-  {invoice.status?.toLowerCase() !== "paid" && (
-    <button
-      className="btn-primary"
-      onClick={onPay}
-    >
-       Pay Invoice
-    </button>
-  )}
+          {invoice.status?.toLowerCase() !== "paid" && (
+            <button
+              className="px-5 py-2.5 border-none rounded-lg cursor-pointer text-sm font-semibold bg-blue-600 text-white transition-colors hover:bg-blue-700"
+              onClick={onPay}
+            >
+              Pay Invoice
+            </button>
+          )}
 
-  <button className="btn-download" onClick={handleDownload}>Download Invoice</button>
-</div>
-
+          <button
+            className="px-5 py-2.5 border-none rounded-lg cursor-pointer text-sm font-semibold bg-blue-600 text-white transition-colors hover:bg-blue-700"
+            onClick={handleDownload}
+          >
+            Download Invoice
+          </button>
+        </div>
       </div>
     </div>
   );
