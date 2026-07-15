@@ -34,6 +34,10 @@ import chartOfAccountsRoutes from './routes/chartOfAccounts.routes.js';
 import approvalWorkflowRoutes from './routes/approvalWorkflow.routes.js';
 import inventorySettingsRoutes from './routes/inventorySettings.routes.js';
 import warehouseRoutes from './routes/warehouse.routes.js';
+import commentRoutes from "./routes/comment.routes.js";
+import salesOrderRoutes from "./routes/salesOrder.routes.js";
+
+
 // ✅ IMPORT EMAIL SERVICE
 import { sendReworkRequestEmail } from './services/emailService.js';
 
@@ -80,6 +84,9 @@ app.use('/api/finance/accounts', chartOfAccountsRoutes);
 app.use('/api/finance/approval-workflows', approvalWorkflowRoutes);
 app.use('/api/inventory/settings', inventorySettingsRoutes);
 app.use('/api/inventory/warehouses', warehouseRoutes);
+app.use("/api/customers/:customerId/comments", commentRoutes);
+app.use("/api/sales-orders", salesOrderRoutes);
+
 
 // ============= TEST ENDPOINT =============
 app.get('/api/test', (req: Request, res: Response) => {

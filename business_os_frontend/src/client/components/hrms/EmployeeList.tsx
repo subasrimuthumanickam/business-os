@@ -13,6 +13,8 @@ interface EmployeeFormData {
   salary?: number;
   status?: 'active' | 'on-leave' | 'inactive';
   skills?: string[];
+  username?: string;
+  password?: string;
 }
 
 interface EmployeeListProps {
@@ -20,9 +22,9 @@ interface EmployeeListProps {
   onEmployeeUpdate?: (employees: Employee[]) => void;
 }
 
-const EmployeeList: React.FC<EmployeeListProps> = ({ 
+const EmployeeList: React.FC<EmployeeListProps> = ({
   employees: propEmployees,
-  onEmployeeUpdate 
+  onEmployeeUpdate
 }) => {
   const [employees, setEmployees] = useState<Employee[]>(propEmployees || []);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
@@ -42,7 +44,9 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
     joinDate: '',
     salary: 0,
     status: 'active',
-    skills: []
+    skills: [],
+    username: '',
+    password: ''
   });
 
   useEffect(() => {
@@ -52,31 +56,31 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
   }, []);
 
   const fetchEmployees = async () => {
-  try {
-    const response = await fetch(
-      "http://localhost:5000/api/hrms/employees"
-    );
-
-    const data = await response.json();
-
-    setEmployees(data.data || []);
-if (selectedEmployee && data.data) {
-      const updatedSelectedEmployee = data.data.find(
-        (emp: Employee) => String(emp.id) === String(selectedEmployee.id)
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/hrms/employees"
       );
 
-      if (updatedSelectedEmployee) {
-        setSelectedEmployee(updatedSelectedEmployee);
-      }
-    }
+      const data = await response.json();
 
-    if (onEmployeeUpdate) {
-      onEmployeeUpdate(data.data || []);
+      setEmployees(data.data || []);
+      if (selectedEmployee && data.data) {
+        const updatedSelectedEmployee = data.data.find(
+          (emp: Employee) => String(emp.id) === String(selectedEmployee.id)
+        );
+
+        if (updatedSelectedEmployee) {
+          setSelectedEmployee(updatedSelectedEmployee);
+        }
+      }
+
+      if (onEmployeeUpdate) {
+        onEmployeeUpdate(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching employees:", error);
     }
-  } catch (error) {
-    console.error("Error fetching employees:", error);
-  }
-};
+  };
 
   const getStatusColor = (status: string): string => {
     switch (status) {
@@ -92,26 +96,26 @@ if (selectedEmployee && data.data) {
   };
 
   const handleDelete = async (id: string) => {
-  try {
-    const response = await fetch(
-      `http://localhost:5000/api/hrms/employees/${id}`,
-      {
-        method: "DELETE"
-      }
-    );
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/hrms/employees/${id}`,
+        {
+          method: "DELETE"
+        }
+      );
 
-    if (response.ok) {
-      fetchEmployees();
-      setShowDeleteModal(null);
+      if (response.ok) {
+        fetchEmployees();
+        setShowDeleteModal(null);
 
-      if (selectedEmployee?.id === id) {
-        setSelectedEmployee(null);
+        if (selectedEmployee?.id === id) {
+          setSelectedEmployee(null);
+        }
       }
+    } catch (error) {
+      console.error("Error deleting employee:", error);
     }
-  } catch (error) {
-    console.error("Error deleting employee:", error);
-  }
-};
+  };
 
   const handleStatusChange = async (id: string, newStatus: Employee['status']) => {
     try {
@@ -148,12 +152,15 @@ if (selectedEmployee && data.data) {
   e.preventDefault();
 
   try {
+    const token = localStorage.getItem('token'); // adjust key name if different
+
     const response = await fetch(
       "http://localhost:5000/api/hrms/employees/create",
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify(formData)
       }
@@ -165,6 +172,9 @@ if (selectedEmployee && data.data) {
       fetchEmployees();
       setShowAddModal(false);
       resetForm();
+    } else {
+      console.error("Add employee failed:", data.message);
+      alert(data.message || "Failed to add employee");
     }
   } catch (error) {
     console.error("Error adding employee:", error);
@@ -179,22 +189,30 @@ if (selectedEmployee && data.data) {
   if (!editingEmployee) return;
 
   try {
+    const token = localStorage.getItem('token');
+
     const response = await fetch(
       `http://localhost:5000/api/hrms/employees/${editingEmployee.id}`,
       {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify(formData)
       }
     );
+
+    const data = await response.json();
 
     if (response.ok) {
       fetchEmployees();
       setShowAddModal(false);
       setEditingEmployee(null);
       resetForm();
+    } else {
+      console.error("Update employee failed:", data.message);
+      alert(data.message || "Failed to update employee");
     }
   } catch (error) {
     console.error("Error updating employee:", error);
@@ -212,7 +230,9 @@ if (selectedEmployee && data.data) {
       joinDate: '',
       salary: 0,
       status: 'active',
-      skills: []
+      skills: [],
+      username: '',
+      password: ''
     });
   };
 
@@ -240,7 +260,9 @@ if (selectedEmployee && data.data) {
       joinDate: new Date().toISOString().split('T')[0],
       salary: 0,
       status: 'active',
-      skills: []
+      skills: [],
+      username: '',
+      password: ''
     });
     setShowAddModal(true);
   };
@@ -257,7 +279,9 @@ if (selectedEmployee && data.data) {
       joinDate: employee.joinDate,
       salary: employee.salary || 0,
       status: employee.status,
-      skills: employee.skills || []
+      skills: employee.skills || [],
+      username: employee.username || '',
+      password: '' // blank = don't change password
     });
     setShowAddModal(true);
   };
@@ -278,9 +302,9 @@ if (selectedEmployee && data.data) {
               {filteredEmployees.length}
             </span>
           </span>
-          
+
           <div className="h-4 w-px bg-gray-200"></div>
-          
+
           <input
             type="text"
             placeholder="Search..."
@@ -288,7 +312,7 @@ if (selectedEmployee && data.data) {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          
+
           <select
             value={filterDepartment}
             onChange={(e) => setFilterDepartment(e.target.value)}
@@ -299,7 +323,7 @@ if (selectedEmployee && data.data) {
               <option key={dept} value={dept}>{dept}</option>
             ))}
           </select>
-          
+
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
@@ -310,7 +334,7 @@ if (selectedEmployee && data.data) {
             <option value="on-leave">On Leave</option>
             <option value="inactive">Inactive</option>
           </select>
-          
+
           <button
             onClick={handleOpenAddModal}
             className="ml-auto bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3 py-1 rounded-lg transition-colors whitespace-nowrap"
@@ -357,11 +381,11 @@ if (selectedEmployee && data.data) {
                             <span className="text-xs text-gray-400 truncate">{employee.department}</span>
                             <span className="text-xs text-gray-300">•</span>
                             <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${
-                              employee.status === 'active' ? 'bg-green-100 text-green-700' : 
-                              employee.status === 'on-leave' ? 'bg-yellow-100 text-yellow-700' : 
+                              employee.status === 'active' ? 'bg-green-100 text-green-700' :
+                              employee.status === 'on-leave' ? 'bg-yellow-100 text-yellow-700' :
                               'bg-gray-100 text-gray-700'
                             }`}>
-                              {employee.status === 'active' ? 'Active' : 
+                              {employee.status === 'active' ? 'Active' :
                                employee.status === 'on-leave' ? 'On Leave' : 'Inactive'}
                             </span>
                           </div>
@@ -373,7 +397,7 @@ if (selectedEmployee && data.data) {
               )}
             </tbody>
           </table>
-          
+
           <div className="mt-3 text-xs text-gray-500 flex items-center justify-between border-t border-gray-100 pt-3">
             <span>Displaying {filteredEmployees.length} of {employees.length}</span>
             <span>Rows: 10</span>
@@ -388,7 +412,7 @@ if (selectedEmployee && data.data) {
             <h2 className="text-lg font-bold text-gray-800 border-b border-gray-200 pb-4 mb-5">
               Employee Details
             </h2>
-            
+
             <div className="space-y-5">
               {/* Header with Avatar */}
               <div className="flex items-center gap-4">
@@ -407,15 +431,21 @@ if (selectedEmployee && data.data) {
                 <p className="text-base font-medium text-gray-800">{selectedEmployee.code}</p>
               </div>
 
+              {/* Username - read only display */}
+              <div>
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Login Username</p>
+                <p className="text-base font-medium text-gray-800">{selectedEmployee.username || '-'}</p>
+              </div>
+
               {/* Status - Like Stock */}
               <div>
                 <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Status</p>
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                  selectedEmployee.status === 'active' ? 'bg-green-100 text-green-800' : 
-                  selectedEmployee.status === 'on-leave' ? 'bg-yellow-100 text-yellow-800' : 
+                  selectedEmployee.status === 'active' ? 'bg-green-100 text-green-800' :
+                  selectedEmployee.status === 'on-leave' ? 'bg-yellow-100 text-yellow-800' :
                   'bg-gray-100 text-gray-800'
                 }`}>
-                  {selectedEmployee.status === 'active' ? 'Active' : 
+                  {selectedEmployee.status === 'active' ? 'Active' :
                    selectedEmployee.status === 'on-leave' ? 'On Leave' : 'Inactive'}
                 </span>
               </div>
@@ -471,23 +501,23 @@ if (selectedEmployee && data.data) {
               <div className="border-t border-gray-100 pt-4">
                 <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Actions</p>
                 <div className="flex flex-wrap gap-2">
-                  <button 
+                  <button
                     onClick={() => handleOpenEditModal(selectedEmployee)}
                     className="text-sm bg-blue-50 text-blue-700 px-4 py-1.5 rounded-lg hover:bg-blue-100 transition"
                   >
                     Edit
                   </button>
-                  <button 
+                  <button
                     className="text-sm bg-yellow-50 text-yellow-700 px-4 py-1.5 rounded-lg hover:bg-yellow-100 transition"
                   >
                     Leave
                   </button>
-                  <button 
+                  <button
                     className="text-sm bg-purple-50 text-purple-700 px-4 py-1.5 rounded-lg hover:bg-purple-100 transition"
                   >
                     Performance
                   </button>
-                  <button 
+                  <button
                     onClick={() => setShowDeleteModal(selectedEmployee.id)}
                     className="text-sm bg-red-50 text-red-700 px-4 py-1.5 rounded-lg hover:bg-red-100 transition"
                   >
@@ -565,7 +595,6 @@ if (selectedEmployee && data.data) {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Department *</label>
                   <select
-                    // required
                     value={formData.department || ''}
                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
@@ -576,6 +605,33 @@ if (selectedEmployee && data.data) {
                     ))}
                   </select>
                 </div>
+
+                {/* Username & Password - login credentials for employee */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Username *</label>
+                  <input
+                    type="text"
+                    required={!editingEmployee}
+                    value={formData.username || ''}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                    placeholder="e.g. karthik.dev"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Password {editingEmployee && <span className="text-xs text-gray-400">(leave blank to keep unchanged)</span>}
+                  </label>
+                  <input
+                    type="password"
+                    required={!editingEmployee}
+                    value={formData.password || ''}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                    placeholder={editingEmployee ? '••••••••' : 'Set login password'}
+                  />
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Join Date *</label>
                   <input

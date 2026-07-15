@@ -12,6 +12,7 @@ export interface Employee {
   salary?: number;
   status: 'active' | 'on-leave' | 'inactive';
   skills?: string[];
+  username?: string; 
 }
 
 export interface LeaveRequest {

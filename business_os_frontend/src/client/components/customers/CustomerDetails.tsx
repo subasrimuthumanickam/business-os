@@ -16,7 +16,7 @@ import CreateCreditNote from "../billing/Createcreditnote";
 import InvoiceView from "../billing/InvoiceView";
 import { downloadInvoicePDF } from "../../utils/invoicePdf";
 import ReceiptView from "../billing/ReceiptView";
-
+import CommentsSection from "./Commentssection";
 // =============================================
 // Types
 // =============================================
@@ -952,12 +952,9 @@ const CustomerDetails: React.FC<CustomerProps> = ({ customer, onEdit }) => {
               )}
             </div>
           )}
-
           {activeTab === "comments" && (
-            <div className="bg-white p-10 rounded-xl text-center text-gray-500 shadow-[0_2px_10px_rgba(0,0,0,0.04)]">
-              No comments available
-            </div>
-          )}
+  <CommentsSection customerId={customer.id} />
+)}
           {activeTab === "related" && (
             <div className="bg-white p-10 rounded-xl text-center text-gray-500 shadow-[0_2px_10px_rgba(0,0,0,0.04)]">
               Related records will appear here

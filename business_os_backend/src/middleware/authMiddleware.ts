@@ -12,6 +12,8 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
     try {
         const payload = authService.verifyToken(token);
+        console.log("JWT payload:", payload); // temp debug line
+
         const request = req as Request & { user?: typeof payload };
         request.user = payload;
         next();

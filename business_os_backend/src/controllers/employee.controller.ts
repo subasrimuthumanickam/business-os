@@ -16,7 +16,31 @@ export const createEmployeeController = async (
   res: Response
 ) => {
   try {
-    const result = await employeeService.createEmployee(req.body);
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required for login access",
+      });
+    }
+
+    // Cast INSIDE the function body, not in the parameter type —
+    // this avoids Express RequestHandler overload conflicts
+    const user = (req as any).user as
+      | { id: number; company_id: number; role_id: number; email: string }
+      | undefined;
+
+    const companyId = user?.company_id;
+
+    if (!companyId) {
+      return res.status(401).json({
+        success: false,
+        message: "Company context missing, please re-login",
+      });
+    }
+
+    const result = await employeeService.createEmployee(req.body, companyId);
 
     return res.status(201).json({
       success: true,
