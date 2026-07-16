@@ -1,3 +1,2011 @@
+// // // import React, { useState, useEffect, useRef } from 'react';
+// // // import { 
+// // //   Plus, 
+// // //   MoreVertical, 
+// // //   Edit, 
+// // //   Trash2, 
+// // //   Clock, 
+// // //   CheckCircle,
+// // //   Circle,
+// // //   AlertCircle,
+// // //   Calendar,
+// // //   Tag,
+// // //   Users,
+// // //   ChevronDown,
+// // //   Search,
+// // //   RefreshCw,
+// // //   Bug,
+// // //   ArrowRight,
+// // //   Play,
+// // //   XCircle,
+// // //   User,
+// // //   MessageSquare,
+// // //   Send,
+// // //   Eye,
+// // //   Bell,
+// // //   UserPlus,
+// // //   History,
+// // //   Filter,
+// // //   RotateCcw,
+// // //   Shield,
+// // //   Check,
+// // //   GitBranch,
+// // //   MoveRight,
+// // //   Repeat,
+// // //   UserCheck,
+// // //   UserCog,
+// // //   StopCircle,
+// // //   PlayCircle,
+// // //   GripVertical
+// // // } from 'lucide-react';
+
+// // // // ============================================================
+// // // // TYPES
+// // // // ============================================================
+// // // interface Subtask {
+// // //   title: string;
+// // //   completed: boolean;
+// // // }
+
+// // // interface Task {
+// // //   id: string;
+// // //   title: string;
+// // //   description: string;
+// // //   status: 'todo' | 'in-progress' | 'review' | 'done';
+// // //   priority: 'low' | 'medium' | 'high' | 'urgent';
+// // //   assignee: string;
+// // //   dueDate: string;
+// // //   estimatedHours: number;
+// // //   loggedHours: number;
+// // //   tags: string[];
+// // //   projectName: string;
+// // //   projectId: string;
+// // //   createdAt: string;
+// // //   updatedAt: string;
+// // //   comments: number;
+// // //   attachments: number;
+// // //   subtasks: Subtask[];
+// // //   isBug?: boolean;
+// // //   bugReportedBy?: string;
+// // //   bugAssignedTo?: string;
+// // //   reworkCount?: number;
+// // //   testingNotes?: string;
+// // //   developerNotes?: string;
+// // //   reworkHistory?: Array<{
+// // //     date: string;
+// // //     from: string;
+// // //     to: string;
+// // //     notes: string;
+// // //   }>;
+// // //   originalAssignee?: string;
+// // //   completedBy?: string;
+// // //   completedAt?: string;
+// // //   reworkReason?: string;
+// // //   tester?: string;
+// // //   developer?: string;
+// // //   reworkDeadline?: string;
+// // //   timerStartedAt?: string | null;
+// // //   timerRunning?: boolean;
+// // //   timerElapsedSeconds?: number;
+// // //   rawString?: string;
+// // // }
+
+// // // interface Project {
+// // //   id: string;
+// // //   customerName: string;
+// // //   projectName: string;
+// // //   tasks?: string[];
+// // //   status?: string;
+// // //   timerRunning?: boolean;
+// // //   timerStartedAt?: string | null;
+// // //   timerElapsedSeconds?: number;
+// // //   loggedHours?: number | string;
+// // //   billingType?: string;
+// // //   rate?: number | null;
+// // //   budget?: number | null;
+// // //   totalHours?: number;
+// // //   timerStartTime?: string | null;
+// // //   isTimerRunning?: boolean;
+// // //   currentTaskId?: string | null;
+// // //   currentTaskName?: string | null;
+// // //   customerEmail?: string;
+// // //   projectType?: string;
+// // //   startDate?: string;
+// // //   endDate?: string;
+// // //   description?: string;
+// // //   createdAt?: string;
+// // //   updatedAt?: string;
+// // //   hoursLogged?: number;
+// // //   totalTasks?: number;
+// // //   completedTasks?: number;
+// // // }
+
+// // // interface TaskBoardProps {
+// // //   projects?: Project[];
+// // //   currentUser?: string;
+// // //   userRole?: 'developer' | 'tester' | 'admin';
+// // //   onStartProjectTimer?: (projectId: string, taskId?: string, taskName?: string) => void;
+// // //   onStopProjectTimer?: (projectId: string, taskId?: string, taskName?: string, notes?: string) => void;
+// // //   activeProjectId?: string | null;
+// // //   onTaskCompleted?: (projectId: string, taskName: string) => void;
+// // //   onTaskUpdated?: (projectId: string, taskName: string, newStatus: string) => void;
+// // // }
+
+// // // // ============================================================
+// // // // CONSTANTS
+// // // // ============================================================
+// // // const COLUMN_ORDER = ['todo', 'in-progress', 'review', 'done'];
+// // // const COLUMN_NAMES: Record<string, string> = {
+// // //   todo: 'To Do',
+// // //   'in-progress': 'In Progress',
+// // //   review: 'Review',
+// // //   done: 'Done'
+// // // };
+
+// // // const getVisibleColumns = (role: string): string[] => {
+// // //   switch(role) {
+// // //     case 'developer':
+// // //       return ['todo', 'in-progress', 'review', 'done'];
+// // //     case 'tester':
+// // //       return ['review', 'done'];
+// // //     case 'admin':
+// // //       return ['todo', 'in-progress', 'review', 'done'];
+// // //     default:
+// // //       return ['todo', 'in-progress', 'review', 'done'];
+// // //   }
+// // // };
+
+// // // const isMoveAllowed = (source: string, destination: string): boolean => {
+// // //   const sourceIndex = COLUMN_ORDER.indexOf(source);
+// // //   const destIndex = COLUMN_ORDER.indexOf(destination);
+// // //   return sourceIndex !== -1 && destIndex !== -1 && destIndex > sourceIndex;
+// // // };
+
+// // // // ============================================================
+// // // // TASK BOARD COMPONENT
+// // // // ============================================================
+// // // const TaskBoard: React.FC<TaskBoardProps> = ({ 
+// // //   projects = [], 
+// // //   currentUser = '',
+// // //   userRole = 'developer',
+// // //   onStartProjectTimer,
+// // //   onStopProjectTimer,
+// // //   activeProjectId = null,
+// // //   onTaskCompleted,
+// // //   onTaskUpdated
+// // // }) => {
+// // //   // ============================================================
+// // //   // STATE
+// // //   // ============================================================
+// // //   const loadTasksFromStorage = (): Task[] => {
+// // //     try {
+// // //       const stored = localStorage.getItem('taskBoardTasks');
+// // //       if (stored) {
+// // //         return JSON.parse(stored);
+// // //       }
+// // //     } catch (error) {
+// // //       console.error('Failed to load tasks from storage:', error);
+// // //     }
+// // //     return [];
+// // //   };
+
+// // //   const [tasks, setTasks] = useState<Task[]>(() => {
+// // //     const stored = loadTasksFromStorage();
+// // //     return stored.length > 0 ? stored : [];
+// // //   });
+
+// // //   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+// // //   const [searchTerm, setSearchTerm] = useState('');
+// // //   const [filterPriority, setFilterPriority] = useState<string>('all');
+// // //   const [filterAssignee, setFilterAssignee] = useState<string>('all');
+// // //   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
+  
+// // //   const [showReworkModal, setShowReworkModal] = useState(false);
+// // //   const [reworkTask, setReworkTask] = useState<Task | null>(null);
+// // //   const [reworkNotes, setReworkNotes] = useState('');
+// // //   const [reworkAssignee, setReworkAssignee] = useState('');
+// // //   const [reworkAssignees, setReworkAssignees] = useState<string[]>([]);
+// // //   const [reworkDeadline, setReworkDeadline] = useState('');
+  
+// // //   const [showReassignModal, setShowReassignModal] = useState(false);
+// // //   const [reassignTask, setReassignTask] = useState<Task | null>(null);
+// // //   const [reassignAssignee, setReassignAssignee] = useState('');
+// // //   const [reassignAssignees, setReassignAssignees] = useState<string[]>([]);
+// // //   const [reassignReason, setReassignReason] = useState('');
+  
+// // //   const [newTask, setNewTask] = useState({
+// // //     title: '',
+// // //     description: '',
+// // //     priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
+// // //     assignee: '',
+// // //     dueDate: '',
+// // //     projectId: '',
+// // //     projectName: ''
+// // //   });
+
+// // //   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+// // //   const stopTimerCalledRef = useRef<Set<string>>(new Set());
+
+// // //   // ============================================================
+// // //   // LOAD PROJECTS
+// // //   // ============================================================
+// // //   const loadProjects = (): Project[] => {
+// // //     try {
+// // //       const savedProjects = localStorage.getItem('userProjects');
+// // //       if (savedProjects) {
+// // //         const parsed = JSON.parse(savedProjects);
+// // //         if (Array.isArray(parsed)) {
+// // //           return parsed;
+// // //         }
+// // //       }
+// // //     } catch (error) {
+// // //       console.error('Failed to load projects:', error);
+// // //     }
+// // //     return [];
+// // //   };
+
+// // //   // ============================================================
+// // //   // SYNC TIMER WITH PROJECTS
+// // //   // ============================================================
+// // //   useEffect(() => {
+// // //     if (projects.length > 0) {
+// // //       const runningProject = projects.find((p: any) => p.timerRunning === true);
+      
+// // //       if (runningProject) {
+// // //         console.log('🔄 Syncing timer from project:', runningProject.projectName);
+        
+// // //         setTasks(prevTasks => 
+// // //           prevTasks.map(task => {
+// // //             if (task.projectId === runningProject.id && task.status === 'in-progress') {
+// // //               if (!task.timerRunning) {
+// // //                 console.log(`✅ Syncing timer for task: ${task.title}`);
+// // //                 return {
+// // //                   ...task,
+// // //                   timerRunning: true,
+// // //                   timerStartedAt: runningProject.timerStartedAt || new Date().toISOString(),
+// // //                   timerElapsedSeconds: runningProject.timerElapsedSeconds || 0
+// // //                 };
+// // //               }
+// // //             }
+// // //             return task;
+// // //           })
+// // //         );
+// // //       }
+// // //     }
+// // //   }, [projects]);
+
+// // //   // ============================================================
+// // //   // TIMER LOGIC
+// // //   // ============================================================
+// // //   useEffect(() => {
+// // //     if (timerIntervalRef.current) {
+// // //       clearInterval(timerIntervalRef.current);
+// // //       timerIntervalRef.current = null;
+// // //     }
+
+// // //     const runningTask = tasks.find(t => t.timerRunning === true);
+    
+// // //     if (runningTask) {
+// // //       timerIntervalRef.current = setInterval(() => {
+// // //         setTasks(prevTasks => 
+// // //           prevTasks.map(task => {
+// // //             if (task.id === runningTask.id && task.timerRunning) {
+// // //               const elapsed = (task.timerElapsedSeconds || 0) + 1;
+// // //               return { ...task, timerElapsedSeconds: elapsed };
+// // //             }
+// // //             return task;
+// // //           })
+// // //         );
+// // //       }, 1000);
+// // //     }
+
+// // //     return () => {
+// // //       if (timerIntervalRef.current) {
+// // //         clearInterval(timerIntervalRef.current);
+// // //         timerIntervalRef.current = null;
+// // //       }
+// // //     };
+// // //   }, [tasks.map(t => t.timerRunning).join(',')]);
+
+// // //   const startTimer = (taskId: string) => {
+// // //     const task = tasks.find(t => t.id === taskId);
+// // //     if (!task) return;
+    
+// // //     console.log(`▶️ Starting timer for task: ${task.title}, projectId: ${task.projectId}`);
+    
+// // //     setTasks(prevTasks => 
+// // //       prevTasks.map(task => {
+// // //         if (task.id === taskId) {
+// // //           return {
+// // //             ...task,
+// // //             timerStartedAt: new Date().toISOString(),
+// // //             timerRunning: true,
+// // //             timerElapsedSeconds: task.timerElapsedSeconds || 0
+// // //           };
+// // //         }
+// // //         return task;
+// // //       })
+// // //     );
+    
+// // //     if (onStartProjectTimer && task.projectId) {
+// // //       console.log(`📤 Starting project timer for project: ${task.projectId}`);
+// // //       onStartProjectTimer(task.projectId, task.id, task.title);
+// // //     } else {
+// // //       console.warn(`⚠️ Cannot start timer: onStartProjectTimer=${!!onStartProjectTimer}, projectId=${task.projectId}`);
+// // //     }
+// // //   };
+
+// // //   const stopTimer = (taskId: string, saveTime: boolean = true) => {
+// // //     const task = tasks.find(t => t.id === taskId);
+// // //     if (!task) return;
+    
+// // //     console.log(`⏹️ Stopping timer for task: ${task.title}, projectId: ${task.projectId}`);
+    
+// // //     setTasks(prevTasks => 
+// // //       prevTasks.map(task => {
+// // //         if (task.id === taskId && task.timerRunning) {
+// // //           const elapsedSeconds = task.timerElapsedSeconds || 0;
+// // //           const hoursLogged = elapsedSeconds / 3600;
+          
+// // //           return {
+// // //             ...task,
+// // //             timerRunning: false,
+// // //             timerStartedAt: null,
+// // //             loggedHours: saveTime ? task.loggedHours + hoursLogged : task.loggedHours,
+// // //             timerElapsedSeconds: saveTime ? 0 : elapsedSeconds
+// // //           };
+// // //         }
+// // //         return task;
+// // //       })
+// // //     );
+    
+// // //     if (onStopProjectTimer && task?.projectId) {
+// // //       console.log(`🛑 Stopping project timer for project: ${task.projectId}`);
+// // //       onStopProjectTimer(task.projectId, task?.id, task?.title, 'Timer stopped manually');
+// // //     }
+// // //   };
+
+// // //   const stopProjectTimerOnReview = (task: Task) => {
+// // //     const key = `${task.id}-${task.projectId}`;
+// // //     if (stopTimerCalledRef.current.has(key)) {
+// // //       console.log(`⚠️ Already stopped timer for task: ${task.title}`);
+// // //       return;
+// // //     }
+// // //     stopTimerCalledRef.current.add(key);
+    
+// // //     console.log(`🔍 stopProjectTimerOnReview called:`, {
+// // //       taskId: task.id,
+// // //       taskTitle: task.title,
+// // //       projectId: task.projectId,
+// // //       onStopProjectTimer: !!onStopProjectTimer,
+// // //       timerRunning: task.timerRunning
+// // //     });
+    
+// // //     if (onStopProjectTimer && task.projectId) {
+// // //       console.log(`🛑 STOPPING PROJECT TIMER: Task "${task.title}" moved to Review, projectId=${task.projectId}`);
+// // //       onStopProjectTimer(
+// // //         task.projectId,
+// // //         task.id, 
+// // //         task.title, 
+// // //         'Task moved to Review - Timer stopped automatically'
+// // //       );
+// // //     } else {
+// // //       console.log(`⚠️ Cannot stop timer: projectId=${task.projectId}, onStopProjectTimer=${!!onStopProjectTimer}`);
+// // //     }
+// // //   };
+
+// // //   const formatTime = (seconds: number): string => {
+// // //     if (seconds < 60) {
+// // //       return `${seconds}s`;
+// // //     }
+// // //     const hours = Math.floor(seconds / 3600);
+// // //     const minutes = Math.floor((seconds % 3600) / 60);
+// // //     const secs = seconds % 60;
+    
+// // //     if (hours > 0) {
+// // //       return `${hours}h ${minutes}m ${secs}s`;
+// // //     }
+// // //     return `${minutes}m ${secs}s`;
+// // //   };
+
+// // //   const getTimerDisplay = (task: Task) => {
+// // //     if (task.timerRunning) {
+// // //       const elapsed = task.timerElapsedSeconds || 0;
+// // //       return (
+// // //         <div className="flex items-center gap-1.5 text-green-600 mb-2">
+// // //           <Clock className="w-3 h-3 animate-pulse" />
+// // //           <span className="text-xs font-medium">{formatTime(elapsed)}</span>
+// // //           <span className="text-[8px] text-green-400 animate-pulse">●</span>
+// // //         </div>
+// // //       );
+// // //     }
+    
+// // //     const project = projects.find(p => p.id === task.projectId);
+// // //     if (project?.timerRunning) {
+// // //       const elapsed = project.timerElapsedSeconds || 0;
+// // //       return (
+// // //         <div className="flex items-center gap-1.5 text-green-600 mb-2">
+// // //           <Clock className="w-3 h-3 animate-pulse" />
+// // //           <span className="text-xs font-medium">{formatTime(elapsed)}</span>
+// // //           <span className="text-[8px] text-green-400 animate-pulse">●</span>
+// // //           <span className="text-[8px] text-blue-400">(project)</span>
+// // //         </div>
+// // //       );
+// // //     }
+    
+// // //     if (task.loggedHours > 0) {
+// // //       return (
+// // //         <div className="flex items-center gap-1.5 text-gray-400 mb-2">
+// // //           <Clock className="w-3 h-3" />
+// // //           <span className="text-[10px]">{task.loggedHours.toFixed(1)}h logged</span>
+// // //         </div>
+// // //       );
+// // //     }
+// // //     return null;
+// // //   };
+
+// // //   // ============================================================
+// // //   // SYNC TASKS WITH PROJECTS
+// // //   // ============================================================
+// // //   useEffect(() => {
+// // //     const syncTasks = () => {
+// // //       const allProjects = projects.length > 0 ? projects : loadProjects();
+      
+// // //       const existingTaskIds = new Set(tasks.map(t => t.id));
+// // //       const projectTaskIds = new Set();
+      
+// // //       const newProjectTasks: Task[] = [];
+      
+// // //       allProjects.forEach(project => {
+// // //         if (project.tasks && project.tasks.length > 0) {
+// // //           const tasksFromProject = project.tasks.map(taskName => {
+// // //             const taskId = `task-${project.id}-${taskName}-${Date.now()}-${Math.random()}`;
+// // //             projectTaskIds.add(taskId);
+            
+// // //             const existingTask = tasks.find(t => 
+// // //               t.title === taskName && 
+// // //               t.projectId === project.id &&
+// // //               !t.id.startsWith('task-manual-')
+// // //             );
+            
+// // //             if (existingTask) {
+// // //               return null;
+// // //             }
+            
+// // //             return {
+// // //               id: taskId,
+// // //               title: taskName,
+// // //               description: `Task from project: ${project.projectName}`,
+// // //               status: 'todo' as const,
+// // //               priority: 'medium' as const,
+// // //               assignee: project.customerName || 'Unassigned',
+// // //               dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+// // //               estimatedHours: 1,
+// // //               loggedHours: 0,
+// // //               tags: [project.projectName],
+// // //               projectName: project.projectName,
+// // //               projectId: project.id,
+// // //               createdAt: new Date().toISOString(),
+// // //               updatedAt: new Date().toISOString(),
+// // //               comments: 0,
+// // //               attachments: 0,
+// // //               subtasks: [],
+// // //               isBug: false,
+// // //               reworkCount: 0,
+// // //               reworkHistory: [],
+// // //               developer: project.customerName || 'Unassigned',
+// // //               tester: '',
+// // //               reworkDeadline: '',
+// // //               timerStartedAt: null,
+// // //               timerRunning: false,
+// // //               timerElapsedSeconds: 0
+// // //             };
+// // //           }).filter(task => task !== null) as Task[];
+          
+// // //           newProjectTasks.push(...tasksFromProject);
+// // //         }
+// // //       });
+
+// // //       const tasksToAdd = newProjectTasks.filter(task => 
+// // //         !existingTaskIds.has(task.id) && 
+// // //         !tasks.some(t => t.title === task.title && t.projectId === task.projectId)
+// // //       );
+
+// // //       if (tasksToAdd.length > 0) {
+// // //         const allTasks = [...tasks, ...tasksToAdd];
+// // //         setTasks(allTasks);
+// // //         localStorage.setItem('taskBoardTasks', JSON.stringify(allTasks));
+// // //       }
+// // //     };
+
+// // //     syncTasks();
+// // //   }, [projects]);
+
+// // //   useEffect(() => {
+// // //     try {
+// // //       localStorage.setItem('taskBoardTasks', JSON.stringify(tasks));
+// // //     } catch (error) {
+// // //       console.error('Failed to save tasks to storage:', error);
+// // //     }
+// // //   }, [tasks]);
+
+// // //   // ============================================================
+// // //   // UPDATE PROJECT TASK STATUS
+// // //   // ============================================================
+// // //   const updateProjectTaskStatus = (projectId: string, taskTitle: string, newStatus: string) => {
+// // //     try {
+// // //       const savedProjects = localStorage.getItem('userProjects');
+// // //       if (savedProjects) {
+// // //         const parsed = JSON.parse(savedProjects);
+// // //         const projectIndex = parsed.findIndex((p: any) => p.id === projectId);
+        
+// // //         if (projectIndex !== -1 && parsed[projectIndex].tasks) {
+// // //           const taskIndex = parsed[projectIndex].tasks.findIndex((t: string) => {
+// // //             return t.includes(taskTitle);
+// // //           });
+          
+// // //           if (taskIndex !== -1) {
+// // //             const oldTaskString = parsed[projectIndex].tasks[taskIndex];
+            
+// // //             // Parse the task string to extract components
+// // //             const titleMatch = oldTaskString.match(/^(.*?)(?:\s*assignee|$)/i);
+// // //             const title = titleMatch ? titleMatch[1].trim() : taskTitle;
+// // //             const assigneeMatch = oldTaskString.match(/assignee[:\s]+([A-Za-z]+(?:\s+[A-Za-z]+)*)/i);
+// // //             const assignee = assigneeMatch ? assigneeMatch[1].trim() : 'Unassigned';
+// // //             const hoursMatch = oldTaskString.match(/(\d+\.?\d*)\s*h\s*\/\s*(\d+\.?\d*)\s*h/);
+// // //             const loggedHours = hoursMatch ? hoursMatch[1] : '0';
+// // //             const estimatedHours = hoursMatch ? hoursMatch[2] : '1';
+            
+// // //             // Create updated task string with new status
+// // //             const newTaskString = `${title} - assignee: ${assignee} - ${loggedHours}h / ${estimatedHours}h - ${newStatus}`;
+// // //             parsed[projectIndex].tasks[taskIndex] = newTaskString;
+            
+// // //             localStorage.setItem('userProjects', JSON.stringify(parsed));
+// // //             console.log(`✅ Updated project task status to: ${newStatus}`);
+            
+// // //             // Notify parent if callback provided
+// // //             if (onTaskUpdated) {
+// // //               onTaskUpdated(projectId, taskTitle, newStatus);
+// // //             }
+            
+// // //             return true;
+// // //           }
+// // //         }
+// // //       }
+// // //     } catch (error) {
+// // //       console.error('Failed to update project task status:', error);
+// // //     }
+// // //     return false;
+// // //   };
+
+// // //   // ============================================================
+// // //   // REMOVE TASK FROM PROJECT
+// // //   // ============================================================
+// // //   const removeTaskFromProject = (projectId: string, taskTitle: string) => {
+// // //     try {
+// // //       const savedProjects = localStorage.getItem('userProjects');
+// // //       if (savedProjects) {
+// // //         const parsed = JSON.parse(savedProjects);
+// // //         const projectIndex = parsed.findIndex((p: any) => p.id === projectId);
+        
+// // //         if (projectIndex !== -1 && parsed[projectIndex].tasks) {
+// // //           const taskIndex = parsed[projectIndex].tasks.findIndex((t: string) => {
+// // //             return t.includes(taskTitle);
+// // //           });
+          
+// // //           if (taskIndex !== -1) {
+// // //             parsed[projectIndex].tasks.splice(taskIndex, 1);
+// // //             localStorage.setItem('userProjects', JSON.stringify(parsed));
+// // //             console.log(`✅ Removed task "${taskTitle}" from project`);
+            
+// // //             if (onTaskCompleted) {
+// // //               onTaskCompleted(projectId, taskTitle);
+// // //             }
+// // //             return true;
+// // //           }
+// // //         }
+// // //       }
+// // //     } catch (error) {
+// // //       console.error('Failed to remove task from project:', error);
+// // //     }
+// // //     return false;
+// // //   };
+
+// // //   // ============================================================
+// // //   // COLUMN CONFIGURATION
+// // //   // ============================================================
+// // //   const visibleColumns = getVisibleColumns(userRole);
+
+// // //   const columns = [
+// // //     { id: 'todo', title: 'To Do', bgColor: 'bg-gray-50', borderColor: 'border-gray-200', headerColor: 'text-gray-700' },
+// // //     { id: 'in-progress', title: 'In Progress', bgColor: 'bg-blue-50', borderColor: 'border-blue-200', headerColor: 'text-blue-700' },
+// // //     { id: 'review', title: 'Review', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200', headerColor: 'text-yellow-700' },
+// // //     { id: 'done', title: 'Done', bgColor: 'bg-green-50', borderColor: 'border-green-200', headerColor: 'text-green-700' }
+// // //   ];
+
+// // //   // ============================================================
+// // //   // HELPERS
+// // //   // ============================================================
+// // //   const getPriorityColor = (priority: string): string => {
+// // //     switch(priority) {
+// // //       case 'urgent': return 'bg-red-100 text-red-700 border-red-200';
+// // //       case 'high': return 'bg-orange-100 text-orange-700 border-orange-200';
+// // //       case 'medium': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+// // //       case 'low': return 'bg-green-100 text-green-700 border-green-200';
+// // //       default: return 'bg-gray-100 text-gray-600 border-gray-200';
+// // //     }
+// // //   };
+
+// // //   const getStatusIcon = (status: string) => {
+// // //     switch(status) {
+// // //       case 'done': return <CheckCircle className="w-4 h-4 text-green-500" />;
+// // //       case 'review': return <AlertCircle className="w-4 h-4 text-yellow-500" />;
+// // //       case 'in-progress': return <Clock className="w-4 h-4 text-blue-500" />;
+// // //       default: return <Circle className="w-4 h-4 text-gray-400" />;
+// // //     }
+// // //   };
+
+// // //   const getTasksByStatus = (status: string): Task[] => {
+// // //     let filtered = tasks.filter(task => task.status === status);
+    
+// // //     if (searchTerm) {
+// // //       filtered = filtered.filter(task => 
+// // //         task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+// // //         task.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+// // //         task.projectName.toLowerCase().includes(searchTerm.toLowerCase())
+// // //       );
+// // //     }
+// // //     if (filterPriority !== 'all') {
+// // //       filtered = filtered.filter(task => task.priority === filterPriority);
+// // //     }
+// // //     if (filterAssignee !== 'all') {
+// // //       filtered = filtered.filter(task => task.assignee === filterAssignee);
+// // //     }
+// // //     return filtered;
+// // //   };
+
+// // //   const deleteTask = (taskId: string) => {
+// // //     if (window.confirm('Are you sure you want to delete this task?')) {
+// // //       setTasks(prev => prev.filter(task => task.id !== taskId));
+// // //     }
+// // //   };
+
+// // //   const getInitials = (name: string): string => {
+// // //     return name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+// // //   };
+
+// // //   const getAssigneeColor = (name: string): string => {
+// // //     const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500', 'bg-red-500'];
+// // //     return colors[name.length % colors.length];
+// // //   };
+
+// // //   const getProgress = (task: Task): number => {
+// // //     if (task.estimatedHours === 0) return 0;
+// // //     return Math.round((task.loggedHours / task.estimatedHours) * 100);
+// // //   };
+
+// // //   const getUniqueAssignees = (): string[] => {
+// // //     const assignees = tasks.map(task => task.assignee);
+// // //     return ['all', ...new Set(assignees)];
+// // //   };
+
+// // //   const getAllDevelopers = (): string[] => {
+// // //     const allProjects = projects.length > 0 ? projects : loadProjects();
+// // //     const developers = allProjects.map(p => p.customerName).filter(Boolean);
+// // //     const uniqueDevelopers = [...new Set(developers)];
+// // //     tasks.forEach(task => {
+// // //       if (task.assignee && !uniqueDevelopers.includes(task.assignee)) {
+// // //         uniqueDevelopers.push(task.assignee);
+// // //       }
+// // //     });
+// // //     if (uniqueDevelopers.length === 0) {
+// // //       uniqueDevelopers.push('Unassigned');
+// // //     }
+// // //     return uniqueDevelopers;
+// // //   };
+
+// // //   // ============================================================
+// // //   // ADD TASK
+// // //   // ============================================================
+// // //   const handleAddTask = () => {
+// // //     if (!newTask.title.trim()) {
+// // //       alert('Please enter a task title');
+// // //       return;
+// // //     }
+
+// // //     const allProjects = projects.length > 0 ? projects : loadProjects();
+// // //     const project = allProjects.find(p => p.id === newTask.projectId);
+    
+// // //     const task: Task = {
+// // //       id: `task-manual-${Date.now()}`,
+// // //       title: newTask.title,
+// // //       description: newTask.description || 'No description',
+// // //       status: 'todo',
+// // //       priority: newTask.priority,
+// // //       assignee: newTask.assignee || project?.customerName || 'Unassigned',
+// // //       dueDate: newTask.dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+// // //       estimatedHours: 1,
+// // //       loggedHours: 0,
+// // //       tags: project ? [project.projectName] : [],
+// // //       projectName: project?.projectName || newTask.projectName || 'Unassigned',
+// // //       projectId: project?.id || newTask.projectId || 'unknown',
+// // //       createdAt: new Date().toISOString(),
+// // //       updatedAt: new Date().toISOString(),
+// // //       comments: 0,
+// // //       attachments: 0,
+// // //       subtasks: [],
+// // //       isBug: false,
+// // //       reworkCount: 0,
+// // //       reworkHistory: [],
+// // //       developer: newTask.assignee || project?.customerName || 'Unassigned',
+// // //       tester: '',
+// // //       reworkDeadline: '',
+// // //       timerStartedAt: null,
+// // //       timerRunning: false,
+// // //       timerElapsedSeconds: 0
+// // //     };
+
+// // //     setTasks(prev => [task, ...prev]);
+// // //     setShowAddTaskModal(false);
+// // //     setNewTask({
+// // //       title: '',
+// // //       description: '',
+// // //       priority: 'medium',
+// // //       assignee: '',
+// // //       dueDate: '',
+// // //       projectId: '',
+// // //       projectName: ''
+// // //     });
+// // //   };
+
+// // //   // ============================================================
+// // //   // MOVE TASK
+// // //   // ============================================================
+// // //   const handleMoveTask = (taskId: string, direction: 'forward' | 'backward') => {
+// // //     const task = tasks.find(t => t.id === taskId);
+// // //     if (!task) return;
+
+// // //     const statusOrder: Task['status'][] = ['todo', 'in-progress', 'review', 'done'];
+// // //     const currentIndex = statusOrder.indexOf(task.status);
+    
+// // //     let newStatus: Task['status'];
+    
+// // //     if (direction === 'forward') {
+// // //       if (currentIndex >= statusOrder.length - 1) return;
+// // //       newStatus = statusOrder[currentIndex + 1];
+// // //     } else {
+// // //       if (currentIndex <= 0) return;
+// // //       newStatus = statusOrder[currentIndex - 1];
+// // //     }
+
+// // //     const isReview = newStatus === 'review';
+// // //     const isDone = newStatus === 'done';
+    
+// // //     let updatedTask = { ...task };
+    
+// // //     const project = projects.find(p => p.id === task.projectId);
+// // //     const isTimerRunning = task.timerRunning || project?.timerRunning === true;
+    
+// // //     if ((isReview || isDone) && isTimerRunning) {
+// // //       const elapsedSeconds = task.timerElapsedSeconds || project?.timerElapsedSeconds || 0;
+// // //       const hoursLogged = elapsedSeconds / 3600;
+      
+// // //       updatedTask = {
+// // //         ...task,
+// // //         status: newStatus,
+// // //         timerRunning: false,
+// // //         timerStartedAt: null,
+// // //         loggedHours: task.loggedHours + hoursLogged,
+// // //         timerElapsedSeconds: 0,
+// // //         updatedAt: new Date().toISOString()
+// // //       };
+      
+// // //       if (isDone) {
+// // //         updatedTask = {
+// // //           ...updatedTask,
+// // //           completedBy: currentUser,
+// // //           completedAt: new Date().toISOString()
+// // //         };
+// // //       }
+      
+// // //       if (isReview) {
+// // //         stopProjectTimerOnReview(task);
+// // //       }
+      
+// // //       alert(`⏹️ Timer stopped automatically. Task "${task.title}" moved to ${newStatus}.`);
+// // //     } else {
+// // //       updatedTask = {
+// // //         ...task,
+// // //         status: newStatus,
+// // //         updatedAt: new Date().toISOString()
+// // //       };
+      
+// // //       if (isDone) {
+// // //         updatedTask = {
+// // //           ...updatedTask,
+// // //           completedBy: currentUser,
+// // //           completedAt: new Date().toISOString()
+// // //         };
+// // //       }
+// // //     }
+
+// // //     if (isDone) {
+// // //       const updatedTasks = tasks.filter(t => t.id !== taskId);
+// // //       setTasks(updatedTasks);
+// // //       removeTaskFromProject(task.projectId, task.title);
+      
+// // //       try {
+// // //         localStorage.setItem('taskBoardTasks', JSON.stringify(updatedTasks));
+// // //       } catch (error) {
+// // //         console.error('Failed to save tasks:', error);
+// // //       }
+      
+// // //       alert(`✅ Task "${task.title}" has been completed and removed from the project!`);
+// // //     } else {
+// // //       const updatedTasks = tasks.map(t => t.id === taskId ? updatedTask : t);
+// // //       setTasks(updatedTasks);
+      
+// // //       // ✅ Update the project's task status
+// // //       updateProjectTaskStatus(task.projectId, task.title, newStatus);
+// // //     }
+// // //   };
+
+// // //   // ============================================================
+// // //   // REASSIGN TASK
+// // //   // ============================================================
+// // //   const handleReassignTask = (taskId: string) => {
+// // //     if (userRole !== 'admin' && userRole !== 'developer') {
+// // //       return;
+// // //     }
+    
+// // //     const task = tasks.find(t => t.id === taskId);
+// // //     if (!task) return;
+    
+// // //     const developers = getAllDevelopers();
+// // //     const filteredDevelopers = developers.filter(d => d !== task.assignee);
+    
+// // //     if (filteredDevelopers.length === 0) {
+// // //       return;
+// // //     }
+    
+// // //     setReassignTask(task);
+// // //     setReassignAssignee(filteredDevelopers[0] || '');
+// // //     setReassignAssignees(filteredDevelopers);
+// // //     setReassignReason('');
+// // //     setShowReassignModal(true);
+// // //   };
+
+// // //   const handleSubmitReassign = () => {
+// // //     if (!reassignTask) return;
+
+// // //     if (!reassignAssignee.trim()) {
+// // //       return;
+// // //     }
+
+// // //     const updatedTasks = tasks.map(t => {
+// // //       if (t.id === reassignTask.id) {
+// // //         return {
+// // //           ...t,
+// // //           status: 'todo' as Task['status'],
+// // //           assignee: reassignAssignee,
+// // //           developer: reassignAssignee,
+// // //           updatedAt: new Date().toISOString(),
+// // //           reworkHistory: [
+// // //             ...(t.reworkHistory || []),
+// // //             {
+// // //               date: new Date().toISOString(),
+// // //               from: reassignTask.assignee,
+// // //               to: reassignAssignee,
+// // //               notes: reassignReason || 'Reassigned to new developer'
+// // //             }
+// // //           ]
+// // //         };
+// // //       }
+// // //       return t;
+// // //     });
+
+// // //     setTasks(updatedTasks);
+// // //     setShowReassignModal(false);
+// // //     setReassignTask(null);
+// // //     setReassignAssignee('');
+// // //     setReassignReason('');
+// // //   };
+
+// // //   // ============================================================
+// // //   // REWORK TASK
+// // //   // ============================================================
+// // //   const handleReworkTask = (taskId: string) => {
+// // //     const task = tasks.find(t => t.id === taskId);
+// // //     if (!task) return;
+    
+// // //     const assignees = getAllDevelopers();
+    
+// // //     setReworkTask(task);
+// // //     setReworkNotes('');
+// // //     setReworkAssignee(task.assignee || assignees[0] || '');
+// // //     setReworkAssignees(assignees);
+// // //     const defaultDeadline = new Date();
+// // //     defaultDeadline.setDate(defaultDeadline.getDate() + 3);
+// // //     setReworkDeadline(defaultDeadline.toISOString().split('T')[0]);
+// // //     setShowReworkModal(true);
+// // //   };
+
+// // //   const handleSubmitRework = async () => {
+// // //     if (!reworkTask) {
+// // //       alert('No task selected for rework');
+// // //       return;
+// // //     }
+
+// // //     if (!reworkNotes.trim()) {
+// // //       alert('Please add rework notes');
+// // //       return;
+// // //     }
+
+// // //     if (!reworkAssignee.trim()) {
+// // //       alert('Please assign a developer for rework');
+// // //       return;
+// // //     }
+
+// // //     if (!reworkDeadline) {
+// // //       alert('Please set a rework deadline');
+// // //       return;
+// // //     }
+
+// // //     const reworkHistoryEntry = {
+// // //       date: new Date().toISOString(),
+// // //       from: reworkTask.assignee,
+// // //       to: reworkAssignee,
+// // //       notes: reworkNotes
+// // //     };
+
+// // //     const updatedTasks = tasks.map(t => {
+// // //       if (t.id === reworkTask.id) {
+// // //         return {
+// // //           ...t,
+// // //           status: 'todo' as Task['status'],
+// // //           assignee: reworkAssignee,
+// // //           reworkCount: (t.reworkCount || 0) + 1,
+// // //           testingNotes: reworkNotes,
+// // //           reworkReason: reworkNotes,
+// // //           reworkDeadline: reworkDeadline,
+// // //           updatedAt: new Date().toISOString(),
+// // //           reworkHistory: [...(t.reworkHistory || []), reworkHistoryEntry],
+// // //           originalAssignee: t.originalAssignee || t.assignee,
+// // //           developer: reworkAssignee,
+// // //           tester: currentUser || 'Tester'
+// // //         };
+// // //       }
+// // //       return t;
+// // //     });
+
+// // //     setTasks(updatedTasks);
+// // //     setShowReworkModal(false);
+// // //     setReworkTask(null);
+// // //     setReworkNotes('');
+// // //     setReworkAssignee('');
+// // //     setReworkDeadline('');
+
+// // //     // Update project task status to todo
+// // //     updateProjectTaskStatus(reworkTask.projectId, reworkTask.title, 'todo');
+
+// // //     try {
+// // //       const token = localStorage.getItem('token');
+// // //       const testerEmail = localStorage.getItem('userEmail') || 'subasrimuthumanickam@gmail.com';
+      
+// // //       const response = await fetch('http://localhost:5000/api/send-rework-email', {
+// // //         method: 'POST',
+// // //         headers: {
+// // //           'Content-Type': 'application/json',
+// // //           'Authorization': `Bearer ${token}`
+// // //         },
+// // //         body: JSON.stringify({
+// // //           developerName: reworkAssignee,
+// // //           taskTitle: reworkTask.title,
+// // //           reworkNotes: reworkNotes,
+// // //           testerName: currentUser || 'Tester',
+// // //           testerEmail: testerEmail,
+// // //           taskId: reworkTask.id,
+// // //           projectName: reworkTask.projectName
+// // //         }),
+// // //       });
+
+// // //       const data = await response.json();
+      
+// // //       if (data.success) {
+// // //         alert(`✅ Rework assigned to ${reworkAssignee}\n📧 ${data.message}`);
+// // //       } else {
+// // //         alert(`✅ Rework assigned to ${reworkAssignee}\n⚠️ ${data.message || 'Email notification failed to send.'}`);
+// // //       }
+// // //     } catch (error) {
+// // //       console.error('Error sending rework email:', error);
+// // //       alert(`✅ Rework assigned to ${reworkAssignee}\n⚠️ Could not send email notification.`);
+// // //     }
+// // //   };
+
+// // //   // ============================================================
+// // //   // COMPLETE WORK
+// // //   // ============================================================
+// // //   const handleCompleteWork = (taskId: string) => {
+// // //     const task = tasks.find(t => t.id === taskId);
+// // //     if (!task) return;
+    
+// // //     let updatedTask = { ...task };
+    
+// // //     const project = projects.find(p => p.id === task.projectId);
+// // //     const isTimerRunning = task.timerRunning || project?.timerRunning === true;
+    
+// // //     if (isTimerRunning) {
+// // //       const elapsedSeconds = task.timerElapsedSeconds || project?.timerElapsedSeconds || 0;
+// // //       const hoursLogged = elapsedSeconds / 3600;
+      
+// // //       updatedTask = {
+// // //         ...task,
+// // //         status: 'review' as Task['status'],
+// // //         timerRunning: false,
+// // //         timerStartedAt: null,
+// // //         loggedHours: task.loggedHours + hoursLogged,
+// // //         timerElapsedSeconds: 0,
+// // //         updatedAt: new Date().toISOString()
+// // //       };
+      
+// // //       stopProjectTimerOnReview(task);
+      
+// // //       alert(`⏹️ Timer stopped automatically. Task "${task.title}" moved to Review.`);
+// // //     } else {
+// // //       updatedTask = {
+// // //         ...task,
+// // //         status: 'review' as Task['status'],
+// // //         updatedAt: new Date().toISOString()
+// // //       };
+// // //     }
+
+// // //     const updatedTasks = tasks.map(t => t.id === taskId ? updatedTask : t);
+// // //     setTasks(updatedTasks);
+    
+// // //     // ✅ Update the project's task status to review
+// // //     updateProjectTaskStatus(task.projectId, task.title, 'review');
+    
+// // //     if (!isTimerRunning) {
+// // //       alert(`✅ Task "${task.title}" moved to Review for testing!`);
+// // //     }
+// // //   };
+
+// // //   // ============================================================
+// // //   // APPROVE TASK
+// // //   // ============================================================
+// // //   const handleApproveTask = (taskId: string) => {
+// // //     const task = tasks.find(t => t.id === taskId);
+// // //     if (!task) return;
+    
+// // //     const project = projects.find(p => p.id === task.projectId);
+// // //     const isTimerRunning = task.timerRunning || project?.timerRunning === true;
+    
+// // //     if (isTimerRunning) {
+// // //       stopTimer(taskId, true);
+// // //     }
+    
+// // //     const updatedTasks = tasks.filter(t => t.id !== taskId);
+// // //     setTasks(updatedTasks);
+    
+// // //     // ✅ Remove task from project
+// // //     removeTaskFromProject(task.projectId, task.title);
+    
+// // //     try {
+// // //       localStorage.setItem('taskBoardTasks', JSON.stringify(updatedTasks));
+// // //     } catch (error) {
+// // //       console.error('Failed to save tasks:', error);
+// // //     }
+    
+// // //     alert(`✅ Task "${task.title}" has been approved and removed from the project!`);
+// // //   };
+
+// // //   // ============================================================
+// // //   // DRAG & DROP
+// // //   // ============================================================
+// // //   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, task: Task) => {
+// // //     e.dataTransfer.effectAllowed = 'move';
+// // //     e.dataTransfer.setData('text/plain', task.id);
+// // //     setDraggedTask(task);
+// // //   };
+
+// // //   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+// // //     e.preventDefault();
+// // //     e.dataTransfer.dropEffect = 'move';
+// // //   };
+
+// // //   const handleDrop = (e: React.DragEvent<HTMLDivElement>, targetStatus: string) => {
+// // //     e.preventDefault();
+    
+// // //     if (!draggedTask) {
+// // //       console.log('❌ No dragged task');
+// // //       return;
+// // //     }
+    
+// // //     console.log(`📦 Dropping task: "${draggedTask.title}" to: ${targetStatus}`);
+    
+// // //     if (!isMoveAllowed(draggedTask.status, targetStatus)) {
+// // //       console.log('❌ Move not allowed');
+// // //       setDraggedTask(null);
+// // //       return;
+// // //     }
+    
+// // //     if (draggedTask.status === targetStatus) {
+// // //       console.log('❌ Same status');
+// // //       setDraggedTask(null);
+// // //       return;
+// // //     }
+    
+// // //     const newStatus = targetStatus as Task['status'];
+// // //     const isReview = newStatus === 'review';
+// // //     const isDone = newStatus === 'done';
+    
+// // //     const latestTask = tasks.find(t => t.id === draggedTask.id);
+// // //     if (!latestTask) {
+// // //       console.log('❌ Could not find latest task');
+// // //       setDraggedTask(null);
+// // //       return;
+// // //     }
+    
+// // //     let project = projects.find(p => p.id === latestTask.projectId);
+// // //     if (!project) {
+// // //       project = projects.find(p => p.projectName === latestTask.projectName);
+// // //     }
+    
+// // //     const isProjectTimerRunning = project?.timerRunning === true;
+// // //     const isTimerRunning = latestTask.timerRunning || isProjectTimerRunning;
+    
+// // //     console.log(`📋 Latest task state:`, {
+// // //       id: latestTask.id,
+// // //       title: latestTask.title,
+// // //       projectId: latestTask.projectId,
+// // //       taskProjectName: latestTask.projectName,
+// // //       timerRunning: latestTask.timerRunning,
+// // //       timerElapsedSeconds: latestTask.timerElapsedSeconds,
+// // //       isProjectTimerRunning,
+// // //       isTimerRunning,
+// // //       projectFound: !!project,
+// // //       foundProjectName: project?.projectName,
+// // //       projectTimerRunning: project?.timerRunning
+// // //     });
+    
+// // //     // ✅ If dropping to "done", DELETE the task
+// // //     if (isDone) {
+// // //       console.log(`🗑️ Task "${latestTask.title}" moved to Done - DELETING...`);
+      
+// // //       if (isTimerRunning) {
+// // //         const projectIdToStop = project?.id || latestTask.projectId;
+// // //         if (onStopProjectTimer && projectIdToStop) {
+// // //           console.log(`🛑 Stopping timer for project: ${projectIdToStop}`);
+// // //           onStopProjectTimer(
+// // //             projectIdToStop,
+// // //             latestTask.id, 
+// // //             latestTask.title, 
+// // //             'Task moved to Done - Timer stopped automatically'
+// // //           );
+// // //         }
+// // //         setTasks(prevTasks => 
+// // //           prevTasks.map(task => {
+// // //             if (task.id === latestTask.id) {
+// // //               return {
+// // //                 ...task,
+// // //                 timerRunning: false,
+// // //                 timerStartedAt: null,
+// // //                 timerElapsedSeconds: 0
+// // //               };
+// // //             }
+// // //             return task;
+// // //           })
+// // //         );
+// // //       }
+      
+// // //       const updatedTasks = tasks.filter(task => task.id !== latestTask.id);
+// // //       setTasks(updatedTasks);
+// // //       removeTaskFromProject(latestTask.projectId, latestTask.title);
+      
+// // //       try {
+// // //         localStorage.setItem('taskBoardTasks', JSON.stringify(updatedTasks));
+// // //       } catch (error) {
+// // //         console.error('Failed to save tasks:', error);
+// // //       }
+      
+// // //       alert(`✅ Task "${latestTask.title}" has been completed and removed from the project!`);
+// // //       setDraggedTask(null);
+// // //       return;
+// // //     }
+    
+// // //     // ✅ If dropping to "review" or any other status, UPDATE the task status
+// // //     let updatedTask = { ...latestTask };
+    
+// // //     if (isReview) {
+// // //       console.log(`🔄 Moving task to Review: ${latestTask.title}`);
+      
+// // //       if (isTimerRunning) {
+// // //         console.log(`⏹️ Timer IS running, stopping...`);
+        
+// // //         const elapsedSeconds = latestTask.timerElapsedSeconds || project?.timerElapsedSeconds || 0;
+// // //         const hoursLogged = elapsedSeconds / 3600;
+        
+// // //         updatedTask = {
+// // //           ...latestTask,
+// // //           status: newStatus,
+// // //           timerRunning: false,
+// // //           timerStartedAt: null,
+// // //           loggedHours: latestTask.loggedHours + hoursLogged,
+// // //           timerElapsedSeconds: 0,
+// // //           updatedAt: new Date().toISOString()
+// // //         };
+        
+// // //         const projectIdToStop = project?.id || latestTask.projectId;
+// // //         if (onStopProjectTimer && projectIdToStop) {
+// // //           console.log(`🛑 STOPPING PROJECT TIMER for project: ${projectIdToStop}`);
+// // //           onStopProjectTimer(
+// // //             projectIdToStop,
+// // //             latestTask.id, 
+// // //             latestTask.title, 
+// // //             'Task moved to Review - Timer stopped automatically'
+// // //           );
+// // //           alert(`⏹️ Timer stopped automatically. Task "${latestTask.title}" moved to Review.`);
+// // //         } else {
+// // //           console.log(`⚠️ Cannot stop timer: projectId=${projectIdToStop}, onStopProjectTimer=${!!onStopProjectTimer}`);
+// // //         }
+// // //       } else {
+// // //         console.log(`ℹ️ Timer is NOT running for this task or project`);
+// // //         updatedTask = {
+// // //           ...latestTask,
+// // //           status: newStatus,
+// // //           updatedAt: new Date().toISOString()
+// // //         };
+// // //       }
+// // //     } else {
+// // //       updatedTask = {
+// // //         ...latestTask,
+// // //         status: newStatus,
+// // //         updatedAt: new Date().toISOString()
+// // //       };
+// // //     }
+    
+// // //     const updatedTasks = tasks.map(task =>
+// // //       task.id === latestTask.id ? updatedTask : task
+// // //     );
+// // //     setTasks(updatedTasks);
+    
+// // //     // ✅ Update the project's task status
+// // //     updateProjectTaskStatus(latestTask.projectId, latestTask.title, newStatus);
+    
+// // //     try {
+// // //       localStorage.setItem('taskBoardTasks', JSON.stringify(updatedTasks));
+// // //     } catch (error) {
+// // //       console.error('Failed to save tasks:', error);
+// // //     }
+    
+// // //     setDraggedTask(null);
+// // //     console.log(`✅ Drop completed: Task "${latestTask.title}" moved to ${newStatus}`);
+// // //   };
+
+// // //   const handleDragEnd = () => {
+// // //     setDraggedTask(null);
+// // //   };
+
+// // //   const allProjects = projects.length > 0 ? projects : loadProjects();
+
+// // //   const isTaskDraggable = (task: Task): boolean => {
+// // //     const status = task.status as string;
+// // //     if (status === 'done') return false;
+// // //     if (userRole === 'tester' && status === 'done') return false;
+// // //     return true;
+// // //   };
+
+// // //   // ============================================================
+// // //   // RENDER
+// // //   // ============================================================
+// // //   return (
+// // //     <div className="bg-gray-50">
+// // //       {/* Header */}
+// // //       <div className="bg-white rounded-lg shadow-sm p-3 mb-4 border border-gray-200">
+// // //         <div className="flex flex-wrap items-center justify-between gap-2">
+// // //           <div className="flex items-center gap-3">
+// // //             <div className="flex items-center gap-2">
+// // //               <Shield className="w-5 h-5 text-purple-600" />
+// // //               <span className="text-sm font-semibold text-gray-700">Role:</span>
+// // //               <span className={`px-3 py-0.5 rounded-full text-xs font-medium ${
+// // //                 userRole === 'admin' ? 'bg-red-100 text-red-700' :
+// // //                 userRole === 'tester' ? 'bg-yellow-100 text-yellow-700' :
+// // //                 'bg-blue-100 text-blue-700'
+// // //               }`}>
+// // //                 {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+// // //               </span>
+// // //             </div>
+// // //             {userRole === 'tester' && (
+// // //               <div className="flex items-center gap-1 text-xs text-yellow-600 bg-yellow-50 px-3 py-1 rounded-lg">
+// // //                 <UserCheck className="w-3.5 h-3.5" />
+// // //                 <span>Testing - Review & Done</span>
+// // //               </div>
+// // //             )}
+// // //             {userRole === 'developer' && (
+// // //               <div className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">
+// // //                 <GitBranch className="w-3.5 h-3.5" />
+// // //                 <span>To Do → In Progress → Review</span>
+// // //               </div>
+// // //             )}
+// // //           </div>
+// // //           <div className="flex items-center gap-2">
+// // //             <button
+// // //               onClick={() => { setSearchTerm(''); setFilterPriority('all'); setFilterAssignee('all'); }}
+// // //               className="px-3 py-1.5 text-sm bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center transition whitespace-nowrap"
+// // //             >
+// // //               <RefreshCw className="w-3.5 h-3.5 mr-1" /> Refresh
+// // //             </button>
+// // //             {userRole !== 'tester' && (
+// // //               <button
+// // //                 onClick={() => setShowAddTaskModal(true)}
+// // //                 className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center transition whitespace-nowrap"
+// // //               >
+// // //                 <Plus className="w-3.5 h-3.5 mr-1" /> Add Task
+// // //               </button>
+// // //             )}
+// // //           </div>
+// // //         </div>
+// // //       </div>
+
+// // //       {/* Search and Filters */}
+// // //       <div className="bg-white rounded-lg shadow-sm p-3 mb-4 border border-gray-200">
+// // //         <div className="flex flex-wrap items-center gap-2">
+// // //           <div className="relative flex-1 min-w-[180px]">
+// // //             <Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
+// // //             <input
+// // //               type="text"
+// // //               placeholder="Search tasks..."
+// // //               className="w-full pl-9 pr-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+// // //               value={searchTerm}
+// // //               onChange={(e) => setSearchTerm(e.target.value)}
+// // //             />
+// // //           </div>
+// // //           <div className="relative">
+// // //             <select
+// // //               className="appearance-none bg-gray-50 border border-gray-300 rounded-lg px-3 py-1.5 pr-7 text-sm focus:ring-2 focus:ring-purple-500"
+// // //               value={filterPriority}
+// // //               onChange={(e) => setFilterPriority(e.target.value)}
+// // //             >
+// // //               <option value="all">All Priorities</option>
+// // //               <option value="urgent">Urgent</option>
+// // //               <option value="high">High</option>
+// // //               <option value="medium">Medium</option>
+// // //               <option value="low">Low</option>
+// // //             </select>
+// // //             <ChevronDown className="w-4 h-4 absolute right-2 top-2 text-gray-500 pointer-events-none" />
+// // //           </div>
+// // //           <div className="relative">
+// // //             <select
+// // //               className="appearance-none bg-gray-50 border border-gray-300 rounded-lg px-3 py-1.5 pr-7 text-sm focus:ring-2 focus:ring-purple-500"
+// // //               value={filterAssignee}
+// // //               onChange={(e) => setFilterAssignee(e.target.value)}
+// // //             >
+// // //               <option value="all">All Developers</option>
+// // //               {getUniqueAssignees().filter(a => a !== 'all').map(assignee => (
+// // //                 <option key={assignee} value={assignee}>{assignee}</option>
+// // //               ))}
+// // //             </select>
+// // //             <ChevronDown className="w-4 h-4 absolute right-2 top-2 text-gray-500 pointer-events-none" />
+// // //           </div>
+// // //         </div>
+// // //       </div>
+
+// // //       {/* Board */}
+// // //       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+// // //         {columns
+// // //           .filter(column => visibleColumns.includes(column.id))
+// // //           .map(column => {
+// // //             const columnTasks = getTasksByStatus(column.id);
+// // //             const isDropAllowed = draggedTask && isMoveAllowed(draggedTask.status, column.id);
+            
+// // //             return (
+// // //               <div
+// // //                 key={column.id}
+// // //                 className={`${column.bgColor} rounded-[30px] p-3 min-h-[350px] border ${column.borderColor} transition-colors ${
+// // //                   isDropAllowed ? 'ring-2 ring-green-400 ring-offset-2' : ''
+// // //                 }`}
+// // //                 onDragOver={handleDragOver}
+// // //                 onDrop={(e) => handleDrop(e, column.id)}
+// // //               >
+// // //                 <div className="flex items-center justify-between mb-3">
+// // //                   <div className="flex items-center gap-2">
+// // //                     <h3 className={`font-semibold text-sm ${column.headerColor}`}>{column.title}</h3>
+// // //                     <span className="text-xs text-gray-500 bg-white px-2 py-0.5 rounded-full border border-gray-200">
+// // //                       {columnTasks.length}
+// // //                     </span>
+// // //                   </div>
+// // //                   {column.id === 'done' && (
+// // //                     <span className="text-[10px] text-green-600 bg-green-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+// // //                       <CheckCircle className="w-3 h-3" /> Complete
+// // //                     </span>
+// // //                   )}
+// // //                   {userRole === 'tester' && column.id === 'review' && columnTasks.length > 0 && (
+// // //                     <span className="text-[10px] text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+// // //                       <Repeat className="w-3 h-3" /> Rework Available
+// // //                     </span>
+// // //                   )}
+// // //                 </div>
+
+// // //                 <div className="space-y-2">
+// // //                   {columnTasks.length === 0 ? (
+// // //                     <div className="text-center py-8 text-gray-400 text-sm">
+// // //                       <Circle className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+// // //                       <p>No tasks in this column</p>
+// // //                       {isDropAllowed && (
+// // //                         <p className="text-[10px] text-green-500 mt-1">Drop here to move</p>
+// // //                       )}
+// // //                     </div>
+// // //                   ) : (
+// // //                     columnTasks.map(task => {
+// // //                       const draggable = isTaskDraggable(task);
+                      
+// // //                       return (
+// // //                         <div
+// // //                           key={task.id}
+// // //                           className={`bg-white rounded-[30px] shadow-sm p-3 hover:shadow-md transition border border-gray-100 ${
+// // //                             draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
+// // //                           } ${draggedTask?.id === task.id ? 'opacity-50' : ''}`}
+// // //                           draggable={draggable}
+// // //                           onDragStart={(e) => handleDragStart(e, task)}
+// // //                           onDragEnd={handleDragEnd}
+// // //                         >
+// // //                           {/* Task content */}
+// // //                           <div className="flex items-start justify-between mb-2">
+// // //                             <div className="flex items-start gap-2 flex-1 min-w-0">
+// // //                               <div className="mt-0.5 flex-shrink-0">{getStatusIcon(task.status)}</div>
+// // //                               <h4 className="text-sm font-medium text-gray-800 line-clamp-2">{task.title}</h4>
+// // //                             </div>
+// // //                             <div className="flex items-center gap-0.5 flex-shrink-0 ml-2">
+// // //                               {userRole === 'admin' && (
+// // //                                 <>
+// // //                                   <button className="p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition">
+// // //                                     <Edit className="w-3.5 h-3.5" />
+// // //                                   </button>
+// // //                                   <button onClick={() => deleteTask(task.id)} className="p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 transition">
+// // //                                     <Trash2 className="w-3.5 h-3.5" />
+// // //                                   </button>
+// // //                                 </>
+// // //                               )}
+// // //                               {(userRole === 'admin' || userRole === 'developer') && task.status !== 'done' && (
+// // //                                 <button 
+// // //                                   onClick={() => handleReassignTask(task.id)}
+// // //                                   className="p-1 text-gray-400 hover:text-purple-600 rounded hover:bg-purple-50 transition"
+// // //                                   title="Reassign task to another developer"
+// // //                                 >
+// // //                                   <UserCog className="w-3.5 h-3.5" />
+// // //                                 </button>
+// // //                               )}
+// // //                             </div>
+// // //                           </div>
+
+// // //                           <p className="text-xs text-gray-500 mb-3 line-clamp-2">{task.description}</p>
+
+// // //                           <div className="flex flex-wrap items-center gap-1.5 mb-3">
+// // //                             <span className={`text-[10px] px-2 py-0.5 rounded-full border ${getPriorityColor(task.priority)} font-medium`}>
+// // //                               {task.priority}
+// // //                             </span>
+// // //                             <span className="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full flex items-center border border-gray-200">
+// // //                               <Tag className="w-2.5 h-2.5 mr-0.5" />
+// // //                               <span className="truncate max-w-[60px]">{task.projectName}</span>
+// // //                             </span>
+// // //                             {task.isBug && (
+// // //                               <span className="text-[10px] px-2 py-0.5 bg-red-100 text-red-700 rounded-full flex items-center border border-red-200">
+// // //                                 <Bug className="w-2.5 h-2.5 mr-0.5" /> Bug
+// // //                               </span>
+// // //                             )}
+// // //                             {task.reworkCount && task.reworkCount > 0 && (
+// // //                               <span className="text-[10px] px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full flex items-center border border-orange-200">
+// // //                                 <RefreshCw className="w-2.5 h-2.5 mr-0.5" /> Rework #{task.reworkCount}
+// // //                               </span>
+// // //                             )}
+// // //                           </div>
+
+// // //                           <div className="flex items-center justify-between text-xs mb-3">
+// // //                             <div className="flex items-center gap-1.5 min-w-0">
+// // //                               <div className={`w-5 h-5 rounded-full ${getAssigneeColor(task.assignee)} text-white flex items-center justify-center text-[8px] font-medium flex-shrink-0`}>
+// // //                                 {getInitials(task.assignee)}
+// // //                               </div>
+// // //                               <span className="text-gray-600 truncate max-w-[60px] text-xs">{task.assignee}</span>
+// // //                             </div>
+// // //                             <div className="flex items-center gap-1 text-gray-400 flex-shrink-0">
+// // //                               <Calendar className="w-3 h-3" />
+// // //                               <span className="text-[10px]">{task.dueDate}</span>
+// // //                             </div>
+// // //                           </div>
+
+// // //                           <div className="flex items-center justify-between mb-3">
+// // //                             <div className="flex items-center gap-1.5">
+// // //                               <Clock className="w-3 h-3 text-gray-400" />
+// // //                               <span className="text-[10px] text-gray-500">{task.loggedHours}h / {task.estimatedHours}h</span>
+// // //                             </div>
+// // //                             <div className="w-12 bg-gray-200 rounded-full h-1">
+// // //                               <div className="bg-blue-500 h-1 rounded-full transition-all" style={{ width: `${getProgress(task)}%` }} />
+// // //                             </div>
+// // //                           </div>
+
+// // //                           {/* Timer Display */}
+// // //                           {getTimerDisplay(task)}
+
+// // //                           {task.reworkReason && task.status === 'todo' && (
+// // //                             <div className="mb-2 p-1.5 bg-orange-50 rounded-lg border border-orange-200">
+// // //                               <div className="flex items-center gap-1 text-[9px] text-orange-600">
+// // //                                 <RotateCcw className="w-2.5 h-2.5" />
+// // //                                 <span>Rework Required</span>
+// // //                               </div>
+// // //                               <div className="text-[8px] text-gray-600 mt-0.5 line-clamp-2">
+// // //                                 "{task.reworkReason}"
+// // //                               </div>
+// // //                               {task.reworkDeadline && (
+// // //                                 <div className="text-[8px] text-red-500 mt-0.5">
+// // //                                   ⏰ Deadline: {task.reworkDeadline}
+// // //                                 </div>
+// // //                               )}
+// // //                               <div className="text-[8px] text-gray-400 mt-0.5">
+// // //                                 Tester: {task.tester || 'Unknown'}
+// // //                               </div>
+// // //                             </div>
+// // //                           )}
+
+// // //                           {task.reworkHistory && task.reworkHistory.length > 0 && (
+// // //                             <div className="mb-2 p-1.5 bg-gray-50 rounded-lg border border-gray-200">
+// // //                               <div className="flex items-center gap-1 text-[9px] text-gray-500">
+// // //                                 <History className="w-2.5 h-2.5" />
+// // //                                 <span>Rework #{task.reworkHistory.length}</span>
+// // //                               </div>
+// // //                               <div className="text-[8px] text-gray-400 mt-0.5">
+// // //                                 {task.reworkHistory[task.reworkHistory.length - 1].from} → {task.reworkHistory[task.reworkHistory.length - 1].to}
+// // //                               </div>
+// // //                               <div className="text-[8px] text-gray-400 mt-0.5 line-clamp-1">
+// // //                                 Notes: "{task.reworkHistory[task.reworkHistory.length - 1].notes}"
+// // //                               </div>
+// // //                             </div>
+// // //                           )}
+
+// // //                           <div className="flex items-center justify-between text-[9px] text-gray-400 border-t border-gray-100 pt-2">
+// // //                             <span>{task.subtasks.filter(s => s.completed).length}/{task.subtasks.length} subtasks</span>
+// // //                             <span>{task.comments} comments</span>
+// // //                           </div>
+
+// // //                           {/* Developer Actions with Timer */}
+// // //                           {userRole === 'developer' && task.status === 'todo' && (
+// // //                             <div className="mt-2 flex gap-1">
+// // //                               {task.timerRunning ? (
+// // //                                 <button 
+// // //                                   onClick={(e) => {
+// // //                                     e.stopPropagation();
+// // //                                     stopTimer(task.id, true);
+// // //                                   }}
+// // //                                   className="flex-1 text-[10px] px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition flex items-center justify-center gap-1"
+// // //                                 >
+// // //                                   <StopCircle className="w-2.5 h-2.5" /> Stop Timer
+// // //                                 </button>
+// // //                               ) : (
+// // //                                 <button 
+// // //                                   onClick={(e) => {
+// // //                                     e.stopPropagation();
+// // //                                     startTimer(task.id);
+// // //                                   }}
+// // //                                   className="flex-1 text-[10px] px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition flex items-center justify-center gap-1"
+// // //                                 >
+// // //                                   <PlayCircle className="w-2.5 h-2.5" /> Start Timer
+// // //                                 </button>
+// // //                               )}
+// // //                               <button 
+// // //                                 onClick={(e) => {
+// // //                                   e.stopPropagation();
+// // //                                   handleMoveTask(task.id, 'forward');
+// // //                                 }}
+// // //                                 className="flex-1 text-[10px] px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition flex items-center justify-center gap-1"
+// // //                               >
+// // //                                 <Play className="w-2.5 h-2.5" /> Start Work
+// // //                               </button>
+// // //                             </div>
+// // //                           )}
+
+// // //                           {userRole === 'developer' && task.status === 'in-progress' && (
+// // //                             <div className="mt-2 flex gap-1">
+// // //                               {task.timerRunning ? (
+// // //                                 <button 
+// // //                                   onClick={(e) => {
+// // //                                     e.stopPropagation();
+// // //                                     stopTimer(task.id, true);
+// // //                                   }}
+// // //                                   className="flex-1 text-[10px] px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition flex items-center justify-center gap-1"
+// // //                                 >
+// // //                                   <StopCircle className="w-2.5 h-2.5" /> Stop Timer
+// // //                                 </button>
+// // //                               ) : (
+// // //                                 <button 
+// // //                                   onClick={(e) => {
+// // //                                     e.stopPropagation();
+// // //                                     startTimer(task.id);
+// // //                                   }}
+// // //                                   className="flex-1 text-[10px] px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition flex items-center justify-center gap-1"
+// // //                                 >
+// // //                                   <PlayCircle className="w-2.5 h-2.5" /> Start Timer
+// // //                                 </button>
+// // //                               )}
+// // //                               <button 
+// // //                                 onClick={(e) => {
+// // //                                   e.stopPropagation();
+// // //                                   handleCompleteWork(task.id);
+// // //                                 }}
+// // //                                 className="flex-1 text-[10px] px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition flex items-center justify-center gap-1"
+// // //                               >
+// // //                                 <ArrowRight className="w-2.5 h-2.5" /> Complete & Send to Review
+// // //                               </button>
+// // //                             </div>
+// // //                           )}
+
+// // //                           {/* Review Actions - Rework & Approve */}
+// // //                           {task.status === 'review' && (
+// // //                             <div className="mt-2 flex gap-1">
+// // //                               <button 
+// // //                                 onClick={(e) => {
+// // //                                   e.stopPropagation();
+// // //                                   handleReworkTask(task.id);
+// // //                                 }}
+// // //                                 className="flex-1 text-[10px] px-2 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition flex items-center justify-center gap-1"
+// // //                               >
+// // //                                 <RotateCcw className="w-2.5 h-2.5" /> Rework
+// // //                               </button>
+// // //                               <button 
+// // //                                 onClick={(e) => {
+// // //                                   e.stopPropagation();
+// // //                                   handleApproveTask(task.id);
+// // //                                 }}
+// // //                                 className="flex-1 text-[10px] px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition flex items-center justify-center gap-1"
+// // //                               >
+// // //                                 <Check className="w-2.5 h-2.5" /> Approve
+// // //                               </button>
+// // //                             </div>
+// // //                           )}
+
+// // //                           {task.status === 'done' && (
+// // //                             <div className="mt-2 text-[10px] text-green-600 flex items-center gap-1">
+// // //                               <CheckCircle className="w-3 h-3" /> Completed by {task.completedBy || task.assignee}
+// // //                               {task.completedAt && (
+// // //                                 <span className="text-[8px] text-gray-400">
+// // //                                   {new Date(task.completedAt).toLocaleDateString()}
+// // //                                 </span>
+// // //                               )}
+// // //                             </div>
+// // //                           )}
+// // //                         </div>
+// // //                       );
+// // //                     })
+// // //                   )}
+// // //                 </div>
+// // //               </div>
+// // //             );
+// // //           })}
+// // //       </div>
+
+// // //       {/* Rework Modal */}
+// // //       {showReworkModal && reworkTask && (
+// // //         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+// // //           <div className="bg-white rounded-xl p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+// // //             <div className="flex items-center justify-between mb-4">
+// // //               <h3 className="text-lg font-semibold flex items-center gap-2 text-orange-600">
+// // //                 <RotateCcw className="w-5 h-5" /> Send for Rework
+// // //               </h3>
+// // //               <button onClick={() => setShowReworkModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+// // //                 <XCircle className="w-5 h-5 text-gray-500" />
+// // //               </button>
+// // //             </div>
+// // //             <div className="space-y-4">
+// // //               <div className="bg-gray-50 p-3 rounded-lg">
+// // //                 <p className="text-sm font-medium text-gray-700">Task: {reworkTask.title}</p>
+// // //                 <p className="text-xs text-gray-500 mt-1">
+// // //                   <User className="w-3 h-3 inline mr-1" />
+// // //                   Current Developer: {reworkTask.assignee}
+// // //                 </p>
+// // //                 <p className="text-xs text-gray-500">
+// // //                   <span className="inline-flex items-center gap-1">
+// // //                     <Calendar className="w-3 h-3" />
+// // //                     Original Deadline: {reworkTask.dueDate}
+// // //                   </span>
+// // //                 </p>
+// // //                 <p className="text-xs text-gray-500">
+// // //                   <span className="inline-flex items-center gap-1">
+// // //                     <Clock className="w-3 h-3" />
+// // //                     Estimated Hours: {reworkTask.estimatedHours}h
+// // //                   </span>
+// // //                 </p>
+// // //                 <p className="text-xs text-gray-500">
+// // //                   <span className="inline-flex items-center gap-1">
+// // //                     <Tag className="w-3 h-3" />
+// // //                     Project: {reworkTask.projectName}
+// // //                   </span>
+// // //                 </p>
+// // //                 <p className="text-xs text-gray-500">
+// // //                   <span className="inline-flex items-center gap-1">
+// // //                     <RefreshCw className="w-3 h-3" />
+// // //                     Rework Count: {reworkTask.reworkCount || 0}
+// // //                   </span>
+// // //                 </p>
+// // //                 <p className="text-xs text-orange-600 mt-1 font-medium">⚠️ Status: In Review → To Do</p>
+// // //               </div>
+
+// // //               <div>
+// // //                 <label className="block text-sm font-medium text-gray-700 mb-1">
+// // //                   <User className="w-4 h-4 inline mr-1" />
+// // //                   Assign to Developer <span className="text-red-500">*</span>
+// // //                 </label>
+// // //                 <select
+// // //                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none"
+// // //                   value={reworkAssignee}
+// // //                   onChange={(e) => setReworkAssignee(e.target.value)}
+// // //                 >
+// // //                   <option value="">Select Developer</option>
+// // //                   {reworkAssignees.map(assignee => (
+// // //                     <option key={assignee} value={assignee}>
+// // //                       {assignee}
+// // //                     </option>
+// // //                   ))}
+// // //                 </select>
+// // //                 <p className="text-[10px] text-gray-400 mt-1">
+// // //                   The task will move to the developer's To Do column
+// // //                 </p>
+// // //               </div>
+
+// // //               <div>
+// // //                 <label className="block text-sm font-medium text-gray-700 mb-1">
+// // //                   <Calendar className="w-4 h-4 inline mr-1" />
+// // //                   Rework Deadline <span className="text-red-500">*</span>
+// // //                 </label>
+// // //                 <input
+// // //                   type="date"
+// // //                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none"
+// // //                   value={reworkDeadline}
+// // //                   onChange={(e) => setReworkDeadline(e.target.value)}
+// // //                 />
+// // //                 <p className="text-[10px] text-gray-400 mt-1">
+// // //                   When should the rework be completed?
+// // //                 </p>
+// // //               </div>
+
+// // //               <div>
+// // //                 <label className="block text-sm font-medium text-gray-700 mb-1">
+// // //                   <MessageSquare className="w-4 h-4 inline mr-1" />
+// // //                   Rework Notes <span className="text-red-500">*</span>
+// // //                 </label>
+// // //                 <textarea 
+// // //                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none"
+// // //                   rows={4}
+// // //                   value={reworkNotes}
+// // //                   onChange={(e) => setReworkNotes(e.target.value)}
+// // //                   placeholder="Describe what needs to be fixed or improved..."
+// // //                 />
+// // //                 <p className="text-[10px] text-gray-400 mt-1">
+// // //                   These notes will be visible to the developer
+// // //                 </p>
+// // //               </div>
+
+// // //               <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+// // //                 <div className="flex items-center gap-2 text-sm text-blue-700">
+// // //                   <Bell className="w-4 h-4" />
+// // //                   <span>The developer will see this in their To Do column</span>
+// // //                 </div>
+// // //               </div>
+// // //             </div>
+// // //             <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
+// // //               <button 
+// // //                 onClick={() => setShowReworkModal(false)} 
+// // //                 className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+// // //               >
+// // //                 Cancel
+// // //               </button>
+// // //               <button 
+// // //                 onClick={handleSubmitRework} 
+// // //                 className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition flex items-center gap-2"
+// // //               >
+// // //                 <Send className="w-4 h-4" />
+// // //                 Send for Rework
+// // //               </button>
+// // //             </div>
+// // //           </div>
+// // //         </div>
+// // //       )}
+
+// // //       {/* Reassign Modal */}
+// // //       {showReassignModal && reassignTask && (
+// // //         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+// // //           <div className="bg-white rounded-xl p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+// // //             <div className="flex items-center justify-between mb-4">
+// // //               <h3 className="text-lg font-semibold flex items-center gap-2 text-purple-600">
+// // //                 <UserCog className="w-5 h-5" /> Reassign Task
+// // //               </h3>
+// // //               <button onClick={() => setShowReassignModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+// // //                 <XCircle className="w-5 h-5 text-gray-500" />
+// // //               </button>
+// // //             </div>
+// // //             <div className="space-y-4">
+// // //               <div className="bg-gray-50 p-3 rounded-lg">
+// // //                 <p className="text-sm font-medium text-gray-700">Task: {reassignTask.title}</p>
+// // //                 <p className="text-xs text-gray-500 mt-1">
+// // //                   <User className="w-3 h-3 inline mr-1" />
+// // //                   Current Developer: {reassignTask.assignee}
+// // //                 </p>
+// // //                 <p className="text-xs text-gray-500">
+// // //                   <span className="inline-flex items-center gap-1">
+// // //                     <Tag className="w-3 h-3" />
+// // //                     Project: {reassignTask.projectName}
+// // //                   </span>
+// // //                 </p>
+// // //                 <p className="text-xs text-gray-500">Current Status: {reassignTask.status}</p>
+// // //                 <p className="text-xs text-blue-600 mt-1">⚠️ Task will move to To Do of new developer</p>
+// // //               </div>
+
+// // //               <div>
+// // //                 <label className="block text-sm font-medium text-gray-700 mb-1">
+// // //                   <User className="w-4 h-4 inline mr-1" />
+// // //                   Assign to Developer <span className="text-red-500">*</span>
+// // //                 </label>
+// // //                 <select
+// // //                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none"
+// // //                   value={reassignAssignee}
+// // //                   onChange={(e) => setReassignAssignee(e.target.value)}
+// // //                 >
+// // //                   <option value="">Select Developer</option>
+// // //                   {reassignAssignees.map(assignee => (
+// // //                     <option key={assignee} value={assignee}>
+// // //                       {assignee}
+// // //                     </option>
+// // //                   ))}
+// // //                 </select>
+// // //                 <p className="text-[10px] text-gray-400 mt-1">
+// // //                   The task will move to the developer's To Do column
+// // //                 </p>
+// // //               </div>
+
+// // //               <div>
+// // //                 <label className="block text-sm font-medium text-gray-700 mb-1">
+// // //                   <MessageSquare className="w-4 h-4 inline mr-1" />
+// // //                   Reassign Reason (Optional)
+// // //                 </label>
+// // //                 <textarea 
+// // //                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none"
+// // //                   rows={3}
+// // //                   value={reassignReason}
+// // //                   onChange={(e) => setReassignReason(e.target.value)}
+// // //                   placeholder="Why is this task being reassigned?"
+// // //                 />
+// // //               </div>
+// // //             </div>
+// // //             <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
+// // //               <button 
+// // //                 onClick={() => setShowReassignModal(false)} 
+// // //                 className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+// // //               >
+// // //                 Cancel
+// // //               </button>
+// // //               <button 
+// // //                 onClick={handleSubmitReassign} 
+// // //                 className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition flex items-center gap-2"
+// // //               >
+// // //                 <MoveRight className="w-4 h-4" />
+// // //                 Reassign Task
+// // //               </button>
+// // //             </div>
+// // //           </div>
+// // //         </div>
+// // //       )}
+
+// // //       {/* Add Task Modal */}
+// // //       {showAddTaskModal && userRole !== 'tester' && (
+// // //         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+// // //           <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+// // //             <div className="flex items-center justify-between mb-4">
+// // //               <h3 className="text-xl font-bold flex items-center gap-2 text-purple-600">
+// // //                 <Plus className="w-5 h-5" /> Add New Task
+// // //               </h3>
+// // //               <button onClick={() => setShowAddTaskModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+// // //                 <XCircle className="w-5 h-5 text-gray-500" />
+// // //               </button>
+// // //             </div>
+// // //             <div className="space-y-4">
+// // //               <div>
+// // //                 <label className="block text-sm font-medium text-gray-700 mb-1">Task Title *</label>
+// // //                 <input 
+// // //                   type="text" 
+// // //                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none"
+// // //                   value={newTask.title}
+// // //                   onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+// // //                   placeholder="Enter task title"
+// // //                 />
+// // //               </div>
+// // //               <div>
+// // //                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+// // //                 <textarea 
+// // //                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none"
+// // //                   rows={3}
+// // //                   value={newTask.description}
+// // //                   onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+// // //                   placeholder="Enter task description"
+// // //                 />
+// // //               </div>
+// // //               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+// // //                 <div>
+// // //                   <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+// // //                   <select
+// // //                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none"
+// // //                     value={newTask.priority}
+// // //                     onChange={(e) => setNewTask({ ...newTask, priority: e.target.value as any })}
+// // //                   >
+// // //                     <option value="low">Low</option>
+// // //                     <option value="medium">Medium</option>
+// // //                     <option value="high">High</option>
+// // //                     <option value="urgent">Urgent</option>
+// // //                   </select>
+// // //                 </div>
+// // //                 <div>
+// // //                   <label className="block text-sm font-medium text-gray-700 mb-1">Assignee</label>
+// // //                   <input
+// // //                     type="text"
+// // //                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none"
+// // //                     value={newTask.assignee}
+// // //                     onChange={(e) => setNewTask({ ...newTask, assignee: e.target.value })}
+// // //                     placeholder="Developer name"
+// // //                   />
+// // //                 </div>
+// // //               </div>
+// // //               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+// // //                 <div>
+// // //                   <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+// // //                   <input
+// // //                     type="date"
+// // //                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none"
+// // //                     value={newTask.dueDate}
+// // //                     onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+// // //                   />
+// // //                 </div>
+// // //                 <div>
+// // //                   <label className="block text-sm font-medium text-gray-700 mb-1">Project</label>
+// // //                   <select
+// // //                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none"
+// // //                     value={newTask.projectId}
+// // //                     onChange={(e) => {
+// // //                       const project = allProjects.find(p => p.id === e.target.value);
+// // //                       setNewTask({ 
+// // //                         ...newTask, 
+// // //                         projectId: e.target.value,
+// // //                         projectName: project?.projectName || ''
+// // //                       });
+// // //                     }}
+// // //                   >
+// // //                     <option value="">Select Project</option>
+// // //                     {allProjects.map(project => (
+// // //                       <option key={project.id} value={project.id}>
+// // //                         {project.projectName}
+// // //                       </option>
+// // //                     ))}
+// // //                   </select>
+// // //                 </div>
+// // //               </div>
+// // //             </div>
+// // //             <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
+// // //               <button 
+// // //                 onClick={() => setShowAddTaskModal(false)} 
+// // //                 className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+// // //               >
+// // //                 Cancel
+// // //               </button>
+// // //               <button 
+// // //                 onClick={handleAddTask} 
+// // //                 className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition"
+// // //               >
+// // //                 Add Task
+// // //               </button>
+// // //             </div>
+// // //           </div>
+// // //         </div>
+// // //       )}
+// // //     </div>
+// // //   );
+// // // };
+
+// // // export default TaskBoard;
 // // import React, { useState, useEffect, useRef } from 'react';
 // // import { 
 // //   Plus, 
@@ -759,7 +2767,7 @@
 // //   };
 
 // //   // ============================================================
-// //   // MOVE TASK
+// //   // MOVE TASK - ADDED DELETE FUNCTIONALITY FOR DONE
 // //   // ============================================================
 // //   const handleMoveTask = (taskId: string, direction: 'forward' | 'backward') => {
 // //     const task = tasks.find(t => t.id === taskId);
@@ -786,7 +2794,55 @@
 // //     const project = projects.find(p => p.id === task.projectId);
 // //     const isTimerRunning = task.timerRunning || project?.timerRunning === true;
     
-// //     if ((isReview || isDone) && isTimerRunning) {
+// //     // ✅ If moving to DONE - DELETE the task
+// //     if (isDone) {
+// //       console.log(`🗑️ Task "${task.title}" moved to Done - DELETING...`);
+      
+// //       if (isTimerRunning) {
+// //         const elapsedSeconds = task.timerElapsedSeconds || project?.timerElapsedSeconds || 0;
+// //         const hoursLogged = elapsedSeconds / 3600;
+// //         updatedTask = {
+// //           ...task,
+// //           timerRunning: false,
+// //           timerStartedAt: null,
+// //           loggedHours: task.loggedHours + hoursLogged,
+// //           timerElapsedSeconds: 0,
+// //           completedBy: currentUser,
+// //           completedAt: new Date().toISOString()
+// //         };
+// //         stopTimer(taskId, true);
+// //       }
+      
+// //       // ✅ REMOVE FROM TASKBOARD
+// //       const updatedTasks = tasks.filter(t => t.id !== taskId);
+// //       setTasks(updatedTasks);
+      
+// //       // ✅ REMOVE FROM PROJECT
+// //       removeTaskFromProject(task.projectId, task.title);
+      
+// //       try {
+// //         localStorage.setItem('taskBoardTasks', JSON.stringify(updatedTasks));
+// //       } catch (error) {
+// //         console.error('Failed to save tasks:', error);
+// //       }
+      
+// //       // ✅ Dispatch event to notify ProjectDetail
+// //       window.dispatchEvent(new CustomEvent('taskBoardUpdated', { 
+// //         detail: { 
+// //           projectId: task.projectId, 
+// //           taskTitle: task.title, 
+// //           newStatus: 'done',
+// //           taskId: task.id,
+// //           deleted: true
+// //         } 
+// //       }));
+      
+// //       alert(`✅ Task "${task.title}" has been completed and removed!`);
+// //       return;
+// //     }
+    
+// //     // ✅ Keep existing timer logic for other statuses (review, in-progress, etc.)
+// //     if ((isReview) && isTimerRunning) {
 // //       const elapsedSeconds = task.timerElapsedSeconds || project?.timerElapsedSeconds || 0;
 // //       const hoursLogged = elapsedSeconds / 3600;
       
@@ -800,54 +2856,29 @@
 // //         updatedAt: new Date().toISOString()
 // //       };
       
-// //       if (isDone) {
-// //         updatedTask = {
-// //           ...updatedTask,
-// //           completedBy: currentUser,
-// //           completedAt: new Date().toISOString()
-// //         };
-// //       }
-      
 // //       if (isReview) {
 // //         stopProjectTimerOnReview(task);
 // //       }
       
-// //       alert(`⏹️ Timer stopped automatically. Task "${task.title}" moved to ${newStatus}.`);
+// //       alert(`⏹️ Timer stopped. Task "${task.title}" moved to ${newStatus}.`);
+      
+// //       // ✅ UPDATE PROJECT - ONLY WHEN TIMER IS RUNNING
+// //       updateProjectTaskStatus(task.projectId, task.title, newStatus);
+      
 // //     } else {
+// //       // ❌ TIMER NOT RUNNING - Only update local task
 // //       updatedTask = {
 // //         ...task,
 // //         status: newStatus,
 // //         updatedAt: new Date().toISOString()
 // //       };
       
-// //       if (isDone) {
-// //         updatedTask = {
-// //           ...updatedTask,
-// //           completedBy: currentUser,
-// //           completedAt: new Date().toISOString()
-// //         };
-// //       }
+// //       console.log(`⏭️ Skipping project update - timer not running for task: ${task.title}`);
+// //       alert(`✅ Task "${task.title}" moved to ${newStatus} locally. Start timer to log hours.`);
 // //     }
 
-// //     if (isDone) {
-// //       const updatedTasks = tasks.filter(t => t.id !== taskId);
-// //       setTasks(updatedTasks);
-// //       removeTaskFromProject(task.projectId, task.title);
-      
-// //       try {
-// //         localStorage.setItem('taskBoardTasks', JSON.stringify(updatedTasks));
-// //       } catch (error) {
-// //         console.error('Failed to save tasks:', error);
-// //       }
-      
-// //       alert(`✅ Task "${task.title}" has been completed and removed from the project!`);
-// //     } else {
-// //       const updatedTasks = tasks.map(t => t.id === taskId ? updatedTask : t);
-// //       setTasks(updatedTasks);
-      
-// //       // ✅ Update the project's task status
-// //       updateProjectTaskStatus(task.projectId, task.title, newStatus);
-// //     }
+// //     const updatedTasks = tasks.map(t => t.id === taskId ? updatedTask : t);
+// //     setTasks(updatedTasks);
 // //   };
 
 // //   // ============================================================
@@ -1023,7 +3054,7 @@
 // //   };
 
 // //   // ============================================================
-// //   // COMPLETE WORK
+// //   // COMPLETE WORK - UNCHANGED
 // //   // ============================================================
 // //   const handleCompleteWork = (taskId: string) => {
 // //     const task = tasks.find(t => t.id === taskId);
@@ -1071,7 +3102,7 @@
 // //   };
 
 // //   // ============================================================
-// //   // APPROVE TASK
+// //   // APPROVE TASK - ADDED DELETE FUNCTIONALITY
 // //   // ============================================================
 // //   const handleApproveTask = (taskId: string) => {
 // //     const task = tasks.find(t => t.id === taskId);
@@ -1084,10 +3115,11 @@
 // //       stopTimer(taskId, true);
 // //     }
     
+// //     // ✅ REMOVE TASK FROM TASKBOARD
 // //     const updatedTasks = tasks.filter(t => t.id !== taskId);
 // //     setTasks(updatedTasks);
     
-// //     // ✅ Remove task from project
+// //     // ✅ REMOVE TASK FROM PROJECT
 // //     removeTaskFromProject(task.projectId, task.title);
     
 // //     try {
@@ -1096,11 +3128,22 @@
 // //       console.error('Failed to save tasks:', error);
 // //     }
     
-// //     alert(`✅ Task "${task.title}" has been approved and removed from the project!`);
+// //     // ✅ Dispatch event to notify ProjectDetail
+// //     window.dispatchEvent(new CustomEvent('taskBoardUpdated', { 
+// //       detail: { 
+// //         projectId: task.projectId, 
+// //         taskTitle: task.title, 
+// //         newStatus: 'done',
+// //         taskId: task.id,
+// //         deleted: true
+// //       } 
+// //     }));
+    
+// //     alert(`✅ Task "${task.title}" has been approved and removed!`);
 // //   };
 
 // //   // ============================================================
-// //   // DRAG & DROP
+// //   // DRAG & DROP - ADDED DELETE FUNCTIONALITY FOR DONE
 // //   // ============================================================
 // //   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, task: Task) => {
 // //     e.dataTransfer.effectAllowed = 'move';
@@ -1207,6 +3250,17 @@
 // //       } catch (error) {
 // //         console.error('Failed to save tasks:', error);
 // //       }
+      
+// //       // ✅ Dispatch event to notify ProjectDetail
+// //       window.dispatchEvent(new CustomEvent('taskBoardUpdated', { 
+// //         detail: { 
+// //           projectId: latestTask.projectId, 
+// //           taskTitle: latestTask.title, 
+// //           newStatus: 'done',
+// //           taskId: latestTask.id,
+// //           deleted: true
+// //         } 
+// //       }));
       
 // //       alert(`✅ Task "${latestTask.title}" has been completed and removed from the project!`);
 // //       setDraggedTask(null);
@@ -2767,7 +4821,7 @@
 //   };
 
 //   // ============================================================
-//   // MOVE TASK - ADDED DELETE FUNCTIONALITY FOR DONE
+//   // MOVE TASK - ADDED DELETE FUNCTIONALITY FOR DONE (Timer logic unchanged)
 //   // ============================================================
 //   const handleMoveTask = (taskId: string, direction: 'forward' | 'backward') => {
 //     const task = tasks.find(t => t.id === taskId);
@@ -2794,7 +4848,7 @@
 //     const project = projects.find(p => p.id === task.projectId);
 //     const isTimerRunning = task.timerRunning || project?.timerRunning === true;
     
-//     // ✅ If moving to DONE - DELETE the task
+//     // ✅ If moving to DONE - DELETE the task (Timer logic unchanged for other statuses)
 //     if (isDone) {
 //       console.log(`🗑️ Task "${task.title}" moved to Done - DELETING...`);
       
@@ -2841,7 +4895,7 @@
 //       return;
 //     }
     
-//     // ✅ Keep existing timer logic for other statuses (review, in-progress, etc.)
+//     // ✅ EXISTING TIMER LOGIC - UNCHANGED
 //     if ((isReview) && isTimerRunning) {
 //       const elapsedSeconds = task.timerElapsedSeconds || project?.timerElapsedSeconds || 0;
 //       const hoursLogged = elapsedSeconds / 3600;
@@ -3143,7 +5197,7 @@
 //   };
 
 //   // ============================================================
-//   // DRAG & DROP - ADDED DELETE FUNCTIONALITY FOR DONE
+//   // DRAG & DROP - ADDED DELETE FUNCTIONALITY FOR DONE (Timer logic unchanged)
 //   // ============================================================
 //   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, task: Task) => {
 //     e.dataTransfer.effectAllowed = 'move';
@@ -3267,7 +5321,7 @@
 //       return;
 //     }
     
-//     // ✅ If dropping to "review" or any other status, UPDATE the task status
+//     // ✅ EXISTING TIMER LOGIC - UNCHANGED
 //     let updatedTask = { ...latestTask };
     
 //     if (isReview) {
@@ -4592,7 +6646,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
   }, [tasks]);
 
   // ============================================================
-  // UPDATE PROJECT TASK STATUS
+  // UPDATE PROJECT TASK STATUS - REMOVE TASK FROM PROJECT WHEN DONE
   // ============================================================
   const updateProjectTaskStatus = (projectId: string, taskTitle: string, newStatus: string) => {
     try {
@@ -4607,25 +6661,32 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
           });
           
           if (taskIndex !== -1) {
-            const oldTaskString = parsed[projectIndex].tasks[taskIndex];
-            
-            // Parse the task string to extract components
-            const titleMatch = oldTaskString.match(/^(.*?)(?:\s*assignee|$)/i);
-            const title = titleMatch ? titleMatch[1].trim() : taskTitle;
-            const assigneeMatch = oldTaskString.match(/assignee[:\s]+([A-Za-z]+(?:\s+[A-Za-z]+)*)/i);
-            const assignee = assigneeMatch ? assigneeMatch[1].trim() : 'Unassigned';
-            const hoursMatch = oldTaskString.match(/(\d+\.?\d*)\s*h\s*\/\s*(\d+\.?\d*)\s*h/);
-            const loggedHours = hoursMatch ? hoursMatch[1] : '0';
-            const estimatedHours = hoursMatch ? hoursMatch[2] : '1';
-            
-            // Create updated task string with new status
-            const newTaskString = `${title} - assignee: ${assignee} - ${loggedHours}h / ${estimatedHours}h - ${newStatus}`;
-            parsed[projectIndex].tasks[taskIndex] = newTaskString;
+            if (newStatus === 'done') {
+              // ✅ REMOVE TASK FROM PROJECT when status is 'done'
+              parsed[projectIndex].tasks.splice(taskIndex, 1);
+              console.log(`✅ Removed task "${taskTitle}" from project (status: done)`);
+              
+              if (onTaskCompleted) {
+                onTaskCompleted(projectId, taskTitle);
+              }
+            } else {
+              // For other statuses, just update the status string
+              const oldTaskString = parsed[projectIndex].tasks[taskIndex];
+              const titleMatch = oldTaskString.match(/^(.*?)(?:\s*assignee|$)/i);
+              const title = titleMatch ? titleMatch[1].trim() : taskTitle;
+              const assigneeMatch = oldTaskString.match(/assignee[:\s]+([A-Za-z]+(?:\s+[A-Za-z]+)*)/i);
+              const assignee = assigneeMatch ? assigneeMatch[1].trim() : 'Unassigned';
+              const hoursMatch = oldTaskString.match(/(\d+\.?\d*)\s*h\s*\/\s*(\d+\.?\d*)\s*h/);
+              const loggedHours = hoursMatch ? hoursMatch[1] : '0';
+              const estimatedHours = hoursMatch ? hoursMatch[2] : '1';
+              
+              const newTaskString = `${title} - assignee: ${assignee} - ${loggedHours}h / ${estimatedHours}h - ${newStatus}`;
+              parsed[projectIndex].tasks[taskIndex] = newTaskString;
+              console.log(`✅ Updated project task status to: ${newStatus}`);
+            }
             
             localStorage.setItem('userProjects', JSON.stringify(parsed));
-            console.log(`✅ Updated project task status to: ${newStatus}`);
             
-            // Notify parent if callback provided
             if (onTaskUpdated) {
               onTaskUpdated(projectId, taskTitle, newStatus);
             }
@@ -4641,7 +6702,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
   };
 
   // ============================================================
-  // REMOVE TASK FROM PROJECT
+  // REMOVE TASK FROM PROJECT - ONLY FOR DONE STATUS
   // ============================================================
   const removeTaskFromProject = (projectId: string, taskTitle: string) => {
     try {
@@ -4658,7 +6719,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
           if (taskIndex !== -1) {
             parsed[projectIndex].tasks.splice(taskIndex, 1);
             localStorage.setItem('userProjects', JSON.stringify(parsed));
-            console.log(`✅ Removed task "${taskTitle}" from project`);
+            console.log(`✅ Removed task "${taskTitle}" from project (Done)`);
             
             if (onTaskCompleted) {
               onTaskCompleted(projectId, taskTitle);
@@ -4821,7 +6882,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
   };
 
   // ============================================================
-  // MOVE TASK - ADDED DELETE FUNCTIONALITY FOR DONE (Timer logic unchanged)
+  // MOVE TASK - KEEP IN DONE COLUMN, ONLY REMOVE FROM PROJECT
   // ============================================================
   const handleMoveTask = (taskId: string, direction: 'forward' | 'backward') => {
     const task = tasks.find(t => t.id === taskId);
@@ -4848,30 +6909,40 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
     const project = projects.find(p => p.id === task.projectId);
     const isTimerRunning = task.timerRunning || project?.timerRunning === true;
     
-    // ✅ If moving to DONE - DELETE the task (Timer logic unchanged for other statuses)
+    // ✅ If moving to DONE - Keep in TaskBoard, remove from project
     if (isDone) {
-      console.log(`🗑️ Task "${task.title}" moved to Done - DELETING...`);
+      console.log(`📦 Task "${task.title}" moved to Done - Keeping in TaskBoard, removing from project`);
       
       if (isTimerRunning) {
         const elapsedSeconds = task.timerElapsedSeconds || project?.timerElapsedSeconds || 0;
         const hoursLogged = elapsedSeconds / 3600;
         updatedTask = {
           ...task,
+          status: newStatus,
           timerRunning: false,
           timerStartedAt: null,
           loggedHours: task.loggedHours + hoursLogged,
           timerElapsedSeconds: 0,
           completedBy: currentUser,
-          completedAt: new Date().toISOString()
+          completedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         };
         stopTimer(taskId, true);
+      } else {
+        updatedTask = {
+          ...task,
+          status: newStatus,
+          completedBy: currentUser,
+          completedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
       }
       
-      // ✅ REMOVE FROM TASKBOARD
-      const updatedTasks = tasks.filter(t => t.id !== taskId);
+      // ✅ UPDATE TASK IN TASKBOARD (keep it in Done column)
+      const updatedTasks = tasks.map(t => t.id === taskId ? updatedTask : t);
       setTasks(updatedTasks);
       
-      // ✅ REMOVE FROM PROJECT
+      // ✅ REMOVE TASK FROM PROJECT ONLY
       removeTaskFromProject(task.projectId, task.title);
       
       try {
@@ -4887,15 +6958,15 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
           taskTitle: task.title, 
           newStatus: 'done',
           taskId: task.id,
-          deleted: true
+          deleted: false // Not deleted from TaskBoard
         } 
       }));
       
-      alert(`✅ Task "${task.title}" has been completed and removed!`);
+      alert(`✅ Task "${task.title}" completed! It remains in Done column.`);
       return;
     }
     
-    // ✅ EXISTING TIMER LOGIC - UNCHANGED
+    // ✅ EXISTING TIMER LOGIC FOR OTHER STATUSES
     if ((isReview) && isTimerRunning) {
       const elapsedSeconds = task.timerElapsedSeconds || project?.timerElapsedSeconds || 0;
       const hoursLogged = elapsedSeconds / 3600;
@@ -5108,7 +7179,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
   };
 
   // ============================================================
-  // COMPLETE WORK - UNCHANGED
+  // COMPLETE WORK
   // ============================================================
   const handleCompleteWork = (taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
@@ -5156,7 +7227,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
   };
 
   // ============================================================
-  // APPROVE TASK - ADDED DELETE FUNCTIONALITY
+  // APPROVE TASK - Keep in Done column, remove from project
   // ============================================================
   const handleApproveTask = (taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
@@ -5169,8 +7240,19 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
       stopTimer(taskId, true);
     }
     
-    // ✅ REMOVE TASK FROM TASKBOARD
-    const updatedTasks = tasks.filter(t => t.id !== taskId);
+    // ✅ UPDATE TASK STATUS TO DONE (keep in TaskBoard)
+    const updatedTasks = tasks.map(t => {
+      if (t.id === taskId) {
+        return {
+          ...t,
+          status: 'done' as Task['status'],
+          completedBy: currentUser,
+          completedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return t;
+    });
     setTasks(updatedTasks);
     
     // ✅ REMOVE TASK FROM PROJECT
@@ -5189,15 +7271,15 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
         taskTitle: task.title, 
         newStatus: 'done',
         taskId: task.id,
-        deleted: true
+        deleted: false
       } 
     }));
     
-    alert(`✅ Task "${task.title}" has been approved and removed!`);
+    alert(`✅ Task "${task.title}" approved and moved to Done!`);
   };
 
   // ============================================================
-  // DRAG & DROP - ADDED DELETE FUNCTIONALITY FOR DONE (Timer logic unchanged)
+  // DRAG & DROP - Keep in Done column, remove from project
   // ============================================================
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, task: Task) => {
     e.dataTransfer.effectAllowed = 'move';
@@ -5265,9 +7347,11 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
       projectTimerRunning: project?.timerRunning
     });
     
-    // ✅ If dropping to "done", DELETE the task
+    // ✅ If dropping to "done", KEEP IN TASKBOARD, REMOVE FROM PROJECT
     if (isDone) {
-      console.log(`🗑️ Task "${latestTask.title}" moved to Done - DELETING...`);
+      console.log(`📦 Task "${latestTask.title}" dropped to Done - Keeping in TaskBoard, removing from project`);
+      
+      let updatedTask = { ...latestTask };
       
       if (isTimerRunning) {
         const projectIdToStop = project?.id || latestTask.projectId;
@@ -5280,23 +7364,38 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
             'Task moved to Done - Timer stopped automatically'
           );
         }
-        setTasks(prevTasks => 
-          prevTasks.map(task => {
-            if (task.id === latestTask.id) {
-              return {
-                ...task,
-                timerRunning: false,
-                timerStartedAt: null,
-                timerElapsedSeconds: 0
-              };
-            }
-            return task;
-          })
-        );
+        
+        const elapsedSeconds = latestTask.timerElapsedSeconds || project?.timerElapsedSeconds || 0;
+        const hoursLogged = elapsedSeconds / 3600;
+        
+        updatedTask = {
+          ...latestTask,
+          status: newStatus,
+          timerRunning: false,
+          timerStartedAt: null,
+          loggedHours: latestTask.loggedHours + hoursLogged,
+          timerElapsedSeconds: 0,
+          completedBy: currentUser,
+          completedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+      } else {
+        updatedTask = {
+          ...latestTask,
+          status: newStatus,
+          completedBy: currentUser,
+          completedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
       }
       
-      const updatedTasks = tasks.filter(task => task.id !== latestTask.id);
+      // ✅ UPDATE TASK IN TASKBOARD (keep it)
+      const updatedTasks = tasks.map(task =>
+        task.id === latestTask.id ? updatedTask : task
+      );
       setTasks(updatedTasks);
+      
+      // ✅ REMOVE TASK FROM PROJECT ONLY
       removeTaskFromProject(latestTask.projectId, latestTask.title);
       
       try {
@@ -5312,11 +7411,11 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
           taskTitle: latestTask.title, 
           newStatus: 'done',
           taskId: latestTask.id,
-          deleted: true
+          deleted: false
         } 
       }));
       
-      alert(`✅ Task "${latestTask.title}" has been completed and removed from the project!`);
+      alert(`✅ Task "${latestTask.title}" completed! It remains in Done column.`);
       setDraggedTask(null);
       return;
     }
@@ -5604,6 +7703,11 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
                             {task.reworkCount && task.reworkCount > 0 && (
                               <span className="text-[10px] px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full flex items-center border border-orange-200">
                                 <RefreshCw className="w-2.5 h-2.5 mr-0.5" /> Rework #{task.reworkCount}
+                              </span>
+                            )}
+                            {task.status === 'done' && (
+                              <span className="text-[10px] px-2 py-0.5 bg-green-100 text-green-700 rounded-full flex items-center border border-green-200">
+                                <CheckCircle className="w-2.5 h-2.5 mr-0.5" /> Completed
                               </span>
                             )}
                           </div>
